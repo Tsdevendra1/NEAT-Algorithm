@@ -45,8 +45,9 @@ class ForwardProp:
         return np.dot(input_data, weights) + bias if bias is not None else np.dot(input_data, weights)
 
     @staticmethod
-    def forward_prop(num_layers, initial_input, layer_weights, layer_biases=None):
+    def forward_prop(num_layers, initial_input, layer_weights, layer_biases=None, layer_activation_functions=None):
         """
+        :param layer_activation_functions: The activation functions to be used on each layer. Should be reference to the function at each key.
         :param layer_biases: the biases associated with every layer. Is of type dict
         :param num_layers: number of layers for the neural network
         :param initial_input: the input data
@@ -57,6 +58,9 @@ class ForwardProp:
         # This is done to ensure I can use the .get function later to return None
         if layer_biases is None:
             layer_biases = dict()
+
+        if layer_activation_functions is None:
+            layer_activation_functions = dict()
 
         assert (initial_input, np.array)
         assert (isinstance(layer_weights, dict))
@@ -69,8 +73,14 @@ class ForwardProp:
             # Get bias vector for current layer. If there is no bias for that layer returns none
             current_bias = layer_biases.get(current_layer_number, None)
 
+            # Get current activation function for the layer
+            current_activation_function = layer_activation_functions.get(current_layer_number, None)
+
             # Get output matrix for current_layer
             output = ForwardProp.compute_layer(current_input, current_weights, current_bias)
+
+            if current_activation_function:
+                output = current_activation_function(output)
 
             # The input into the next layer becomes the output from the previous layer
             current_input = output

@@ -58,6 +58,7 @@ class TestForwardProp(unittest.TestCase):
 
         weight_dict = {1: layer_1_weights, 2: layer_2_weights}
         bias_dict = {1: layer_1_bias, 2: layer_2_bias}
+        activation_function_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.relu}
 
         # No bias test
         self.assertEqual(
@@ -67,6 +68,12 @@ class TestForwardProp(unittest.TestCase):
         # Bias test
         self.assertEqual(ForwardProp.forward_prop(num_layers=2, initial_input=input_array, layer_weights=weight_dict,
                                                   layer_biases=bias_dict).tolist(), expected_output_bias.tolist())
+
+        # Testing Activation function with bias
+        self.assertEqual(ForwardProp.forward_prop(num_layers=2, initial_input=input_array, layer_weights=weight_dict,
+                                                  layer_biases=bias_dict,
+                                                  layer_activation_functions=activation_function_dict).tolist(),
+                         expected_output_bias.tolist())
 
 
 class TestActivationFunctions(unittest.TestCase):
