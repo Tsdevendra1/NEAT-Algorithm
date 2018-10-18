@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from main import ForwardProp, ActivationFunctions
+from main import ForwardProp, ActivationFunctions, BackProp
 
 
 class TestForwardProp(unittest.TestCase):
@@ -62,17 +62,20 @@ class TestForwardProp(unittest.TestCase):
 
         # No bias test
         self.assertEqual(
-            ForwardProp.forward_prop(num_layers=2, initial_input=input_array, layer_weights=weight_dict).tolist(),
+            ForwardProp.forward_prop(num_layers=2, initial_input=input_array, layer_weights=weight_dict)[
+                'prediction'].tolist(),
             expected_output_nobias.tolist())
 
         # Bias test
         self.assertEqual(ForwardProp.forward_prop(num_layers=2, initial_input=input_array, layer_weights=weight_dict,
-                                                  layer_biases=bias_dict).tolist(), expected_output_bias.tolist())
+                                                  layer_biases=bias_dict)['prediction'].tolist(),
+                         expected_output_bias.tolist())
 
         # Testing Activation function with bias
         self.assertEqual(ForwardProp.forward_prop(num_layers=2, initial_input=input_array, layer_weights=weight_dict,
                                                   layer_biases=bias_dict,
-                                                  layer_activation_functions=activation_function_dict).tolist(),
+                                                  layer_activation_functions=activation_function_dict)[
+                             'prediction'].tolist(),
                          expected_output_bias.tolist())
 
 
@@ -82,18 +85,49 @@ class TestActivationFunctions(unittest.TestCase):
         pass
 
     def test_relu(self):
-        input = np.array([[1, -1], [-1, 1]])
+        input_matrix = np.array([[1, -1], [-1, 1]])
         expected_output = np.array([[1, 0], [0, 1]])
 
-        self.assertEqual(ActivationFunctions.relu(input).tolist(), expected_output.tolist())
+        self.assertEqual(ActivationFunctions.relu(input_matrix).tolist(), expected_output.tolist())
 
     def test_sigmoid(self):
-        input = np.array([[1, -1], [-1, 1]])
+        input_matrix = np.array([[1, -1], [-1, 1]])
         expected_output = np.array([[0.73, 0.27], [0.27, 0.73]])
 
-        function_output = np.around(ActivationFunctions.sigmoid(input), 2)
+        function_output = np.around(ActivationFunctions.sigmoid(input_matrix), 2)
 
         self.assertEqual(function_output.tolist(), expected_output.tolist())
+
+
+class TestBackProp(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_back_prop_one_layer(self):
+        """
+        Test a very simple one layer neural network to see if correct gradients are calculated
+        """
+        # Initial data
+        input_matrix = np.array([[1, 2], [3, 4]])
+        weights = np.array([[2], [3]])
+        expected_y = np.array([[2], [2]])
+        expected_weight_gradients = np.array([[-2], [-3]])
+
+        # Dictionary with layer information
+        weights_dict = {1: weights}
+        activation_function_dict = {1: ActivationFunctions.sigmoid}
+
+        output = ForwardProp.forward_prop(num_layers=1, initial_input=input_matrix, layer_weights=weights_dict,
+                                          layer_activation_functions=activation_function_dict)
+
+        # Excluded bias gradients here
+        weight_gradients, _ = BackProp.back_prop(num_layers=1, layer_inputs=output['layer_input_dict'],
+                                                              layer_weights=weights_dict, layer_activation_functions=activation_function_dict,
+                                                              expected_y=expected_y, predicted_y=output['prediction'])
+
+        self.assertEqual(weight_gradients[1].astype(int).tolist(), expected_weight_gradients.tolist())
+
 
 
 if __name__ == '__main__':
