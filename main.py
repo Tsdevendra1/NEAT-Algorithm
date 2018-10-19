@@ -143,12 +143,13 @@ class BackProp:
         # number of examples
         n_examples = layer_inputs[1].shape[0]
 
-        # This assumes that we will always use a sigmoid activation function for the last output
+        # This assumes that we will always use a SIGMOID activation function for the last output
         dz_last = (predicted_y - expected_y) * (1 / n_examples)
         # num_layers because we want the inputs into the last layer
         dw_last = np.dot(layer_inputs[num_layers].T, dz_last)
         db_last = np.sum(dz_last)
 
+        # Set gradients for final layer
         weight_gradients[num_layers] = dw_last
         bias_gradients[num_layers] = db_last
 
@@ -187,15 +188,120 @@ class BackProp:
 
 class NeuralNetwork:
 
-    def __init__(self, initial_data, expected_y, weights_dict, activation_function_dict, bias_dict,
-                 learning_rate=0.0001):
+    def __init__(self, initial_data, expected_y, layer_sizes, activation_function_dict, learning_rate=0.0001,
+                 num_epochs=1000):
         self.initial_data = initial_data
         self.expected_y = expected_y
-        self.weights_dict = weights_dict
+        self.weights_dict = dict()
+        self.bias_dict = dict()
+        self.layer_sizes = layer_sizes
         self.activation_function_dict = activation_function_dict
-        self.bias_dict = bias_dict
         self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.num_layers = len(self.layer_sizes)
+
+        # Layer sizes should be a list with number of hidden nodes per layer. First number in list should be number of
+        # features. And last number should always be one because there is one output.
+        assert (layer_sizes[len(layer_sizes) - 1] == 1)
+        assert (layer_sizes[0] == initial_data.shape[1])
+
+        self.initialise_parameters(have_bias=True)
+
+    @staticmethod
+    def xavier_initalizer(num_inputs, num_outputs):
+        """
+        NOTE: if using RELU then use constant 2 instead of 1 for sqrt
+        """
+        np.random.seed(7)
+        weights = np.random.randn(num_inputs, num_outputs) * np.sqrt(1 / num_inputs)
+
+        return weights
+
+    def initialise_parameters(self, have_bias=False):
+        """
+        :param have_bias: Indicates whether to intialise a bias parameter as well
+        """
+        # Initialise parameters
+        for index in range(1, self.num_layers - 1):
+            # Index +1 because we want layer_numbers to start at 1. Index -1 because number of inputs is number of
+            # features from last layer.
+            self.weights_dict[index + 1] = self.xavier_initalizer(num_inputs=self.layer_sizes[index - 1],
+                                                                  num_outputs=self.layer_sizes[index])
+
+            if have_bias:
+                # Shape is (1, num_outputs) for the layer
+                self.bias_dict[index + 1] = np.zeros((1, self.layer_sizes[index]))
+
+    def run_one_pass(self, input_data, labels):
+        """
+        One pass counts as one forward propagation and one backware propogation including the optimisation of the
+        paramters
+        :return: The cost for the current step
+        """
+
+        n_examples = input_data.shape[0]
+
+        output = ForwardProp.forward_prop(num_layers=self.num_layers, initial_input=input_data,
+                                          layer_weights=self.weights_dict,
+                                          layer_activation_functions=self.activation_function_dict)
+
+        prediction = output['prediction']
+
+        # Asserting that the prediction gives the same number of outputs as expected
+        assert (labels.shape[0] == prediction.shape[0])
+
+        # Excluded bias gradients here
+        weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_layers,
+                                                              layer_inputs=output['layer_input_dict'],
+                                                              layer_weights=self.weights_dict,
+                                                              layer_activation_functions=self.activation_function_dict,
+                                                              expected_y=labels, predicted_y=prediction)
+
+        self.optimise_parameters(weight_gradients=weight_gradients, bias_gradients=bias_gradients)
+
+        # Define cost function
+        loss = -((labels * np.log(prediction)) + ((1 - labels) * np.log(1 - prediction)))
+        cost = (1 / n_examples) * np.sum(loss + 1e-8, axis=0)
+
+        return cost
+
+    def optimise_parameters(self, weight_gradients, bias_gradients=None):
+        """
+        :param weight_gradients: Dictionary containing weight gradients for each layer
+        :param bias_gradients: Dictionary containing bias gradients for each layer
+        """
+
+        for layer_number in weight_gradients:
+            self.weights_dict[layer_number] = self.weights_dict[layer_number] - (
+                    self.learning_rate * weight_gradients[layer_number])
+
+            if bias_gradients is not None:
+                self.bias_dict[layer_number] = self.bias_dict[layer_number] - (
+                        self.learning_rate * bias_gradients[layer_number])
+
+
+def create_architecture(num_features_training, hidden_nodes_per_layer):
+    assert (isinstance(hidden_nodes_per_layer, list))
+    # See NeuralNetwork class for reasonining for this layout
+    return [num_features_training] + hidden_nodes_per_layer + [1]
 
 
 if __name__ == '__main__':
-    print(ActivationFunctions.sigmoid(np.array([[1, -1], [-1, 1]])))
+    # Test and Train data
+    n_generated = 5000  # How many training examples to be generated
+
+    data_train = np.random.randint(2, size=(n_generated, 2))
+    labels_train = np.empty((n_generated, 1))
+    for column in range(data_train.shape[0]):
+        if data_train[column, 0] == 1 and data_train[column, 1] == 1:
+            labels_train[column] = 1
+        elif data_train[column, 0] == 0 and data_train[column, 1] == 0:
+            labels_train[column] = 1
+        else:
+            labels_train[column] = 0
+
+    num_features = data_train.shape[1]
+
+    #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
+    desired_architecture = [2]
+    nn_architecture = create_architecture(num_features, desired_architecture)
