@@ -70,12 +70,16 @@ class ForwardProp:
         # This is done to ensure I can use the .get function later to return None
         if layer_biases is None:
             layer_biases = dict()
+        else:
+            assert (len(layer_biases) == num_layers)
 
         if layer_activation_functions is None:
             layer_activation_functions = dict()
+        else:
+            assert (len(layer_activation_functions) == num_layers)
 
-        assert (initial_input, np.array)
         assert (isinstance(layer_weights, dict))
+        assert (len(layer_weights) == num_layers)
 
         # Dictionary to keep track of inputs for each layer
         layer_input_dict = dict()
@@ -127,6 +131,11 @@ class BackProp:
         assert (isinstance(layer_weights, dict))
         assert (isinstance(layer_activation_functions, dict))
 
+        # Ensure information is defined for every layer
+        assert (len(layer_activation_functions) == num_layers)
+        assert (len(layer_weights) == num_layers)
+        assert (len(layer_inputs) == num_layers)
+
         weight_gradients = dict()
         bias_gradients = dict()
 
@@ -134,7 +143,6 @@ class BackProp:
         # number of examples
         n_examples = layer_inputs[1].shape[0]
 
-        random = layer_inputs[num_layers].T
         # This assumes that we will always use a sigmoid activation function for the last output
         dz_last = (predicted_y - expected_y) * (1 / n_examples)
         # num_layers because we want the inputs into the last layer
@@ -155,7 +163,9 @@ class BackProp:
             current_dz, current_dw, current_db = BackProp.compute_gradient(next_layer_dz=current_dz,
                                                                            next_layer_weights=layer_weights[
                                                                                current_layer_number + 1],
-                                                                           activation_gradient_function=current_activation_gradient_function)
+                                                                           activation_gradient_function=current_activation_gradient_function,
+                                                                           current_layer_input=layer_inputs[
+                                                                               current_layer_number])
 
             # Store information of gradients for each layer
             weight_gradients[current_layer_number] = current_dw
@@ -173,6 +183,18 @@ class BackProp:
         current_db = np.sum(dz_current, axis=0)
 
         return dz_current, current_dw, current_db
+
+
+class NeuralNetwork:
+
+    def __init__(self, initial_data, expected_y, weights_dict, activation_function_dict, bias_dict,
+                 learning_rate=0.0001):
+        self.initial_data = initial_data
+        self.expected_y = expected_y
+        self.weights_dict = weights_dict
+        self.activation_function_dict = activation_function_dict
+        self.bias_dict = bias_dict
+        self.learning_rate = learning_rate
 
 
 if __name__ == '__main__':

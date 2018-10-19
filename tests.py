@@ -123,11 +123,35 @@ class TestBackProp(unittest.TestCase):
 
         # Excluded bias gradients here
         weight_gradients, _ = BackProp.back_prop(num_layers=1, layer_inputs=output['layer_input_dict'],
-                                                              layer_weights=weights_dict, layer_activation_functions=activation_function_dict,
-                                                              expected_y=expected_y, predicted_y=output['prediction'])
+                                                 layer_weights=weights_dict,
+                                                 layer_activation_functions=activation_function_dict,
+                                                 expected_y=expected_y, predicted_y=output['prediction'])
 
         self.assertEqual(weight_gradients[1].astype(int).tolist(), expected_weight_gradients.tolist())
 
+    def test_back_prop_two_layer(self):
+        input_matrix = np.array([[1, 2], [3, 4]])
+        weights_1 = np.array([[2, 2], [3, 3]])
+        weights_2 = np.array([[2], [3]])
+        expected_y = np.array([[38], [88]])
+        expected_weight_gradients_2 = np.array([[26], [26]])
+        expected_weight_gradients_1 = np.array([[8, 12], [12, 18]])
+
+        # Dictionary with layer information
+        weights_dict = {1: weights_1, 2: weights_2}
+        activation_function_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.relu}
+
+        output = ForwardProp.forward_prop(num_layers=2, initial_input=input_matrix, layer_weights=weights_dict,
+                                          layer_activation_functions=activation_function_dict)
+
+        # Excluded bias gradients here
+        weight_gradients, _ = BackProp.back_prop(num_layers=2, layer_inputs=output['layer_input_dict'],
+                                                 layer_weights=weights_dict,
+                                                 layer_activation_functions=activation_function_dict,
+                                                 expected_y=expected_y, predicted_y=output['prediction'])
+
+        self.assertEqual(np.round(weight_gradients[2], 0).astype(int).tolist(), expected_weight_gradients_2.tolist())
+        self.assertEqual(np.round(weight_gradients[1], 0).astype(int).tolist(), expected_weight_gradients_1.tolist())
 
 
 if __name__ == '__main__':
