@@ -273,6 +273,10 @@ def main():
     for x in (DeconstructGenome.unpack_genome(genome)):
         print(x)
 
+    random = np.ones((1, 3))
+    random1 = np.broadcast_to(random, (3,3))
+    print(random1)
+
 
 if __name__ == "__main__":
     main()

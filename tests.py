@@ -246,8 +246,11 @@ class TestDeconstructGenomeClass(unittest.TestCase):
         self.genome = Genome(nodes=node_list, connections=connection_list, key=1)
 
     def test_get_node_layer(self):
-        expected_answer = [0, 1, 1, 2, 2, 3]
-        self.assertEqual(DeconstructGenome.get_node_layers(self.genome), expected_answer)
+        expected_answer = {1: 1, 2: 1, 3: 2, 4: 2, 5: 3}
+        self.assertEqual(
+            DeconstructGenome.get_node_layers(connections=list(self.genome.connections.values()),
+                                              num_nodes=len(self.genome.nodes))[0],
+            expected_answer)
 
 
 if __name__ == '__main__':

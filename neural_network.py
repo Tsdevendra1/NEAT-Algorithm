@@ -53,8 +53,10 @@ class ForwardProp:
         if bias is not None:
             # Need to ensure that there is a bias term for each hidden node
             assert (weights.shape[1] == bias.shape[1])
+            # Broadcast so we can remove the required bias for genes
+            broadcasted_bias = np.broadcast_to(bias, (input_data.shape[0], bias.shape[1]))
 
-        return np.dot(input_data, weights) + bias if bias is not None else np.dot(input_data, weights)
+        return np.dot(input_data, weights) + broadcasted_bias if bias is not None else np.dot(input_data, weights)
 
     @staticmethod
     def forward_prop(num_layers, initial_input, layer_weights, layer_activation_functions=None, layer_biases=None):
