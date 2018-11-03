@@ -177,7 +177,8 @@ class BackProp:
         return weight_gradients, bias_gradients
 
     @staticmethod
-    def compute_gradient(next_layer_dz, next_layer_weights, activation_gradient_function, current_layer_input, next_layer_inputs):
+    def compute_gradient(next_layer_dz, next_layer_weights, activation_gradient_function, current_layer_input,
+                         next_layer_inputs):
         # Calculate dZ for current layer (we use weights from the next layer hence the +1)
         dz_current = np.dot(next_layer_dz,
                             next_layer_weights.T) * activation_gradient_function(next_layer_inputs)
@@ -286,7 +287,11 @@ class NeuralNetwork:
                 self.bias_dict[layer_number] = self.bias_dict[layer_number] - (
                         self.learning_rate * bias_gradients[layer_number])
 
-    def optimise(self):
+    def optimise(self, error_stop=None):
+        """
+        Train the neural network
+        :return: a list of each epoch with the cost associated with it
+        """
 
         epoch_list = list()
         cost_list = list()
@@ -297,12 +302,16 @@ class NeuralNetwork:
                 current_batch = self.x_train[batch_start:batch_start + self.batch_size, :]
                 current_labels = self.y_train[batch_start:batch_start + self.batch_size, :]
 
-                cost = self.run_one_pass(input_data=current_batch, labels=current_labels)
+                epoch_cost = self.run_one_pass(input_data=current_batch, labels=current_labels)
 
             epoch_list.append(epoch)
-            cost_list.append(cost)
+            cost_list.append(epoch_cost)
 
-            print('EPOCH:', epoch, 'Cost:', round(cost, 3))
+            # Finish early if it is optimised to a certain error
+            if error_stop and epoch_cost < error_stop:
+                break
+
+            print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
 
         return epoch_list, cost_list
 
@@ -325,23 +334,27 @@ def create_data(n_generated):
     return x_data, y_data
 
 
-if __name__ == '__main__':
+def main():
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
 
     num_features = data_train.shape[1]
 
     #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
-    desired_architecture = [5, 6]
+    desired_architecture = [6, 6]
     nn_architecture = create_architecture(num_features, desired_architecture)
 
     # Defines the activation functions used for each layer
-    activations_dict = {1: ActivationFunctions.sigmoid, 2: ActivationFunctions.sigmoid, 3:ActivationFunctions.sigmoid}
+    activations_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.relu, 3: ActivationFunctions.sigmoid}
 
     neural_network = NeuralNetwork(x_train=data_train, y_train=labels_train, layer_sizes=nn_architecture,
-                                   activation_function_dict=activations_dict, learning_rate=0.1)
+                                   activation_function_dict=activations_dict, learning_rate=0.1, num_epochs=1000)
 
-    epochs, cost = neural_network.optimise()
+    epochs, cost = neural_network.optimise(error_stop=0.09)
 
     plt.plot(epochs, cost)
     plt.show()
+
+
+if __name__ == '__main__':
+    main()

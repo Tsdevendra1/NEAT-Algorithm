@@ -1,6 +1,9 @@
 import unittest
 import numpy as np
-from main import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
+from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
+from genome_neural_net import DeconstructGenome
+from genome import Genome
+from gene import ConnectionGene, NodeGene
 
 
 class TestForwardProp(unittest.TestCase):
@@ -222,6 +225,29 @@ class TestNeuralNetworkMultiLayer(unittest.TestCase):
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.0
         self.assertEqual(round(cost[999], 3), expected_error_after_1000_epochs)
+
+
+class TestDeconstructGenomeClass(unittest.TestCase):
+
+    def setUp(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='output')]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1),
+                           ConnectionGene(input_node=1, output_node=4, innovation_number=2),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=3),
+                           ConnectionGene(input_node=2, output_node=4, innovation_number=4),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=5),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=6)]
+
+        self.genome = Genome(nodes=node_list, connections=connection_list, key=1)
+
+    def test_get_node_layer(self):
+        expected_answer = [0, 1, 1, 2, 2, 3]
+        self.assertEqual(DeconstructGenome.get_node_layers(self.genome), expected_answer)
 
 
 if __name__ == '__main__':
