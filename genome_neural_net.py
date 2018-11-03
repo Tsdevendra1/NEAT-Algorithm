@@ -6,36 +6,6 @@ from genome import *
 import numpy as np
 
 
-def connections_matrix(layer_connections, num_inputs, num_outputs, node_map):
-    connection_matrix = np.zeros((num_inputs, num_outputs))
-    for connection in layer_connections:
-        # Double check that the connection is enabled
-        if connection.enabled:
-            # Minus one because of python indexing
-            input_position_within_layer = node_map[connection.input_node] - 1
-            output_position_within_layer = node_map[connection.output_node] - 1
-            connection_matrix[input_position_within_layer, output_position_within_layer] = 1
-    return connection_matrix
-
-
-def all_connection_matrices(connections, layer_nodes, node_layers, num_layers, node_map):
-    connection_matrices = dict()
-    # The layer a connection is associated with depends on which layer the output node is on.
-    for layer in range(1, num_layers):
-        num_inputs = len(layer_nodes[layer])
-        num_outputs = len(layer_nodes[layer + 1])
-        layer_connections = []
-        for connection in connections:
-            if node_layers[connection.output_node] == layer + 1:
-                layer_connections.append(connection)
-        # Set removes duplicates so we can check number of unique outputs and inputs
-        connection_matrices[layer] = connections_matrix(layer_connections=layer_connections,
-                                                        num_inputs=num_inputs,
-                                                        num_outputs=num_outputs,
-                                                        node_map=node_map)
-    return connection_matrices
-
-
 class DeconstructGenome:
 
     @classmethod
@@ -46,7 +16,9 @@ class DeconstructGenome:
         # Get's which node is on which layer
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, num_nodes=len(nodes))
         num_layers = max(node_layers.values())
+        # Keeps track of number of nodes for each layer
         nodes_per_layer = collections.Counter(list(node_layers.values()))
+        # Keeps track of which number node each node is in their respective layer
         node_map = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes)
         added_nodes, added_connections = cls.find_ghost_nodes(nodes_per_layer=nodes_per_layer, node_layers=node_layers,
                                                               node_map=node_map, connections=connections,
@@ -55,9 +27,11 @@ class DeconstructGenome:
         nodes += added_nodes
         connections += added_connections
 
-        connection_matrices = all_connection_matrices(connections=connections, layer_nodes=layer_nodes,
-                                                      node_layers=node_layers, num_layers=num_layers, node_map=node_map)
-        return connection_matrices
+        connection_matrices, bias_matrices, constant_weight_connections = cls.all_connection_matrices(
+            connections=connections, layer_nodes=layer_nodes,
+            node_layers=node_layers, num_layers=num_layers,
+            node_map=node_map)
+        return connection_matrices, bias_matrices, constant_weight_connections
 
     @classmethod
     def get_node_layers(cls, connections, num_nodes):
@@ -106,17 +80,13 @@ class DeconstructGenome:
         return node_map
 
     @classmethod
-    def find_active_nodes(cls, genome):
-        pass
-
-    @classmethod
     def find_ghost_nodes(cls, nodes_per_layer, node_layers, node_map, connections, layer_nodes):
         """
         :param nodes_per_layer: Dictionary containing number of nodes per layer
         :param node_layers: Dictionary containing the
         :param node_map: Keeps track of which node is which number in it's respective layer
         :param connections: A list containing all the ConnectionGenes
-        :param nodes: A list containing all the NodeGenes
+        :param layer_nodes: Dictionary with nodes list for each layer
         :return: The new added added_nodes and added_connections
         """
         # Will save which new nodes have been added
@@ -140,7 +110,7 @@ class DeconstructGenome:
 
                 # Turn off the connection we're in
                 connection.enabled = False
-                cls.update_connections(new_node_ids=new_nodes, connection_gene=connection, connections=connections,
+                cls.update_connections(new_node_ids=new_nodes, connection_gene=connection,
                                        added_connections=added_connections)
 
         return added_nodes, added_connections
@@ -206,11 +176,76 @@ class DeconstructGenome:
         new_input_nodes = [connection_gene.input_node] + new_node_ids
         new_output_nodes = new_node_ids + [connection_gene.output_node]
         num_new_connections = len(new_input_nodes)
-        for new_connection in range(num_new_connections):
-            new_connection_gene = ConnectionGene(input_node=new_input_nodes[new_connection],
-                                                 output_node=new_output_nodes[new_connection])
+        for new_connection_number in range(num_new_connections):
+            new_connection_gene = ConnectionGene(input_node=new_input_nodes[new_connection_number],
+                                                 output_node=new_output_nodes[new_connection_number])
+            if new_connection_number != num_new_connections - 1:
+                # Because all the weights apart from the last on to connect to the final node should have constant 1
+                # weights
+                new_connection_gene.keep_constant_weight = True
             # Keep track of the new connections we've added
             added_connections.append(new_connection_gene)
+
+    @classmethod
+    def connections_matrix(cls, layer_connections, num_inputs, num_outputs, node_map):
+        """
+        :param layer_connections: A list containing the connections ONLY for the specific layer
+        :param num_inputs: Number of inputs for the layer
+        :param num_outputs: Number of outputs for the layer
+        :param node_map: Dictionary with respective position in a layer for each node_id
+        :return: numpy array of which nodes are connected to which
+        """
+        connection_matrix = np.zeros((num_inputs, num_outputs))
+        # Keeps track of which connections shouldn't have any bias or activation functions applied
+        bias_matrix = np.ones((num_inputs, num_outputs))
+        # Keep track of which connections should keep a constant one weight
+        keep_constant_weight_connections = []
+        for connection in layer_connections:
+            # Double check that the connection is enabled
+            if connection.enabled:
+                # Minus one because of python indexing
+                input_position_within_layer = node_map[connection.input_node] - 1
+                output_position_within_layer = node_map[connection.output_node] - 1
+                if not connection.keep_constant_weight:
+                    # Set it to one if it exists
+                    connection_matrix[input_position_within_layer, output_position_within_layer] = 1
+                else:
+                    # Because when we multiply by the actual biases, then we will remove the on that should have a
+                    # constant weight
+                    bias_matrix[input_position_within_layer, output_position_within_layer] = 0
+                    # Saving the connections because we have to always set the weight to one for that specific position.
+                    # It will always be used to ensure that the activation function isn't applied to that value.
+                    keep_constant_weight_connections.append(connection)
+        return connection_matrix, bias_matrix, keep_constant_weight_connections
+
+    @classmethod
+    def all_connection_matrices(cls, connections, layer_nodes, node_layers, num_layers, node_map):
+        """
+        :param connections: List of connection genes
+        :param layer_nodes:  Nodes for each layer
+        :param node_layers: Layer associated with each node_id
+        :param num_layers: Number of layers in genome
+        :param node_map: Position for each node_id in it's respective layer
+        :return: A dictionary containing whether a node is connected a node in the next layer for every layer
+        """
+        connection_matrices = dict()
+        bias_matrices = dict()
+        constant_weight_connections = dict()
+        for layer in range(1, num_layers):
+            num_inputs = len(layer_nodes[layer])
+            num_outputs = len(layer_nodes[layer + 1])
+            layer_connections = []
+            for connection in connections:
+                # The layer a connection is associated with depends on which layer the output node is on.
+                if node_layers[connection.output_node] == layer + 1:
+                    layer_connections.append(connection)
+            connection_matrices[layer], bias_matrices[layer], constant_weight_connections[
+                layer] = cls.connections_matrix(
+                layer_connections=layer_connections,
+                num_inputs=num_inputs,
+                num_outputs=num_outputs,
+                node_map=node_map)
+        return connection_matrices, bias_matrices, constant_weight_connections
 
 
 class GenomeNeuralNet(NeuralNetwork):
@@ -235,7 +270,8 @@ def main():
 
     genome = Genome(nodes=node_list, connections=connection_list, key=1)
 
-    print(DeconstructGenome.unpack_genome(genome))
+    for x in (DeconstructGenome.unpack_genome(genome)):
+        print(x)
 
 
 if __name__ == "__main__":
