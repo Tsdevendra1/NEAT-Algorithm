@@ -193,7 +193,9 @@ class DeconstructGenome:
         :param num_inputs: Number of inputs for the layer
         :param num_outputs: Number of outputs for the layer
         :param node_map: Dictionary with respective position in a layer for each node_id
-        :return: numpy array of which nodes are connected to which
+        :return: numpy array of which nodes are connected to which, a bias matrix which should be multiplied with the
+                actual bias matrix so that the constant weight connections don't have bias applied to them. And  a list
+                of connection genes for which the weight should remain a constant one.
         """
         connection_matrix = np.zeros((num_inputs, num_outputs))
         # Keeps track of which connections shouldn't have any bias or activation functions applied
@@ -206,10 +208,10 @@ class DeconstructGenome:
                 # Minus one because of python indexing
                 input_position_within_layer = node_map[connection.input_node] - 1
                 output_position_within_layer = node_map[connection.output_node] - 1
-                if not connection.keep_constant_weight:
-                    # Set it to one if it exists
-                    connection_matrix[input_position_within_layer, output_position_within_layer] = 1
-                else:
+                # Set it to one if it exists
+                connection_matrix[input_position_within_layer, output_position_within_layer] = 1
+                # Keep track of which connections should be a constant weight i.e. weight of 1 forever
+                if connection.keep_constant_weight:
                     # Because when we multiply by the actual biases, then we will remove the on that should have a
                     # constant weight
                     bias_matrix[input_position_within_layer, output_position_within_layer] = 0
