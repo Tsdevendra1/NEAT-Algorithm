@@ -10,6 +10,10 @@ class DeconstructGenome:
 
     @classmethod
     def unpack_genome(cls, genome):
+        """
+        :param genome: The genome to be deconstructed
+        :return:
+        """
         # We use deep copies because we don't want to make changes to the genome itself
         nodes = copy.deepcopy(list(genome.nodes.values()))
         connections = copy.deepcopy(list(genome.connections.values()))
@@ -17,7 +21,7 @@ class DeconstructGenome:
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, num_nodes=len(nodes))
         num_layers = max(node_layers.values())
         # Keeps track of number of nodes for each layer
-        nodes_per_layer = collections.Counter(list(node_layers.values()))
+        nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
         # Keeps track of which number node each node is in their respective layer
         node_map = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes)
         added_nodes, added_connections = cls.find_ghost_nodes(nodes_per_layer=nodes_per_layer, node_layers=node_layers,
@@ -31,7 +35,7 @@ class DeconstructGenome:
             connections=connections, layer_nodes=layer_nodes,
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
-        return connection_matrices, bias_matrices, constant_weight_connections
+        return connection_matrices, bias_matrices, constant_weight_connections, nodes_per_layer, node_map
 
     @classmethod
     def get_node_layers(cls, connections, num_nodes):
@@ -100,7 +104,7 @@ class DeconstructGenome:
             output_node_layer = node_layers[connection.output_node]
             layer_span = output_node_layer - input_node_layer
 
-            if layer_span > 1:
+            if layer_span > 1 and connection.enabled:
                 num_added_nodes = layer_span - 1
                 new_nodes = cls.update_nodes(num_added_nodes=num_added_nodes, added_nodes=added_nodes,
                                              node_layers=node_layers, input_node_layer=input_node_layer,
@@ -250,12 +254,6 @@ class DeconstructGenome:
         return connection_matrices, bias_matrices, constant_weight_connections
 
 
-class GenomeNeuralNet(NeuralNetwork):
-
-    def __init__(self, ):
-        pass
-
-
 def main():
     node_list = [NodeGene(node_id=1, node_type='source'),
                  NodeGene(node_id=2, node_type='source'),
@@ -263,7 +261,7 @@ def main():
                  NodeGene(node_id=4, node_type='hidden'),
                  NodeGene(node_id=5, node_type='output')]
 
-    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True),
+    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=False),
                        ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
                        ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
                        ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
@@ -272,12 +270,13 @@ def main():
 
     genome = Genome(nodes=node_list, connections=connection_list, key=1)
 
+    counter = 0
     for x in (DeconstructGenome.unpack_genome(genome)):
-        print(x)
-
-    random = np.ones((1, 3))
-    random1 = np.broadcast_to(random, (3,3))
-    print(random1)
+        if counter == 0:
+            print(max(x))
+        else:
+            print(x)
+        counter += 1
 
 
 if __name__ == "__main__":

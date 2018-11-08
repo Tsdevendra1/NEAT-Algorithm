@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
-from genome_neural_net import DeconstructGenome
+from deconstruct_genome import DeconstructGenome
 from genome import Genome
 from gene import ConnectionGene, NodeGene
 
@@ -251,6 +251,38 @@ class TestDeconstructGenomeClass(unittest.TestCase):
             DeconstructGenome.get_node_layers(connections=list(self.genome.connections.values()),
                                               num_nodes=len(self.genome.nodes))[0],
             expected_answer)
+
+    def test_unpack_genome(self):
+        expected_answer = np.ones((2, 2))
+        answer = DeconstructGenome.unpack_genome(genome=self.genome)
+
+        # check that the first layer weights are the correct ones
+        self.assertEqual(answer[0][1].tolist(), expected_answer.tolist())
+
+    def test_unpack_genome_broken_link(self):
+        """
+        Tests unpack genome for a genome which contains a broken link
+        """
+        expected_answer = np.ones((2, 2))
+        expected_answer[0, 0] = 0
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='output')]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=False),
+                           ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
+                           ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=2)
+
+        answer = DeconstructGenome.unpack_genome(genome=genome)
+
+        self.assertEqual(answer[0][1].tolist(), expected_answer.tolist())
 
 
 if __name__ == '__main__':

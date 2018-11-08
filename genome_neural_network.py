@@ -1,33 +1,36 @@
-import numpy as np
-import matplotlib.pyplot as plt
+from deconstruct_genome import DeconstructGenome
+from neural_network import *
+from genome import *
+from gene import *
 from neural_network_components import *
 
 
-class NeuralNetwork:
+class GenomeNeuralNetwork:
 
-    def __init__(self, x_train, y_train, layer_sizes, activation_function_dict, learning_rate=0.0001,
+    def __init__(self, genome, x_train, y_train, activation_function_dict, learning_rate=0.0001,
                  num_epochs=1000, batch_size=64):
+        self.genome = genome
+        self.connection_matrices_per_layer, self.no_activations_matrix_per_layer, self.constant_weight_connections, self.nodes_per_layer, self.node_map = DeconstructGenome.unpack_genome(
+            genome=genome)
         self.x_train = x_train
         self.y_train = y_train
         self.batch_size = batch_size
         self.weights_dict = dict()
         self.bias_dict = dict()
-        self.layer_sizes = layer_sizes
         self.activation_function_dict = activation_function_dict
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
-        self.num_layers = len(self.layer_sizes) - 1
+        # Minus one because we include the data input as a layer in 'nodes_per_layer'
+        self.num_hidden_layers = max(self.nodes_per_layer) - 1
 
-        # Layer sizes should be a list with number of hidden nodes per layer. First number in list should be number of
-        # features. And last number should always be one because there is one output.
-        assert (layer_sizes[len(layer_sizes) - 1] == 1)
-        assert (layer_sizes[0] == x_train.shape[1])
+        # The number of 'nodes' on the first layer should be equal to the number of features in the training data
+        assert (self.nodes_per_layer[1] == self.x_train.shape[1])
 
         # This is to check that there is an activation function specified for each layer
-        assert (len(layer_sizes[1:len(layer_sizes)]) == len(activation_function_dict))
+        assert (len(self.connection_matrices_per_layer) == len(activation_function_dict))
 
         # The activation function for the last layer should be a sigmoid due to how the gradients were calculated
-        assert (activation_function_dict[len(layer_sizes) - 1] == ActivationFunctions.sigmoid)
+        assert (activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
 
         self.initialise_parameters(have_bias=True)
 
@@ -37,24 +40,43 @@ class NeuralNetwork:
         NOTE: if using RELU then use constant 2 instead of 1 for sqrt
         """
         np.random.seed(7)
-        weights = np.random.randn(num_inputs, num_outputs) * np.sqrt(1 / num_inputs)
+        weights = np.random.randn(num_inputs, num_outputs) * np.sqrt(2 / num_inputs)
 
         return weights
+
+    def create_weight_matrix_from_connections(self):
+        pass
+
+    def create_bias_matrix_from_connections(self):
+        pass
 
     def initialise_parameters(self, have_bias=False):
         """
         :param have_bias: Indicates whether to intialise a bias parameter as well
         """
         # Initialise parameters
-        for index in range(1, self.num_layers + 1):
-            # Index +1 because we want layer_numbers to start at 1. Index -1 because number of inputs is number of
-            # features from last layer.
-            self.weights_dict[index] = self.xavier_initalizer(num_inputs=self.layer_sizes[index - 1],
-                                                              num_outputs=self.layer_sizes[index])
+        for hidden_layer_number in range(1, self.num_hidden_layers + 1):
+
+            # We multiply by the connection_matrices_per_layer because zeroes out the weights where there isn't a
+            # connection between the nodes. Add one because nodes per_layer counts the first layer as the data_inputs.
+            # So indexing nodes_per_layer[1] would actually give you the number of features in the training set.
+            self.weights_dict[hidden_layer_number] = self.xavier_initalizer(
+                num_inputs=self.nodes_per_layer[hidden_layer_number],
+                num_outputs=self.nodes_per_layer[hidden_layer_number + 1]) * \
+                                                     self.connection_matrices_per_layer[hidden_layer_number]
+
+            # All the connections where the connection should have a constant one connection
+            for connection in self.constant_weight_connections[hidden_layer_number]:
+                # Need to convert to their position in their layer
+                # Minus one because of python indexing
+                input_position_within_layer = self.node_map[connection.input_node] - 1
+                output_position_within_layer = self.node_map[connection.output_node] - 1
+                self.weights_dict[hidden_layer_number][input_position_within_layer, output_position_within_layer] = 1
 
             if have_bias:
                 # Shape is (1, num_outputs) for the layer
-                self.bias_dict[index] = np.zeros((1, self.layer_sizes[index]))
+                self.bias_dict[hidden_layer_number] = np.zeros((1, self.nodes_per_layer[hidden_layer_number + 1]))
+
 
     def run_one_pass(self, input_data, labels):
         """
@@ -65,7 +87,8 @@ class NeuralNetwork:
 
         n_examples = input_data.shape[0]
 
-        prediction, layer_input_dict = ForwardProp.forward_prop(num_layers=self.num_layers, initial_input=input_data,
+        prediction, layer_input_dict = ForwardProp.forward_prop(num_layers=self.num_hidden_layers,
+                                                                initial_input=input_data,
                                                                 layer_weights=self.weights_dict,
                                                                 layer_activation_functions=self.activation_function_dict)
 
@@ -73,7 +96,7 @@ class NeuralNetwork:
         assert (labels.shape[0] == prediction.shape[0])
 
         # Excluded bias gradients here
-        weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_layers,
+        weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_hidden_layers,
                                                               layer_inputs=layer_input_dict,
                                                               layer_weights=self.weights_dict,
                                                               layer_activation_functions=self.activation_function_dict,
@@ -130,45 +153,36 @@ class NeuralNetwork:
         return epoch_list, cost_list
 
 
-def create_architecture(num_features_training, hidden_nodes_per_layer):
-    assert (isinstance(hidden_nodes_per_layer, list))
-    # See NeuralNetwork class for reasoning for this layout
-    return [num_features_training] + hidden_nodes_per_layer + [1]
-
-
-def create_data(n_generated):
-    x_data = np.random.randint(2, size=(n_generated, 2))
-    y_data = np.empty((n_generated, 1))
-
-    # Sets y data to 1 or 0 according to XOR rules
-    for column in range(x_data.shape[0]):
-        y_data[column] = ((x_data[column, 0] == 1 and x_data[column, 1] == 1) or (
-                x_data[column, 0] == 0 and x_data[column, 1] == 0))
-
-    return x_data, y_data
-
-
 def main():
+    node_list = [NodeGene(node_id=1, node_type='source'),
+                 NodeGene(node_id=2, node_type='source'),
+                 NodeGene(node_id=3, node_type='hidden'),
+                 NodeGene(node_id=4, node_type='hidden'),
+                 NodeGene(node_id=5, node_type='output')]
+
+    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=False),
+                       ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
+                       ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
+                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
+                       ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True),
+                       ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True)]
+
+    genome = Genome(nodes=node_list, connections=connection_list, key=1)
+
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
-
-    num_features = data_train.shape[1]
-
-    #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
-    desired_architecture = [2]
-    nn_architecture = create_architecture(num_features, desired_architecture)
 
     # Defines the activation functions used for each layer
     activations_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.sigmoid}
 
-    neural_network = NeuralNetwork(x_train=data_train, y_train=labels_train, layer_sizes=nn_architecture,
-                                   activation_function_dict=activations_dict, learning_rate=0.1, num_epochs=1000)
+    genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train,
+                                    activation_function_dict=activations_dict)
 
-    epochs, cost = neural_network.optimise(error_stop=0.09)
+    epochs, cost = genome_nn.optimise(error_stop=0.09)
 
     plt.plot(epochs, cost)
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
