@@ -70,15 +70,13 @@ class ForwardProp:
         """
         # Need to keep the values where the
         for connection in constant_connections[current_layer]:
-            # Need to convert to their position in the layer
-            # Minus one because of python indexing
-            input_position_within_layer = node_map[connection.input_node] - 1
+            # Need to convert to their position in the layer. Minus one because of python indexing
             output_position_within_layer = node_map[connection.output_node] - 1
-            # Use the saved output before the activation function was applied because for these values they
-            # shouldn't have the activation function applied
-            output_with_activation[input_position_within_layer, output_position_within_layer] = \
+            # The output node position is the node which shouldn't have any activations applied. So we use all the
+            # values from before the activation was applied
+            output_with_activation[:, output_position_within_layer] = \
                 output_without_activation[
-                    input_position_within_layer, output_position_within_layer]
+                :, output_position_within_layer]
 
         return output_with_activation
 
