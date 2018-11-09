@@ -21,7 +21,7 @@ class GenomeNeuralNetwork:
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         # Minus one because we include the data input as a layer in 'nodes_per_layer'
-        self.num_hidden_layers = max(self.nodes_per_layer) - 1
+        self.num_layers = max(self.nodes_per_layer) - 1
 
         # The number of 'nodes' on the first layer should be equal to the number of features in the training data
         assert (self.nodes_per_layer[1] == self.x_train.shape[1])
@@ -33,6 +33,31 @@ class GenomeNeuralNetwork:
         assert (activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
 
         self.initialise_parameters(have_bias=True)
+
+    def ensure_correct_weights(self):
+        """
+        Goes through the weights dict to ensure the where there are no connections the weight is set to zero, and where
+        the connection should be a constant 1, that it is set as such.
+        """
+        for layer in self.weights_dict:
+            # Zeroes out the connections which there isn't one
+            self.weights_dict[layer] *= self.connection_matrices_per_layer[layer]
+            # All the connections where the connection should have a constant one connection are set to one
+            for connection in self.constant_weight_connections[layer]:
+                # Need to convert to their position in their layer
+                # Minus one because of python indexing
+                input_position_within_layer = self.node_map[connection.input_node] - 1
+                output_position_within_layer = self.node_map[connection.output_node] - 1
+                # Set the weight to one
+                self.weights_dict[layer][input_position_within_layer, output_position_within_layer] = 1
+
+    def ensure_correct_bias(self):
+        """
+        Zeroes out the bias values where the node is a dummy node
+        """
+        for layer in range(1, self.num_layers + 1):
+            # Broadcast to fit the batch_size and also multiply by the matrix which contains which bias values should be zero
+            self.bias_dict[layer] *= self.no_activations_matrix_per_layer[layer]
 
     @staticmethod
     def xavier_initalizer(num_inputs, num_outputs):
@@ -55,28 +80,24 @@ class GenomeNeuralNetwork:
         :param have_bias: Indicates whether to intialise a bias parameter as well
         """
         # Initialise parameters
-        for hidden_layer_number in range(1, self.num_hidden_layers + 1):
+        for layer in range(1, self.num_layers + 1):
 
             # We multiply by the connection_matrices_per_layer because zeroes out the weights where there isn't a
             # connection between the nodes. Add one because nodes per_layer counts the first layer as the data_inputs.
             # So indexing nodes_per_layer[1] would actually give you the number of features in the training set.
-            self.weights_dict[hidden_layer_number] = self.xavier_initalizer(
-                num_inputs=self.nodes_per_layer[hidden_layer_number],
-                num_outputs=self.nodes_per_layer[hidden_layer_number + 1]) * \
-                                                     self.connection_matrices_per_layer[hidden_layer_number]
-
-            # All the connections where the connection should have a constant one connection
-            for connection in self.constant_weight_connections[hidden_layer_number]:
-                # Need to convert to their position in their layer
-                # Minus one because of python indexing
-                input_position_within_layer = self.node_map[connection.input_node] - 1
-                output_position_within_layer = self.node_map[connection.output_node] - 1
-                self.weights_dict[hidden_layer_number][input_position_within_layer, output_position_within_layer] = 1
+            self.weights_dict[layer] = self.xavier_initalizer(
+                num_inputs=self.nodes_per_layer[layer],
+                num_outputs=self.nodes_per_layer[layer + 1])
 
             if have_bias:
                 # Shape is (1, num_outputs) for the layer
-                self.bias_dict[hidden_layer_number] = np.zeros((1, self.nodes_per_layer[hidden_layer_number + 1]))
+                self.bias_dict[layer] = np.zeros((1, self.nodes_per_layer[layer + 1]))
 
+        # Zeroes out connections where there aren't any and sets the constant connections to one
+        self.ensure_correct_weights()
+
+        # Zeroes out the bias values for each layer where there is a dummy node
+        self.ensure_correct_bias()
 
     def run_one_pass(self, input_data, labels):
         """
@@ -87,16 +108,19 @@ class GenomeNeuralNetwork:
 
         n_examples = input_data.shape[0]
 
-        prediction, layer_input_dict = ForwardProp.forward_prop(num_layers=self.num_hidden_layers,
-                                                                initial_input=input_data,
-                                                                layer_weights=self.weights_dict,
-                                                                layer_activation_functions=self.activation_function_dict)
+        prediction, layer_input_dict = ForwardProp.genome_forward_prop(num_layers=self.num_layers,
+                                                                       initial_input=input_data,
+                                                                       layer_weights=self.weights_dict,
+                                                                       layer_biases=self.bias_dict,
+                                                                       layer_activation_functions=self.activation_function_dict,
+                                                                       keep_constant_connections=self.constant_weight_connections,
+                                                                       node_map=self.node_map)
 
         # Asserting that the prediction gives the same number of outputs as expected
         assert (labels.shape[0] == prediction.shape[0])
 
         # Excluded bias gradients here
-        weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_hidden_layers,
+        weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_layers,
                                                               layer_inputs=layer_input_dict,
                                                               layer_weights=self.weights_dict,
                                                               layer_activation_functions=self.activation_function_dict,
@@ -123,6 +147,12 @@ class GenomeNeuralNetwork:
             if bias_gradients is not None:
                 self.bias_dict[layer_number] = self.bias_dict[layer_number] - (
                         self.learning_rate * bias_gradients[layer_number])
+
+        # Zeroes out connections where there aren't any and sets the constant connections to one
+        self.ensure_correct_weights()
+
+        # Zeroes out the bias values for each layer where there is a dummy node
+        self.ensure_correct_bias()
 
     def optimise(self, error_stop=None):
         """
@@ -160,7 +190,7 @@ def main():
                  NodeGene(node_id=4, node_type='hidden'),
                  NodeGene(node_id=5, node_type='output')]
 
-    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=False),
+    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True),
                        ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
                        ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
                        ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
@@ -172,11 +202,11 @@ def main():
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
 
-    # Defines the activation functions used for each layer
+    # Defines the activation functions used for each layer. The LAST LAYER SHOULD ALWAYS BE SIGMOID
     activations_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.sigmoid}
 
     genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train,
-                                    activation_function_dict=activations_dict)
+                                    activation_function_dict=activations_dict, learning_rate=0.1)
 
     epochs, cost = genome_nn.optimise(error_stop=0.09)
 

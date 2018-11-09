@@ -203,7 +203,7 @@ class DeconstructGenome:
         """
         connection_matrix = np.zeros((num_inputs, num_outputs))
         # Keeps track of which connections shouldn't have any bias or activation functions applied
-        bias_matrix = np.ones((num_inputs, num_outputs))
+        bias_matrix = np.ones((1, num_outputs))
         # Keep track of which connections should keep a constant one weight
         keep_constant_weight_connections = []
         for connection in layer_connections:
@@ -218,7 +218,7 @@ class DeconstructGenome:
                 if connection.keep_constant_weight:
                     # Because when we multiply by the actual biases, then we will remove the on that should have a
                     # constant weight
-                    bias_matrix[input_position_within_layer, output_position_within_layer] = 0
+                    bias_matrix[0, output_position_within_layer] = 0
                     # Saving the connections because we have to always set the weight to one for that specific position.
                     # It will always be used to ensure that the activation function isn't applied to that value.
                     keep_constant_weight_connections.append(connection)
@@ -261,7 +261,7 @@ def main():
                  NodeGene(node_id=4, node_type='hidden'),
                  NodeGene(node_id=5, node_type='output')]
 
-    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=False),
+    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True),
                        ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
                        ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
                        ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),

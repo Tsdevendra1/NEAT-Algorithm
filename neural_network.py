@@ -155,11 +155,11 @@ def main():
     num_features = data_train.shape[1]
 
     #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
-    desired_architecture = [2]
+    desired_architecture = [2, 2]
     nn_architecture = create_architecture(num_features, desired_architecture)
 
     # Defines the activation functions used for each layer
-    activations_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.sigmoid}
+    activations_dict = {1: ActivationFunctions.relu, 2:ActivationFunctions.relu, 3: ActivationFunctions.sigmoid}
 
     neural_network = NeuralNetwork(x_train=data_train, y_train=labels_train, layer_sizes=nn_architecture,
                                    activation_function_dict=activations_dict, learning_rate=0.1, num_epochs=1000)

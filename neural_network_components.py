@@ -58,31 +58,37 @@ class ForwardProp:
         return np.dot(input_data, weights) + broadcasted_bias if bias is not None else np.dot(input_data, weights)
 
     @staticmethod
-    def genome_compute_layer(input_data, weights, bias=None, no_activations_matrix=None):
+    def ensure_no_activation_applied(output_without_activation, output_with_activation, constant_connections,
+                                     current_layer, node_map):
         """
-        :param input_data: The input_data for the layer
-        :param weights: The weight matrix for the layer
-        :param bias: The bias matrix for the layer
-        :param bias_matrix:
+        :param output_without_activation: The output with the activation function applied
+        :param output_with_activation: The output with the activation function applied
+        :param constant_connections: The connections where there should be an activation function applied
+        :param current_layer: The current layer we're calculating in
+        :param node_map: A dictionary of which number each node is in their respective layer
         :return:
         """
-        # Need to ensure there are enough weights for number of features in input data
-        assert (input_data.shape[1] == weights.shape[0])
+        # Need to keep the values where the
+        for connection in constant_connections[current_layer]:
+            # Need to convert to their position in the layer
+            # Minus one because of python indexing
+            input_position_within_layer = node_map[connection.input_node] - 1
+            output_position_within_layer = node_map[connection.output_node] - 1
+            # Use the saved output before the activation function was applied because for these values they
+            # shouldn't have the activation function applied
+            output_with_activation[input_position_within_layer, output_position_within_layer] = \
+                output_without_activation[
+                    input_position_within_layer, output_position_within_layer]
 
-        if bias is not None and no_activations_matrix is not None:
-            # Need to ensure that there is a bias term for each hidden node
-            assert (weights.shape[1] == bias.shape[1])
-            # Broadcast so we can remove the required bias for genes (Done through multiplication of no_activations_matrix,
-            # which keeps track of which biases should be zero)
-            broadcasted_bias = np.broadcast_to(bias, (input_data.shape[0], bias.shape[1])) * no_activations_matrix
-
-        return np.dot(input_data, weights) + broadcasted_bias if bias is not None else np.dot(input_data, weights)
+        return output_with_activation
 
     @staticmethod
     def genome_forward_prop(num_layers, initial_input, layer_weights, keep_constant_connections, node_map,
-                            layer_activation_functions=None, layer_biases=None,
-                            no_activations_matrix_per_layer=None):
+                            layer_activation_functions, layer_biases):
         """
+        :param no_activations_matrix_per_layer: A dict containing an array for each layer which showcases which biases should not be applied
+        :param node_map: A dict for each node which shows which number node they are in their respective layer
+        :param keep_constant_connections: A list of connection for which the connection should remain constand and no activation function applied
         :param layer_activation_functions: The activation functions to be used on each layer. Should be reference to the function at each key.
         :param layer_biases: the biases associated with every layer. Is of type dict
         :param num_layers: number of layers for the neural network
@@ -120,22 +126,16 @@ class ForwardProp:
             current_activation_function = layer_activation_functions.get(current_layer_number, None)
 
             # Get output matrix for current_layer
-            output = ForwardProp.genome_compute_layer(current_input, current_weights, current_bias,
-                                                      no_activations_matrix=None if no_activations_matrix_per_layer is None else
-                                                      no_activations_matrix_per_layer[current_layer_number])
+            output = ForwardProp.compute_layer(current_input, current_weights, current_bias)
 
             # If there is an activation function for the layer
             if current_activation_function:
                 saved_output = output
                 output = current_activation_function(output)
-                # Need to keep the values where the
-                for connection in keep_constant_connections[current_layer_number]:
-                    # Need to convert to their position in the layer
-                    # Minus one because of python indexing
-                    input_position_within_layer = node_map[connection.input_node] - 1
-                    output_position_within_layer = node_map[connection.output_node] - 1
-                    output[input_position_within_layer, output_position_within_layer] = saved_output[
-                        input_position_within_layer, output_position_within_layer]
+                output = ForwardProp.ensure_no_activation_applied(output_without_activation=saved_output,
+                                                                  output_with_activation=output, node_map=node_map,
+                                                                  constant_connections=keep_constant_connections,
+                                                                  current_layer=current_layer_number)
 
             layer_input_dict[current_layer_number] = current_input
 
@@ -182,7 +182,6 @@ class ForwardProp:
 
             # Get current activation function for the layer
             current_activation_function = layer_activation_functions.get(current_layer_number, None)
-
             # Get output matrix for current_layer
             output = ForwardProp.compute_layer(current_input, current_weights, current_bias)
 
