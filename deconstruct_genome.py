@@ -15,7 +15,7 @@ class DeconstructGenome:
         :return:
         """
         # We use deep copies because we don't want to make changes to the genome itself
-        nodes = copy.deepcopy(list(genome.nodes.values()))
+        nodes = copy.deepcopy(genome.nodes)
         connections = copy.deepcopy(list(genome.connections.values()))
         # Get's which node is on which layer
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, num_nodes=len(nodes))
@@ -28,14 +28,15 @@ class DeconstructGenome:
                                                               node_map=node_map, connections=connections,
                                                               layer_nodes=layer_nodes)
         # Update the new connections and nodes
-        nodes += added_nodes
+        for node in added_nodes:
+            nodes[node.node_id] = node
         connections += added_connections
 
-        connection_matrices, bias_matrices, constant_weight_connections = cls.all_connection_matrices(
+        connection_matrices, bias_matrices, constant_weight_connections, layer_connections_dict = cls.all_connection_matrices(
             connections=connections, layer_nodes=layer_nodes,
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
-        return connection_matrices, bias_matrices, constant_weight_connections, nodes_per_layer, node_map
+        return connection_matrices, bias_matrices, constant_weight_connections, nodes_per_layer, node_map, layer_connections_dict, nodes
 
     @classmethod
     def get_node_layers(cls, connections, num_nodes):
@@ -162,7 +163,8 @@ class DeconstructGenome:
             # Update the the nodes for each layer
             layer_nodes[layer].append(node_id)
 
-            new_node_gene = NodeGene(node_id=node_id, node_type='hidden')
+            # Create the node and give it a random bias
+            new_node_gene = NodeGene(node_id=node_id, node_type='hidden', bias=np.random.randn())
             # TODO: Setting weights for the connection. And setting innovation numbers for the genes? What purpose does the connection gene hold because surely we only car eabout innovation number
             # Keep track of the new nodes we've added
             added_nodes.append(new_node_gene)
@@ -181,9 +183,12 @@ class DeconstructGenome:
         new_output_nodes = new_node_ids + [connection_gene.output_node]
         num_new_connections = len(new_input_nodes)
         for new_connection_number in range(num_new_connections):
+            # Create the new connection gene with a random weight
             new_connection_gene = ConnectionGene(input_node=new_input_nodes[new_connection_number],
-                                                 output_node=new_output_nodes[new_connection_number])
-            if new_connection_number != num_new_connections - 1:
+                                                 output_node=new_output_nodes[new_connection_number],
+                                                 weight=np.random.randn())
+            # num_new_connections - 1 because of python indexing.
+            if new_connection_number != (num_new_connections - 1):
                 # Because all the weights apart from the last on to connect to the final node should have constant 1
                 # weights
                 new_connection_gene.keep_constant_weight = True
@@ -232,26 +237,32 @@ class DeconstructGenome:
         :param node_layers: Layer associated with each node_id
         :param num_layers: Number of layers in genome
         :param node_map: Position for each node_id in it's respective layer
-        :return: A dictionary containing whether a node is connected a node in the next layer for every layer
+        :return: A dictionary containing whether a node is connected a node in the next layer for every layer, a bias matrix
+        for each layer indicating which nodes shouldn't have a bias applied, and a list of the connections which should
+        have a constant 1 weight connection
         """
         connection_matrices = dict()
         bias_matrices = dict()
         constant_weight_connections = dict()
+        layer_connections_dict = dict()
         for layer in range(1, num_layers):
             num_inputs = len(layer_nodes[layer])
             num_outputs = len(layer_nodes[layer + 1])
             layer_connections = []
             for connection in connections:
-                # The layer a connection is associated with depends on which layer the output node is on.
+                # The layer a connection is associated with depends on which layer the output node is on. Layer + 1
+                # because we're only counting the layers excluding the data input layer.
                 if node_layers[connection.output_node] == layer + 1:
                     layer_connections.append(connection)
+
+            layer_connections_dict[layer] = layer_connections
             connection_matrices[layer], bias_matrices[layer], constant_weight_connections[
                 layer] = cls.connections_matrix(
                 layer_connections=layer_connections,
                 num_inputs=num_inputs,
                 num_outputs=num_outputs,
                 node_map=node_map)
-        return connection_matrices, bias_matrices, constant_weight_connections
+        return connection_matrices, bias_matrices, constant_weight_connections, layer_connections_dict
 
 
 def main():

@@ -10,13 +10,20 @@ class GenomeNeuralNetwork:
     def __init__(self, genome, x_train, y_train, activation_function_dict, learning_rate=0.0001,
                  num_epochs=1000, batch_size=64):
         self.genome = genome
-        self.connection_matrices_per_layer, self.no_activations_matrix_per_layer, self.constant_weight_connections, self.nodes_per_layer, self.node_map = DeconstructGenome.unpack_genome(
+
+        # Unpack genome
+        self.connection_matrices_per_layer, self.no_activations_matrix_per_layer, self.constant_weight_connections, \
+        self.nodes_per_layer, self.node_map, self.layer_connections_dict, self.updated_nodes = DeconstructGenome.unpack_genome(
             genome=genome)
+
         self.x_train = x_train
         self.y_train = y_train
         self.batch_size = batch_size
+        # Where weights are saved
         self.weights_dict = dict()
+        # Where bias for every layer is saved
         self.bias_dict = dict()
+        # Dictionary of activation functions for each layer
         self.activation_function_dict = activation_function_dict
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
@@ -32,7 +39,10 @@ class GenomeNeuralNetwork:
         # The activation function for the last layer should be a sigmoid due to how the gradients were calculated
         assert (activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
 
-        self.initialise_parameters(have_bias=True)
+        self.initialise_parameters(have_bias=True, create_weight_bias_matrix_from_genome=True)
+
+        print(self.weights_dict)
+        print(self.bias_dict)
 
     def ensure_correct_weights(self):
         """
@@ -56,7 +66,8 @@ class GenomeNeuralNetwork:
         Zeroes out the bias values where the node is a dummy node
         """
         for layer in range(1, self.num_layers + 1):
-            # Broadcast to fit the batch_size and also multiply by the matrix which contains which bias values should be zero
+            # Broadcast to fit the batch_size and also multiply by the matrix which contains which bias values should
+            #  be zero
             self.bias_dict[layer] *= self.no_activations_matrix_per_layer[layer]
 
     @staticmethod
@@ -69,14 +80,18 @@ class GenomeNeuralNetwork:
 
         return weights
 
-    def create_weight_matrix_from_connections(self):
-        pass
+    def create_weight_bias_matrix_from_genome(self):
+        for layer in range(1, self.num_layers + 1):
+            for connection in self.layer_connections_dict[layer]:
+                # Get their relative position inside their respective layer
+                input_node_position = self.node_map[connection.input_node] - 1
+                output_node_position = self.node_map[connection.output_node] - 1
+                self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
+                self.bias_dict[layer][0, output_node_position] = self.updated_nodes[connection.output_node].bias
 
-    def create_bias_matrix_from_connections(self):
-        pass
-
-    def initialise_parameters(self, have_bias=False):
+    def initialise_parameters(self, create_weight_bias_matrix_from_genome, have_bias=False):
         """
+        :param create_weight_bias_matrix_from_genome: A boolean of whether we should use the weights already given to each gene
         :param have_bias: Indicates whether to intialise a bias parameter as well
         """
         # Initialise parameters
@@ -92,6 +107,9 @@ class GenomeNeuralNetwork:
             if have_bias:
                 # Shape is (1, num_outputs) for the layer
                 self.bias_dict[layer] = np.zeros((1, self.nodes_per_layer[layer + 1]))
+
+        if create_weight_bias_matrix_from_genome:
+            self.create_weight_bias_matrix_from_genome()
 
         # Zeroes out connections where there aren't any and sets the constant connections to one
         self.ensure_correct_weights()
@@ -184,18 +202,18 @@ class GenomeNeuralNetwork:
 
 
 def main():
-    node_list = [NodeGene(node_id=1, node_type='source'),
-                 NodeGene(node_id=2, node_type='source'),
-                 NodeGene(node_id=3, node_type='hidden'),
-                 NodeGene(node_id=4, node_type='hidden'),
-                 NodeGene(node_id=5, node_type='output')]
+    node_list = [NodeGene(node_id=1, node_type='source', bias=1),
+                 NodeGene(node_id=2, node_type='source', bias=2),
+                 NodeGene(node_id=3, node_type='hidden', bias=7),
+                 NodeGene(node_id=4, node_type='hidden', bias=4),
+                 NodeGene(node_id=5, node_type='output', bias=5)]
 
-    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True),
-                       ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
-                       ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
-                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
-                       ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True),
-                       ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True)]
+    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True, weight=1),
+                       ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=1),
+                       ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=1),
+                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=2),
+                       ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=1),
+                       ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=1)]
 
     genome = Genome(nodes=node_list, connections=connection_list, key=1)
 
@@ -208,10 +226,10 @@ def main():
     genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train,
                                     activation_function_dict=activations_dict, learning_rate=0.1)
 
-    epochs, cost = genome_nn.optimise(error_stop=0.09)
-
-    plt.plot(epochs, cost)
-    plt.show()
+    # epochs, cost = genome_nn.optimise(error_stop=0.09)
+    #
+    # plt.plot(epochs, cost)
+    # plt.show()
 
 
 if __name__ == "__main__":
