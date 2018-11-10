@@ -7,7 +7,7 @@ from neural_network_components import *
 
 class GenomeNeuralNetwork:
 
-    def __init__(self, genome, x_train, y_train, activation_function_dict, learning_rate=0.0001,
+    def __init__(self, genome, x_train, y_train, create_weights_bias_from_genome, learning_rate=0.0001,
                  num_epochs=1000, batch_size=64):
         self.genome = genome
 
@@ -24,7 +24,7 @@ class GenomeNeuralNetwork:
         # Where bias for every layer is saved
         self.bias_dict = dict()
         # Dictionary of activation functions for each layer
-        self.activation_function_dict = activation_function_dict
+        self.activation_function_dict = dict()
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         # Minus one because we include the data input as a layer in 'nodes_per_layer'
@@ -33,16 +33,24 @@ class GenomeNeuralNetwork:
         # The number of 'nodes' on the first layer should be equal to the number of features in the training data
         assert (self.nodes_per_layer[1] == self.x_train.shape[1])
 
+        # Set the activation functions for each layer
+        self.initialise_activation_functions(activation_type='sigmoid')
+
+        self.initialise_parameters(have_bias=True, create_weight_bias_matrix_from_genome=create_weights_bias_from_genome)
+
         # This is to check that there is an activation function specified for each layer
-        assert (len(self.connection_matrices_per_layer) == len(activation_function_dict))
+        assert (len(self.connection_matrices_per_layer) == len(self.activation_function_dict))
 
         # The activation function for the last layer should be a sigmoid due to how the gradients were calculated
-        assert (activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
+        assert (self.activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
 
-        self.initialise_parameters(have_bias=True, create_weight_bias_matrix_from_genome=True)
+    def initialise_activation_functions(self, activation_type):
+        for layer in range(1, self.num_layers):
+            self.activation_function_dict[
+                layer] = ActivationFunctions.relu if activation_type == 'relu' else ActivationFunctions.sigmoid
 
-        print(self.weights_dict)
-        print(self.bias_dict)
+        # The last activation should always be a sigmoid because that's how the gradients are calculated
+        self.activation_function_dict[self.num_layers] = ActivationFunctions.sigmoid
 
     def ensure_correct_weights(self):
         """
@@ -202,16 +210,18 @@ class GenomeNeuralNetwork:
 
 
 def main():
-    node_list = [NodeGene(node_id=1, node_type='source', bias=1),
-                 NodeGene(node_id=2, node_type='source', bias=2),
-                 NodeGene(node_id=3, node_type='hidden', bias=7),
-                 NodeGene(node_id=4, node_type='hidden', bias=4),
-                 NodeGene(node_id=5, node_type='output', bias=5)]
+    optimise = True
 
-    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True, weight=1),
-                       ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=1),
+    node_list = [NodeGene(node_id=1, node_type='source'),
+                 NodeGene(node_id=2, node_type='source'),
+                 NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                 NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                 NodeGene(node_id=5, node_type='output', bias=1.5)]
+
+    connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=1),
+                       ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=-1),
                        ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=1),
-                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=2),
+                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=-1),
                        ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=1),
                        ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=1)]
 
@@ -220,16 +230,13 @@ def main():
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
 
-    # Defines the activation functions used for each layer. The LAST LAYER SHOULD ALWAYS BE SIGMOID
-    activations_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.sigmoid}
+    genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train, learning_rate=0.1, create_weights_bias_from_genome=False)
 
-    genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train,
-                                    activation_function_dict=activations_dict, learning_rate=0.1)
+    if optimise:
+        epochs, cost = genome_nn.optimise(error_stop=0.09)
 
-    # epochs, cost = genome_nn.optimise(error_stop=0.09)
-    #
-    # plt.plot(epochs, cost)
-    # plt.show()
+        plt.plot(epochs, cost)
+        plt.show()
 
 
 if __name__ == "__main__":
