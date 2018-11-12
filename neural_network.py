@@ -101,7 +101,7 @@ class NeuralNetwork:
                 self.bias_dict[layer_number] = self.bias_dict[layer_number] - (
                         self.learning_rate * bias_gradients[layer_number])
 
-    def optimise(self, error_stop=None):
+    def optimise(self, print_epoch_cost, error_stop=None):
         """
         Train the neural network
         :return: a list of each epoch with the cost associated with it
@@ -125,7 +125,8 @@ class NeuralNetwork:
             if error_stop and epoch_cost < error_stop:
                 break
 
-            print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
+            if print_epoch_cost:
+                print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
 
         return epoch_list, cost_list
 
@@ -164,7 +165,7 @@ def main():
     neural_network = NeuralNetwork(x_train=data_train, y_train=labels_train, layer_sizes=nn_architecture,
                                    activation_function_dict=activations_dict, learning_rate=0.1, num_epochs=1000)
 
-    epochs, cost = neural_network.optimise(error_stop=0.09)
+    epochs, cost = neural_network.optimise(error_stop=0.09, print_epoch_cost=True)
 
     plt.plot(epochs, cost)
     plt.show()

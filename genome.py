@@ -24,6 +24,8 @@ class Genome:
     def configure_genes(self, connections, nodes):
         # (innovation_number, ConnectionGene class object) pairs for connection gene sets.
         for connection in connections:
+            if connection.innovation_number in self.connections:
+                raise KeyError('You do not have a unique innovation number for this connection')
             self.connections[connection.innovation_number] = connection
 
         # (node_id, NodeGene class object) pairs for the node gene set

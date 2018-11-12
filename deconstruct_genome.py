@@ -106,6 +106,8 @@ class DeconstructGenome:
             layer_span = output_node_layer - input_node_layer
 
             if layer_span > 1 and connection.enabled:
+                # Remove the connection since it will be replaced
+                connections.remove(connection)
                 num_added_nodes = layer_span - 1
                 new_nodes = cls.update_nodes(num_added_nodes=num_added_nodes, added_nodes=added_nodes,
                                              node_layers=node_layers, input_node_layer=input_node_layer,
@@ -116,7 +118,8 @@ class DeconstructGenome:
                 # Turn off the connection we're in
                 connection.enabled = False
                 cls.update_connections(new_node_ids=new_nodes, connection_gene=connection,
-                                       added_connections=added_connections)
+                                       added_connections=added_connections,
+                                       connection_replaced_weight=connection.weight)
 
         return added_nodes, added_connections
 
@@ -172,8 +175,9 @@ class DeconstructGenome:
         return new_node_ids
 
     @classmethod
-    def update_connections(cls, new_node_ids, connection_gene, added_connections):
+    def update_connections(cls, new_node_ids, connection_gene, added_connections, connection_replaced_weight):
         """
+        :param connection_replaced_weight: The weight of the connection being replaced
         :param new_node_ids: The newly added nodes
         :param connection_gene: The connection gene class object
         :param added_connections: A List of added connections so far
@@ -186,7 +190,9 @@ class DeconstructGenome:
             # Create the new connection gene with a random weight
             new_connection_gene = ConnectionGene(input_node=new_input_nodes[new_connection_number],
                                                  output_node=new_output_nodes[new_connection_number],
-                                                 weight=np.random.randn())
+                                                 # Only the last connection of the new connections should have the replaced weight
+                                                 weight=connection_replaced_weight if new_connection_number == (
+                                                         num_new_connections - 1) else np.random.randn())
             # num_new_connections - 1 because of python indexing.
             if new_connection_number != (num_new_connections - 1):
                 # Because all the weights apart from the last on to connect to the final node should have constant 1

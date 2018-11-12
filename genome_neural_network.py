@@ -7,7 +7,7 @@ from neural_network_components import *
 
 class GenomeNeuralNetwork:
 
-    def __init__(self, genome, x_train, y_train, create_weights_bias_from_genome, learning_rate=0.0001,
+    def __init__(self, genome, x_train, y_train, create_weights_bias_from_genome, activation_type, learning_rate=0.0001,
                  num_epochs=1000, batch_size=64):
         self.genome = genome
 
@@ -15,6 +15,7 @@ class GenomeNeuralNetwork:
         self.connection_matrices_per_layer, self.no_activations_matrix_per_layer, self.constant_weight_connections, \
         self.nodes_per_layer, self.node_map, self.layer_connections_dict, self.updated_nodes = DeconstructGenome.unpack_genome(
             genome=genome)
+
 
         self.x_train = x_train
         self.y_train = y_train
@@ -34,15 +35,17 @@ class GenomeNeuralNetwork:
         assert (self.nodes_per_layer[1] == self.x_train.shape[1])
 
         # Set the activation functions for each layer
-        self.initialise_activation_functions(activation_type='sigmoid')
+        self.initialise_activation_functions(activation_type=activation_type)
 
-        self.initialise_parameters(have_bias=True, create_weight_bias_matrix_from_genome=create_weights_bias_from_genome)
+        self.initialise_parameters(have_bias=True,
+                                   create_weight_bias_matrix_from_genome=create_weights_bias_from_genome)
 
         # This is to check that there is an activation function specified for each layer
         assert (len(self.connection_matrices_per_layer) == len(self.activation_function_dict))
 
         # The activation function for the last layer should be a sigmoid due to how the gradients were calculated
         assert (self.activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
+
 
     def initialise_activation_functions(self, activation_type):
         for layer in range(1, self.num_layers):
@@ -91,11 +94,12 @@ class GenomeNeuralNetwork:
     def create_weight_bias_matrix_from_genome(self):
         for layer in range(1, self.num_layers + 1):
             for connection in self.layer_connections_dict[layer]:
-                # Get their relative position inside their respective layer
-                input_node_position = self.node_map[connection.input_node] - 1
-                output_node_position = self.node_map[connection.output_node] - 1
-                self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
-                self.bias_dict[layer][0, output_node_position] = self.updated_nodes[connection.output_node].bias
+                if connection.enabled:
+                    # Get their relative position inside their respective layer
+                    input_node_position = self.node_map[connection.input_node] - 1
+                    output_node_position = self.node_map[connection.output_node] - 1
+                    self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
+                    self.bias_dict[layer][0, output_node_position] = self.updated_nodes[connection.output_node].bias
 
     def initialise_parameters(self, create_weight_bias_matrix_from_genome, have_bias=False):
         """
@@ -210,7 +214,7 @@ class GenomeNeuralNetwork:
 
 
 def main():
-    optimise = True
+    optimise = False
 
     node_list = [NodeGene(node_id=1, node_type='source'),
                  NodeGene(node_id=2, node_type='source'),
@@ -218,24 +222,29 @@ def main():
                  NodeGene(node_id=4, node_type='hidden', bias=-1.5),
                  NodeGene(node_id=5, node_type='output', bias=1.5)]
 
-    connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=1),
-                       ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=-1),
-                       ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=1),
-                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=-1),
-                       ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=1),
-                       ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=1)]
+    connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True, weight=9),
+                       ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=2),
+                       ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                       ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                       ConnectionGene(input_node=2, output_node=5, innovation_number=5, enabled=True, weight=3),
+                       ConnectionGene(input_node=3, output_node=5, innovation_number=6, enabled=True, weight=5),
+                       ConnectionGene(input_node=4, output_node=5, innovation_number=7, enabled=True, weight=7)]
 
     genome = Genome(nodes=node_list, connections=connection_list, key=1)
 
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
 
-    genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train, learning_rate=0.1, create_weights_bias_from_genome=False)
+    genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train, learning_rate=0.1,
+                                    create_weights_bias_from_genome=True, activation_type='relu')
 
     if optimise:
         epochs, cost = genome_nn.optimise(error_stop=0.09)
 
         plt.plot(epochs, cost)
+        plt.xlabel('Iteration Number')
+        plt.ylabel('Error')
+        plt.title('Error vs Iteration Number')
         plt.show()
 
 

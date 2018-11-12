@@ -1,5 +1,7 @@
 import unittest
 import numpy as np
+
+from genome_neural_network import GenomeNeuralNetwork
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
 from deconstruct_genome import DeconstructGenome
 from genome import Genome
@@ -190,7 +192,7 @@ class TestNeuralNetworkOneLayer(unittest.TestCase):
         self.assertEqual(self.neural_network.weights_dict[2].shape, expected_shape_layer_2)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise()
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.002
@@ -220,7 +222,7 @@ class TestNeuralNetworkMultiLayer(unittest.TestCase):
                                             activation_function_dict=activations_dict, learning_rate=0.1)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise()
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.0
@@ -271,6 +273,7 @@ class TestDeconstructGenomeClass(unittest.TestCase):
                      NodeGene(node_id=4, node_type='hidden'),
                      NodeGene(node_id=5, node_type='output')]
 
+        # Note that one of the connections isn't enabled
         connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=False),
                            ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
                            ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
@@ -283,6 +286,37 @@ class TestDeconstructGenomeClass(unittest.TestCase):
         answer = DeconstructGenome.unpack_genome(genome=genome)
 
         self.assertEqual(answer[0][1].tolist(), expected_answer.tolist())
+
+    def test_genome_forward_prop(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                     NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=5, node_type='output', bias=1.5)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True, weight=9),
+                           ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=2),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                           ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                           ConnectionGene(input_node=2, output_node=5, innovation_number=5, enabled=True, weight=3),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=6, enabled=True, weight=5),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=7, enabled=True, weight=7)]
+
+        genome = Genome(nodes=node_list, connections=connection_list, key=1)
+
+        x_data = np.array([[1, 2]])
+        y_data = np.array([[1]])
+        genome_nn = GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data, learning_rate=0.1,
+                                        create_weights_bias_from_genome=True, activation_type='relu')
+
+        expected_answer = np.array([[104.5]])
+
+        output = ForwardProp.forward_prop(num_layers=genome_nn.num_layers, initial_input=x_data,
+                                          layer_weights=genome_nn.weights_dict,
+                                          layer_activation_functions=genome_nn.activation_function_dict,
+                                          layer_biases=genome_nn.bias_dict, return_number_before_last_activation=True)
+
+        self.assertEqual(expected_answer.tolist(), output.tolist())
 
 
 if __name__ == '__main__':

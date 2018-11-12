@@ -143,8 +143,10 @@ class ForwardProp:
         return current_input, layer_input_dict
 
     @staticmethod
-    def forward_prop(num_layers, initial_input, layer_weights, layer_activation_functions=None, layer_biases=None):
+    def forward_prop(num_layers, initial_input, layer_weights, layer_activation_functions=None, layer_biases=None,
+                     return_number_before_last_activation=False):
         """
+        :param return_number_before_last_activation: If you want the raw output number instead of the sigmoid applied to it
         :param layer_activation_functions: The activation functions to be used on each layer. Should be reference to the function at each key.
         :param layer_biases: the biases associated with every layer. Is of type dict
         :param num_layers: number of layers for the neural network
@@ -182,6 +184,10 @@ class ForwardProp:
             current_activation_function = layer_activation_functions.get(current_layer_number, None)
             # Get output matrix for current_layer
             output = ForwardProp.compute_layer(current_input, current_weights, current_bias)
+
+            # If you want to return the output before the sigmoid is applied on the last layer
+            if return_number_before_last_activation and current_layer_number == num_layers:
+                return output
 
             # If there is an activation function for the layer
             if current_activation_function:
