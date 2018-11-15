@@ -8,14 +8,30 @@ from neural_network_components import *
 class GenomeNeuralNetwork:
 
     def __init__(self, genome, x_train, y_train, create_weights_bias_from_genome, activation_type, learning_rate=0.0001,
-                 num_epochs=1000, batch_size=64):
+                 num_epochs=1000, batch_size=64, show_connections=False):
+        """
+        :param genome: The genome class from which the the neural network will be made from
+        :param x_train: The x_training data in the shape (num_examples, num_features)
+        :param y_train: The y_training data in the shape (num_examples, 1) only one column indicating which category
+        :param create_weights_bias_from_genome: True or False if you want the neural network to initialise with the weights
+        from the genome connections and the biases from the genome nodes
+        :param activation_type: Specify the activation type for each layer excluding the last layer. This will be used
+        for every layer apart from the last.
+        :param learning_rate: Learning rate
+        :param num_epochs: Number of iterations to run
+        :param batch_size: Batch size since it is coded with stochastic gradient descent
+        :param show_connections: True or false if the connections for the neural network AFTER it has been unpack from
+        the genome are needed to be shown
+        """
         self.genome = genome
-
-        # Unpack genome
-        self.connection_matrices_per_layer, self.no_activations_matrix_per_layer, self.constant_weight_connections, \
-        self.nodes_per_layer, self.node_map, self.layer_connections_dict, self.updated_nodes = DeconstructGenome.unpack_genome(
-            genome=genome)
-
+        self.connection_matrices_per_layer = genome.connection_matrices_per_layer
+        self.no_activations_matrix_per_layer = genome.no_activations_matrix_per_layer
+        self.constant_weight_connections = genome.constant_weight_connections
+        self.nodes_per_layer = genome.nodes_per_layer
+        self.node_map = genome.node_map
+        self.layer_connections_dict = genome.layer_connections_dict
+        self.updated_nodes = genome.updated_nodes
+        self.layer_nodes = genome.layer_nodes
 
         self.x_train = x_train
         self.y_train = y_train
@@ -34,6 +50,8 @@ class GenomeNeuralNetwork:
         # The number of 'nodes' on the first layer should be equal to the number of features in the training data
         assert (self.nodes_per_layer[1] == self.x_train.shape[1])
 
+        # So far there have only been two implementations for the activation type
+        assert (activation_type in ('relu', 'sigmoid'))
         # Set the activation functions for each layer
         self.initialise_activation_functions(activation_type=activation_type)
 
@@ -46,6 +64,9 @@ class GenomeNeuralNetwork:
         # The activation function for the last layer should be a sigmoid due to how the gradients were calculated
         assert (self.activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
 
+        if show_connections:
+            for key, value in self.layer_connections_dict.items():
+                print('Layer: {}'.format(key), 'Connections: {}'.format(value), '\n')
 
     def initialise_activation_functions(self, activation_type):
         for layer in range(1, self.num_layers):
@@ -214,8 +235,6 @@ class GenomeNeuralNetwork:
 
 
 def main():
-    optimise = False
-
     node_list = [NodeGene(node_id=1, node_type='source'),
                  NodeGene(node_id=2, node_type='source'),
                  NodeGene(node_id=3, node_type='hidden', bias=0.5),
@@ -236,15 +255,18 @@ def main():
     data_train, labels_train = create_data(n_generated=5000)
 
     genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train, learning_rate=0.1,
-                                    create_weights_bias_from_genome=True, activation_type='relu')
+                                    create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                    show_connections=True)
+
+    optimise = True
 
     if optimise:
         epochs, cost = genome_nn.optimise(error_stop=0.09)
 
         plt.plot(epochs, cost)
-        plt.xlabel('Iteration Number')
+        plt.xlabel('Epoch Number')
         plt.ylabel('Error')
-        plt.title('Error vs Iteration Number')
+        plt.title('Error vs Epoch Number')
         plt.show()
 
 

@@ -2,7 +2,6 @@ from neural_network import NeuralNetwork
 import copy
 import collections
 from gene import *
-from genome import *
 import numpy as np
 
 
@@ -36,7 +35,7 @@ class DeconstructGenome:
             connections=connections, layer_nodes=layer_nodes,
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
-        return connection_matrices, bias_matrices, constant_weight_connections, nodes_per_layer, node_map, layer_connections_dict, nodes
+        return connection_matrices, bias_matrices, constant_weight_connections, nodes_per_layer, node_map, layer_connections_dict, nodes, layer_nodes
 
     @classmethod
     def get_node_layers(cls, connections, num_nodes):
@@ -272,6 +271,7 @@ class DeconstructGenome:
 
 
 def main():
+    from genome import Genome
     node_list = [NodeGene(node_id=1, node_type='source'),
                  NodeGene(node_id=2, node_type='source'),
                  NodeGene(node_id=3, node_type='hidden'),
