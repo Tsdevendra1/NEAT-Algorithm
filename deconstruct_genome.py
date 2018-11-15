@@ -11,7 +11,7 @@ class DeconstructGenome:
     def unpack_genome(cls, genome):
         """
         :param genome: The genome to be deconstructed
-        :return:
+        :return: See GenomeNeuralNetwork class for details
         """
         # We use deep copies because we don't want to make changes to the genome itself
         nodes = copy.deepcopy(genome.nodes)
@@ -35,7 +35,18 @@ class DeconstructGenome:
             connections=connections, layer_nodes=layer_nodes,
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
-        return connection_matrices, bias_matrices, constant_weight_connections, nodes_per_layer, node_map, layer_connections_dict, nodes, layer_nodes
+
+        # Saves all the variables being returned from the function
+        return_dict = dict()
+        return_dict['connection_matrices'] = connection_matrices
+        return_dict['bias_matrices'] = bias_matrices
+        return_dict['constant_weight_connections'] = constant_weight_connections
+        return_dict['nodes_per_layer'] = nodes_per_layer
+        return_dict['node_map'] = node_map
+        return_dict['layer_connections_dict'] = layer_connections_dict
+        return_dict['nodes'] = nodes
+        return_dict['layer_nodes'] = layer_nodes
+        return return_dict
 
     @classmethod
     def get_node_layers(cls, connections, num_nodes):
@@ -167,7 +178,6 @@ class DeconstructGenome:
 
             # Create the node and give it a random bias
             new_node_gene = NodeGene(node_id=node_id, node_type='hidden', bias=np.random.randn())
-            # TODO: Setting weights for the connection. And setting innovation numbers for the genes? What purpose does the connection gene hold because surely we only car eabout innovation number
             # Keep track of the new nodes we've added
             added_nodes.append(new_node_gene)
 

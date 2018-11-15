@@ -1,6 +1,6 @@
 class ConnectionGene:
 
-    def __init__(self, input_node, output_node, innovation_number=None, enabled=True, weight=None, keep_constant_weight=False):
+    def __init__(self, input_node, output_node, innovation_number, enabled=True, weight=None, keep_constant_weight=False):
         self.innovation_number = innovation_number
         self.input_node = input_node
         self._output_node = output_node

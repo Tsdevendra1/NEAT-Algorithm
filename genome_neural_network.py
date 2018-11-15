@@ -24,13 +24,23 @@ class GenomeNeuralNetwork:
         the genome are needed to be shown
         """
         self.genome = genome
+        # This is a matrix containing 1's and 0's depending on if there is a connection or not for each weight matrix
+        # in the neural network
         self.connection_matrices_per_layer = genome.connection_matrices_per_layer
+        # Similar to above, contains a matrix for the biases for which nodes should never have a bias applied (due to
+        # being a dummy node)
         self.no_activations_matrix_per_layer = genome.no_activations_matrix_per_layer
+        # A list of connections which will always have a constant 1 connection value
         self.constant_weight_connections = genome.constant_weight_connections
+        # The number of nodes for each layer
         self.nodes_per_layer = genome.nodes_per_layer
+        # A dictionary with which position a node is in for it's respective layer
         self.node_map = genome.node_map
+        # Dictionary with the connections for each layer (so weight matrix can be made)
         self.layer_connections_dict = genome.layer_connections_dict
+        # An updated list of the nodes. Contains dummys nodes as well.
         self.updated_nodes = genome.updated_nodes
+        # A dictionary with the nodes for each layer
         self.layer_nodes = genome.layer_nodes
 
         self.x_train = x_train
