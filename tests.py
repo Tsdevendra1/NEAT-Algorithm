@@ -393,6 +393,49 @@ class TestGenomeMutatation(unittest.TestCase):
     def test_remove_node(self):
         pass
 
+    def test_cross_over(self):
+        node_list_1 = [NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='source'),
+                       NodeGene(node_id=3, node_type='hidden'),
+                       NodeGene(node_id=4, node_type='hidden'),
+                       NodeGene(node_id=5, node_type='output')]
+
+        connection_list_1 = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=1),
+                             ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=2),
+                             ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                             ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                             ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=5),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=6)]
+
+        node_list_2 = [NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='source'),
+                       NodeGene(node_id=3, node_type='hidden'),
+                       NodeGene(node_id=4, node_type='hidden'),
+                       NodeGene(node_id=5, node_type='output')]
+
+        connection_list_2 = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=2),
+                             ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=5),
+                             ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=9),
+                             ConnectionGene(input_node=1, output_node=5, innovation_number=7, enabled=True, weight=7),
+                             ConnectionGene(input_node=2, output_node=5, innovation_number=8, enabled=True, weight=7),
+                             ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=1),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=8)]
+
+        genome_1 = Genome(connections=connection_list_1, nodes=node_list_1, key=1)
+        genome_1.fitness = 3
+        genome_2 = Genome(connections=connection_list_2, nodes=node_list_2, key=2)
+        genome_2.fitness = 1
+
+        child = Genome(key=4)
+        child.crossover(genome_1=genome_1, genome_2=genome_2)
+
+        expected_genes = [1, 2, 3, 4, 5, 6]
+        actual_genes = []
+        for connection in child.connections.values():
+            actual_genes.append(connection.innovation_number)
+
+        self.assertEqual(expected_genes, actual_genes)
+
 
 if __name__ == '__main__':
     unittest.main()

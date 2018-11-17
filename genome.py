@@ -5,23 +5,18 @@ import random
 
 
 class Genome:
-    def __init__(self, key, connections=None, nodes=None, unpack_genome=True):
+    def __init__(self, key, connections=None, nodes=None):
         """
         :param key: Which genome number it is
         :param connections: A list of ConnectionGene instances
         :param nodes: A list of NodeGene Instance
         """
-        assert isinstance(connections, list)
-        assert isinstance(nodes, list)
 
         # Unique identifier for a genome instance.
         self.key = key
 
         self.connections = {}
         self.nodes = {}
-
-        # Saves the genes in an appropriate format into the dictionaries above. (See the method for saved format)
-        self.configure_genes(connections=connections, nodes=nodes)
 
         # Fitness results.
         self.fitness = None
@@ -38,7 +33,13 @@ class Genome:
         self.node_layers = None
         self.num_layers_including_input = None
 
-        if unpack_genome:
+        if connections and nodes:
+            # To be able to configure them they must be in a list
+            assert isinstance(connections, list)
+            assert isinstance(nodes, list)
+            # Saves the genes in an appropriate format into the dictionaries above. (See the method for saved format)
+            self.configure_genes(connections=connections, nodes=nodes)
+
             self.unpack_genome()
 
     def unpack_genome(self):
@@ -181,10 +182,14 @@ class Genome:
         :param new_innovation_number: The innovation number to be assigned to the new connection gene
         """
 
+        # If there are no hidden nodes then there's no unique new connection we can add that doesn't exist
+        num_hidden_nodes = 0
+        for node in self.nodes.values():
+            if node.node_type == 'hidden':
+                num_hidden_nodes += 1
+        # TODO: Becareful with this because if there are no hidden nodes then this won't ever break.
         # We need to check if the connection already exists as we don't want to re-create a connection
-        # TODO: Becareful with this because if there are 3 nodes then this won't ever break.
-        # This is how i'm fixing it for now
-        if len(self.nodes) != 3:
+        if num_hidden_nodes > 0:
             while True:
                 connection_already_exists = False
                 new_connection_gene = self.get_new_connection_gene(new_innovation_number=new_innovation_number)
