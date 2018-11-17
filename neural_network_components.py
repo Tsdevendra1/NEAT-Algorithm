@@ -61,6 +61,7 @@ class ForwardProp:
     def ensure_no_activation_applied(output_without_activation, output_with_activation, constant_connections,
                                      current_layer, node_map):
         """
+        Ensures the activation function isn't applied to the nodes which are dummy nodes
         :param output_without_activation: The output with the activation function applied
         :param output_with_activation: The output with the activation function applied
         :param constant_connections: The connections where there should be an activation function applied

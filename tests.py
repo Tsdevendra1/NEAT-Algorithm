@@ -287,7 +287,7 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
         self.assertEqual(answer[1].tolist(), expected_answer.tolist())
 
-    def test_genome_forward_prop(self):
+    def test_forward_prop(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
                      NodeGene(node_id=2, node_type='source'),
                      NodeGene(node_id=3, node_type='hidden', bias=0.5),
@@ -311,12 +311,40 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
         expected_answer = np.array([[104.5]])
 
+        # This works because the activation type is relu and there aren't any negative numbers. But it should ideally be
+        # genome_forward_prop instead of forward_prop
         output = ForwardProp.forward_prop(num_layers=genome_nn.num_layers, initial_input=x_data,
                                           layer_weights=genome_nn.weights_dict,
                                           layer_activation_functions=genome_nn.activation_function_dict,
                                           layer_biases=genome_nn.bias_dict, return_number_before_last_activation=True)
 
         self.assertEqual(expected_answer.tolist(), output.tolist())
+
+
+class TestRunOnePass(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_run_one_pass(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=5, node_type='output', bias=0)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True, weight=4),
+                           ConnectionGene(input_node=2, output_node=5, innovation_number=7, enabled=True, weight=0)]
+
+        genome = Genome(nodes=node_list, connections=connection_list, key=1)
+
+        x_data = np.array([[1, 0]])
+        y_data = np.array([[1]])
+        genome_nn = GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data, learning_rate=0.1,
+                                        create_weights_bias_from_genome=True, activation_type='sigmoid')
+
+        cost = genome_nn.run_one_pass(input_data=x_data, labels=y_data)
+        # The output should be sigmoid of the prediction which is 4. Then the loss is calculated using log loss.
+        expected_answer = round(-np.log(ActivationFunctions.sigmoid(4)), 5)
+
+        self.assertEqual(expected_answer, round(cost, 5))
 
 
 class TestGenomeMutatation(unittest.TestCase):

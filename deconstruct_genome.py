@@ -19,7 +19,7 @@ class DeconstructGenome:
         connections = cls.sort_connections(connections, nodes=nodes)
 
         # Get's which node is on which layer
-        node_layers, layer_nodes = cls.get_node_layers(connections=connections, num_nodes=len(nodes))
+        node_layers, layer_nodes = cls.get_node_layers(connections=connections, nodes=nodes)
         num_layers = max(node_layers.values())
         # Keeps track of number of nodes for each layer
         nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
@@ -85,17 +85,19 @@ class DeconstructGenome:
         return sorted_list
 
     @classmethod
-    def get_node_layers(cls, connections, num_nodes):
+    def get_node_layers(cls, connections, nodes):
         """
-        :param num_nodes: number of nodes in the genome
+        :param nodes : dict containing (node_id, node_gene)
         :param connections: list of connections from the genome
         :return: node_layers: A dictionary containing which layer each node is on, layer_nodes: A dictionary containing
                 a list for each layer of what nodes are in that layer
         """
+        num_nodes = len(nodes)
+
         # Keeps track of which node is in which layer. (Have to add one because of python indexing starting at 0)
-        node_layers = {key: 0 for key in list(range(1, num_nodes + 1))}
+        node_layers = {key: 0 for key in list(nodes.keys())}
         # Will be used to keep track of progress of finding which node is in which layer
-        old_layers = {key: -1 for key in list(range(1, num_nodes + 1))}
+        old_layers = {key: -1 for key in list(nodes.keys())}
 
         # Until there is no change between our last guess and the next one
         while old_layers != node_layers:

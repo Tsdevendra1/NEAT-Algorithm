@@ -126,6 +126,10 @@ class GenomeNeuralNetwork:
         for layer in range(1, self.num_layers + 1):
             for connection in self.layer_connections_dict[layer]:
                 if connection.enabled:
+                    # They both need to be set if we're going to create the weight matrix from them
+                    assert (connection.weight is not None)
+                    assert (self.updated_nodes[connection.output_node].bias is not None)
+
                     # Get their relative position inside their respective layer
                     input_node_position = self.node_map[connection.input_node] - 1
                     output_node_position = self.node_map[connection.output_node] - 1
