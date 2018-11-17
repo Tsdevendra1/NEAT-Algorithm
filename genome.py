@@ -206,6 +206,8 @@ class Genome:
             # Add the connection the the genome
             self.connections[new_connection_gene.innovation_number] = new_connection_gene
 
+            return new_connection_gene
+
     def remove_connection(self):
         """
         Remove a random existing connection from the genome
@@ -259,6 +261,8 @@ class Genome:
         self.connections[first_new_connection.innovation_number] = first_new_connection
         self.connections[second_new_connection.innovation_number] = second_new_connection
 
+        return first_new_connection, second_new_connection
+
     def delete_node(self):
         viable_nodes_to_be_delete = []
 
@@ -272,6 +276,55 @@ class Genome:
 
         # Delete the node
         del self.nodes[node_to_delete]
+
+    def compute_compatibility_distance(self, other_genome, excess_coefficient, disjoint_coefficient,
+                                       match_genes_coefficient):
+        """
+        Calculates the compabitility distance between two genomes
+        :param other_genome: The other genome being compared with
+        :param excess_coefficient:
+        :param disjoint_coefficient:
+        :param match_genes_coefficient:
+        :return: The compatibility distance
+        """
+        max_num_genes = max(len(self.connections), len(other_genome.connections))
+
+        num_excess = 0
+        num_disjoint = 0
+        matching_genes = list()
+
+        # This will be used to check if a gene not matching is disjoint or excess
+        lowest_max_innovation_number = min(max(self.connections), max(other_genome.connections))
+
+        # Contains a list of all innovation numbers for both genes
+        unique_gene_innovation_numbers = set()
+
+        for innovation_number in other_genome.connections:
+            unique_gene_innovation_numbers.add(innovation_number)
+
+        for innovation_number in self.connections:
+            unique_gene_innovation_numbers.add(innovation_number)
+
+        for innovation_number in unique_gene_innovation_numbers:
+            genome_1_connection = self.connections.get(innovation_number)
+            genome_2_connection = other_genome.connections.get(innovation_number)
+
+            if genome_1_connection and genome_2_connection:
+                matching_genes.append(abs(genome_1_connection.weight - genome_2_connection.weight))
+            elif genome_1_connection or genome_2_connection:
+                if innovation_number < lowest_max_innovation_number:
+                    num_disjoint += 1
+                else:
+                    num_excess += 1
+            else:
+                raise KeyError('This innovation number should have returned for one of the connections')
+
+        average_weight_diff = np.mean(matching_genes)
+
+        compatibility_distance = ((disjoint_coefficient * num_disjoint) / max_num_genes) + (
+                (excess_coefficient * num_excess) / max_num_genes) + (match_genes_coefficient * average_weight_diff)
+
+        return compatibility_distance
 
 
 def main():
