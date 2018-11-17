@@ -16,6 +16,8 @@ class DeconstructGenome:
         # We use deep copies because we don't want to make changes to the genome itself
         nodes = copy.deepcopy(genome.nodes)
         connections = copy.deepcopy(list(genome.connections.values()))
+        connections = cls.sort_connections(connections, nodes=nodes)
+
         # Get's which node is on which layer
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, num_nodes=len(nodes))
         num_layers = max(node_layers.values())
@@ -46,7 +48,41 @@ class DeconstructGenome:
         return_dict['layer_connections_dict'] = layer_connections_dict
         return_dict['nodes'] = nodes
         return_dict['layer_nodes'] = layer_nodes
+        return_dict['node_layers'] = node_layers
         return return_dict
+
+    @classmethod
+    def sort_connections(cls, connections, nodes):
+        """
+        In order for the unpack genome method to work the connections list must be sorted such that the connections
+        which connect to the output layer must always be last in the list
+        :param nodes: A dictionary of the nodes (node_id, node_gene)
+        :param connections: The list of connection genes
+        :return: Sorted connections list
+        """
+
+        sorted_list = []
+
+        # First we add the input connections
+        for connection in connections:
+            input_node_type = nodes[connection.input_node].node_type
+            output_node_type = nodes[connection.output_node].node_type
+            if input_node_type == 'source' and output_node_type != 'source':
+                sorted_list.append(connection)
+
+        for connection in connections:
+            input_node_type = nodes[connection.input_node].node_type
+            output_node_type = nodes[connection.output_node].node_type
+            if output_node_type != 'output' and input_node_type != 'source':
+                sorted_list.append(connection)
+
+        # Then we add the ones left (the ones linked to the output)
+        for connection in connections:
+            output_node_type = nodes[connection.output_node].node_type
+            if output_node_type == 'output':
+                sorted_list.append(connection)
+
+        return sorted_list
 
     @classmethod
     def get_node_layers(cls, connections, num_nodes):

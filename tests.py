@@ -256,10 +256,10 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
     def test_unpack_genome(self):
         expected_answer = np.ones((2, 2))
-        answer = DeconstructGenome.unpack_genome(genome=self.genome)
+        answer = DeconstructGenome.unpack_genome(genome=self.genome)['connection_matrices']
 
         # check that the first layer weights are the correct ones
-        self.assertEqual(answer[0][1].tolist(), expected_answer.tolist())
+        self.assertEqual(answer[1].tolist(), expected_answer.tolist())
 
     def test_unpack_genome_broken_link(self):
         """
@@ -283,9 +283,9 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=2)
 
-        answer = DeconstructGenome.unpack_genome(genome=genome)
+        answer = DeconstructGenome.unpack_genome(genome=genome)['connection_matrices']
 
-        self.assertEqual(answer[0][1].tolist(), expected_answer.tolist())
+        self.assertEqual(answer[1].tolist(), expected_answer.tolist())
 
     def test_genome_forward_prop(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
@@ -317,6 +317,81 @@ class TestDeconstructGenomeClass(unittest.TestCase):
                                           layer_biases=genome_nn.bias_dict, return_number_before_last_activation=True)
 
         self.assertEqual(expected_answer.tolist(), output.tolist())
+
+
+class TestGenomeMutatation(unittest.TestCase):
+
+    def setUp(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='output')]
+
+        # Note that one of the connections isn't enabled
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True),
+                           ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True),
+                           ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True)]
+
+        self.genome = Genome(connections=connection_list, nodes=node_list, key=2)
+
+    def test_add_connection(self):
+        expected_number_of_connections = 7
+        self.genome.add_connection(new_innovation_number=7)
+
+        self.assertEqual(len(self.genome.connections), expected_number_of_connections)
+
+        new_connection = self.genome.connections[7]
+        # Unpack the new genome
+        self.genome.unpack_genome()
+
+        # Check if connection was where it connected to a node on the same layer
+        if (new_connection.input_node == 3 and new_connection.output_node == 4) or (
+                new_connection.input_node == 4 and new_connection.output_node == 3):
+            # If the connection is one the same layer then the number of layers will have increased
+            self.assertEqual(self.genome.num_layers_including_input, 4)
+
+        # Check that two source nodes aren't connected
+        elif self.genome.nodes[new_connection.input_node].node_type == 'source':
+            self.assertTrue(self.genome.nodes[new_connection.output_node].node_type != 'source')
+
+        # Can't connect to itself
+        self.assertTrue(new_connection.input_node != new_connection.output_node)
+
+    def test_remove_connection(self):
+        number_of_beginning_connections = len(self.genome.connections)
+        expected_number_of_connections = 5
+        self.genome.remove_connection()
+
+        self.assertEqual(number_of_beginning_connections, 6)
+        self.assertEqual(len(self.genome.connections), expected_number_of_connections)
+
+    def test_add_node(self):
+        number_of_beginning_connections = len(self.genome.connections)
+        self.assertEqual(number_of_beginning_connections, 6)
+
+        # Because we replaced 1 connection with two
+        expected_number_connections = number_of_beginning_connections + 2
+
+        self.genome.add_node(new_innovation_number=7)
+
+        self.assertEqual(len(self.genome.connections), expected_number_connections)
+
+        number_of_disabled_connections = 1
+
+        disabled_counters = 0
+        for connection in self.genome.connections.values():
+            if not connection.enabled:
+                disabled_counters += 1
+
+        # One connection should have been disabled from the node addition
+        self.assertEqual(number_of_disabled_connections, disabled_counters)
+
+    def test_remove_node(self):
+        pass
 
 
 if __name__ == '__main__':
