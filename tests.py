@@ -192,7 +192,7 @@ class TestNeuralNetworkOneLayer(unittest.TestCase):
         self.assertEqual(self.neural_network.weights_dict[2].shape, expected_shape_layer_2)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=True)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.002
@@ -222,7 +222,7 @@ class TestNeuralNetworkMultiLayer(unittest.TestCase):
                                             activation_function_dict=activations_dict, learning_rate=0.1)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=True)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.0
@@ -251,7 +251,7 @@ class TestDeconstructGenomeClass(unittest.TestCase):
         expected_answer = {1: 1, 2: 1, 3: 2, 4: 2, 5: 3}
         self.assertEqual(
             DeconstructGenome.get_node_layers(connections=list(self.genome.connections.values()),
-                                              num_nodes=len(self.genome.nodes))[0],
+                                              nodes=self.genome.nodes)[0],
             expected_answer)
 
     def test_unpack_genome(self):
