@@ -351,18 +351,9 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         genome_nn.bias_dict[1] = np.array([[1, 2, 0]])
         genome_nn.bias_dict[2] = np.array([[7]])
 
-        expect_weights = dict()
-        expect_weights[(1, 5)] = 3
-        expect_weights[(1, 3)] = 3
-        expect_weights[(2, 3)] = 4
-        expect_weights[(2, 4)] = 5
-        expect_weights[(4, 5)] = 2
-        expect_weights[(3, 5)] = 1
+        expect_weights = {(1, 5): 3, (1, 3): 3, (2, 3): 4, (2, 4): 5, (4, 5): 2, (3, 5): 1}
 
-        expected_bias = dict()
-        expected_bias[3] = 1
-        expected_bias[4] = 2
-        expected_bias[5] = 7
+        expected_bias = {3: 1, 4: 2, 5: 7}
 
         genome_nn.update_genes()
 

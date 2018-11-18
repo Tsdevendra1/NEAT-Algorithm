@@ -51,11 +51,11 @@ class GenomeNeuralNetwork:
         self.y_train = y_train
         self.batch_size = batch_size
         # Where weights are saved
-        self.weights_dict = dict()
+        self.weights_dict = {}
         # Where bias for every layer is saved
-        self.bias_dict = dict()
+        self.bias_dict = {}
         # Dictionary of activation functions for each layer
-        self.activation_function_dict = dict()
+        self.activation_function_dict = {}
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         # Minus one because we include the data input as a layer in 'nodes_per_layer'
@@ -263,8 +263,8 @@ class GenomeNeuralNetwork:
         :return: a list of each epoch with the cost associated with it
         """
 
-        epoch_list = list()
-        cost_list = list()
+        epoch_list = []
+        cost_list = []
 
         for epoch in range(self.num_epochs):
 

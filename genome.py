@@ -216,7 +216,7 @@ class Genome:
         """
         viable_connection_to_remove = []
 
-        source_input_node_connections = dict()
+        source_input_node_connections = {}
         # TODO: NEAT doesn't have remove node or connection
 
         for connection in self.connections.values():
@@ -293,7 +293,7 @@ class Genome:
 
         num_excess = 0
         num_disjoint = 0
-        matching_genes = list()
+        matching_genes = []
 
         # This will be used to check if a gene not matching is disjoint or excess
         lowest_max_innovation_number = min(max(self.connections), max(other_genome.connections))

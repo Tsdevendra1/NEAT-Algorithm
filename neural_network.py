@@ -10,8 +10,8 @@ class NeuralNetwork:
         self.x_train = x_train
         self.y_train = y_train
         self.batch_size = batch_size
-        self.weights_dict = dict()
-        self.bias_dict = dict()
+        self.weights_dict = {}
+        self.bias_dict = {}
         self.layer_sizes = layer_sizes
         self.activation_function_dict = activation_function_dict
         self.learning_rate = learning_rate
@@ -107,8 +107,8 @@ class NeuralNetwork:
         :return: a list of each epoch with the cost associated with it
         """
 
-        epoch_list = list()
-        cost_list = list()
+        epoch_list = []
+        cost_list = []
 
         for epoch in range(self.num_epochs):
 

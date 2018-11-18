@@ -40,7 +40,7 @@ class DeconstructGenome:
             node_map=node_map)
 
         # Saves all the variables being returned from the function
-        return_dict = dict()
+        return_dict = {}
         return_dict['connection_matrices'] = connection_matrices
         return_dict['bias_matrices'] = bias_matrices
         return_dict['constant_weight_connections'] = constant_weight_connections
@@ -125,7 +125,7 @@ class DeconstructGenome:
         :param layer_nodes: A dictionary with a list of nodes for each layer
         :return: A dictionary containing for each node_id which number node they are in their respective layer
         """
-        node_map = dict()
+        node_map = {}
         for layer in range(1, num_layers + 1):
             counter = 1
             # We go through each index of a node for each layer at assign it an incremented number.
@@ -150,7 +150,7 @@ class DeconstructGenome:
         added_connections = []
 
         # This will contain the last dummy node in the connections: key: the input node, value: the last dummy node
-        last_dummy_related_to_connection = dict()
+        last_dummy_related_to_connection = {}
 
         for connection in connections:
             # How many layers the connection spans
@@ -308,10 +308,10 @@ class DeconstructGenome:
         for each layer indicating which nodes shouldn't have a bias applied, and a list of the connections which should
         have a constant 1 weight connection
         """
-        connection_matrices = dict()
-        bias_matrices = dict()
-        constant_weight_connections = dict()
-        layer_connections_dict = dict()
+        connection_matrices = {}
+        bias_matrices = {}
+        constant_weight_connections = {}
+        layer_connections_dict = {}
         for layer in range(1, num_layers):
             num_inputs = len(layer_nodes[layer])
             num_outputs = len(layer_nodes[layer + 1])

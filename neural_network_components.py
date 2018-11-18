@@ -98,12 +98,12 @@ class ForwardProp:
 
         # This is done to ensure I can use the .get function later to return None
         if layer_biases is None:
-            layer_biases = dict()
+            layer_biases = {}
         else:
             assert (len(layer_biases) == num_layers)
 
         if layer_activation_functions is None:
-            layer_activation_functions = dict()
+            layer_activation_functions = {}
         else:
             assert (len(layer_activation_functions) == num_layers)
 
@@ -111,7 +111,7 @@ class ForwardProp:
         assert (len(layer_weights) == num_layers)
 
         # Dictionary to keep track of inputs for each layer
-        layer_input_dict = dict()
+        layer_input_dict = {}
 
         current_input = initial_input
         for current_layer_number in range(1, num_layers + 1):
@@ -158,12 +158,12 @@ class ForwardProp:
 
         # This is done to ensure I can use the .get function later to return None
         if layer_biases is None:
-            layer_biases = dict()
+            layer_biases = {}
         else:
             assert (len(layer_biases) == num_layers)
 
         if layer_activation_functions is None:
-            layer_activation_functions = dict()
+            layer_activation_functions = {}
         else:
             assert (len(layer_activation_functions) == num_layers)
 
@@ -171,7 +171,7 @@ class ForwardProp:
         assert (len(layer_weights) == num_layers)
 
         # Dictionary to keep track of inputs for each layer
-        layer_input_dict = dict()
+        layer_input_dict = {}
 
         current_input = initial_input
         for current_layer_number in range(1, num_layers + 1):
@@ -228,8 +228,8 @@ class BackProp:
         assert (len(layer_weights) == num_layers)
         assert (len(layer_inputs) == num_layers)
 
-        weight_gradients = dict()
-        bias_gradients = dict()
+        weight_gradients = {}
+        bias_gradients = {}
 
         # Key 1 in layer_inputs should contain the initial data input. So the shape 0 will return number of rows, hence
         # number of examples

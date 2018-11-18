@@ -20,6 +20,6 @@ class Reproduce:
 
 
         # TODO: Keep track of the innovations that have occured
-        current_generation_innovations = list()
+        current_generation_innovations = []
 
         pass

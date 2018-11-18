@@ -45,7 +45,7 @@ class SpeciesSet:
         """
         # For each species we find the new representative
         for species_id, species_object in self.species.items():
-            candidates = list()
+            candidates = []
             for genome_id in unspeciated:
                 genome = population[genome_id]
                 compatibility_distance = self.calculate_compatibility_distance(
@@ -67,7 +67,7 @@ class SpeciesSet:
             genome_id = unspeciated.pop()
             genome = population[genome_id]
 
-            candidates = list()
+            candidates = []
 
             for species_id, representative_id in new_representatives.items():
                 representative_genome = population[representative_id]
@@ -92,7 +92,7 @@ class SpeciesSet:
 
     def save_species_info(self, new_representatives, generation, new_members, population):
         # For each genome_id keeps track of which species_id it belongs to
-        self.genome_species = dict()
+        self.genome_species = {}
 
         for species_id, representative_id in new_representatives.items():
             species_object = self.species.get(species_id)
@@ -118,9 +118,9 @@ class SpeciesSet:
         :return:
         """
         unspeciated = set(population)
-        new_representatives = dict()
-        new_members = dict()
-        dict_of_compatibility_distances = dict()
+        new_representatives = {}
+        new_members = {}
+        dict_of_compatibility_distances = {}
 
         self.find_new_species_representative(unspeciated=unspeciated,
                                              dict_of_compatibility_distances=dict_of_compatibility_distances,
