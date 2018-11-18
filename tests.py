@@ -321,9 +321,57 @@ class TestDeconstructGenomeClass(unittest.TestCase):
         self.assertEqual(expected_answer.tolist(), output.tolist())
 
 
-class TestRunOnePass(unittest.TestCase):
+class TestGenomeNeuralNetwork(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_update_gene(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                     NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=5, node_type='output', bias=1.5)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=5, innovation_number=1, enabled=True, weight=9),
+                           ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=2),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                           ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=6, enabled=True, weight=5),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=7, enabled=True, weight=7)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data = np.array([[1, 0]])
+        y_data = np.array([[1]])
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                        x_train=x_data, y_train=y_data)
+
+        genome_nn.weights_dict[1] = np.array([[3, 0, 1], [4, 5, 0]])
+        genome_nn.weights_dict[2] = np.array([[1], [2], [3]])
+
+        genome_nn.bias_dict[1] = np.array([[1, 2, 0]])
+        genome_nn.bias_dict[2] = np.array([[7]])
+
+        expect_weights = dict()
+        expect_weights[(1, 5)] = 3
+        expect_weights[(1, 3)] = 3
+        expect_weights[(2, 3)] = 4
+        expect_weights[(2, 4)] = 5
+        expect_weights[(4, 5)] = 2
+        expect_weights[(3, 5)] = 1
+
+        expected_bias = dict()
+        expected_bias[3] = 1
+        expected_bias[4] = 2
+        expected_bias[5] = 7
+
+        genome_nn.update_genes()
+
+        for connection in genome.connections.values():
+            self.assertEqual(expect_weights[(connection.input_node, connection.output_node)], connection.weight)
+
+        for node in genome.nodes.values():
+            if node.node_type != 'source':
+                self.assertEqual(node.bias, expected_bias[node.node_id])
 
     def test_run_one_pass(self):
         node_list = [NodeGene(node_id=1, node_type='source'),

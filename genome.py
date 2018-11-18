@@ -32,6 +32,7 @@ class Genome:
         self.layer_nodes = None
         self.node_layers = None
         self.num_layers_including_input = None
+        self.last_dummy_related_to_connection = None
 
         if connections and nodes:
             # To be able to configure them they must be in a list
@@ -59,6 +60,7 @@ class Genome:
         self.node_layers = return_dict['node_layers']
         self.layer_nodes = return_dict['layer_nodes']
         self.num_layers_including_input = max(self.layer_nodes)
+        self.last_dummy_related_to_connection = return_dict['last_dummy_related_to_connection']
 
         # The last layer should only contain the output node
         assert (len(self.layer_nodes[self.num_layers_including_input]) == 1)

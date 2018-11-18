@@ -25,9 +25,10 @@ class DeconstructGenome:
         nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
         # Keeps track of which number node each node is in their respective layer
         node_map = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes)
-        added_nodes, added_connections = cls.find_ghost_nodes(nodes_per_layer=nodes_per_layer, node_layers=node_layers,
-                                                              node_map=node_map, connections=connections,
-                                                              layer_nodes=layer_nodes)
+        added_nodes, added_connections, last_dummy_related_to_connection = cls.find_ghost_nodes(
+            nodes_per_layer=nodes_per_layer, node_layers=node_layers,
+            node_map=node_map, connections=connections,
+            layer_nodes=layer_nodes)
         # Update the new connections and nodes
         for node in added_nodes:
             nodes[node.node_id] = node
@@ -49,6 +50,7 @@ class DeconstructGenome:
         return_dict['nodes'] = nodes
         return_dict['layer_nodes'] = layer_nodes
         return_dict['node_layers'] = node_layers
+        return_dict['last_dummy_related_to_connection'] = last_dummy_related_to_connection
         return return_dict
 
     @classmethod
@@ -147,6 +149,9 @@ class DeconstructGenome:
         # Will save which new connections have been added
         added_connections = []
 
+        # This will contain the last dummy node in the connections: key: the input node, value: the last dummy node
+        last_dummy_related_to_connection = dict()
+
         for connection in connections:
             # How many layers the connection spans
             input_node_layer = node_layers[connection.input_node]
@@ -156,6 +161,7 @@ class DeconstructGenome:
             if layer_span > 1 and connection.enabled:
                 # Remove the connection since it will be replaced
                 connections.remove(connection)
+
                 num_added_nodes = layer_span - 1
                 new_nodes = cls.update_nodes(num_added_nodes=num_added_nodes, added_nodes=added_nodes,
                                              node_layers=node_layers, input_node_layer=input_node_layer,
@@ -167,9 +173,10 @@ class DeconstructGenome:
                 connection.enabled = False
                 cls.update_connections(new_node_ids=new_nodes, connection_gene=connection,
                                        added_connections=added_connections,
-                                       connection_replaced_weight=connection.weight)
+                                       connection_replaced_weight=connection.weight,
+                                       last_dummy_related_to_connection=last_dummy_related_to_connection)
 
-        return added_nodes, added_connections
+        return added_nodes, added_connections, last_dummy_related_to_connection
 
     @classmethod
     def update_nodes(cls, num_added_nodes, added_nodes, node_layers, input_node_layer, nodes_per_layer,
@@ -222,7 +229,8 @@ class DeconstructGenome:
         return new_node_ids
 
     @classmethod
-    def update_connections(cls, new_node_ids, connection_gene, added_connections, connection_replaced_weight):
+    def update_connections(cls, new_node_ids, connection_gene, added_connections, connection_replaced_weight,
+                           last_dummy_related_to_connection):
         """
         :param connection_replaced_weight: The weight of the connection being replaced
         :param new_node_ids: The newly added nodes
@@ -233,6 +241,11 @@ class DeconstructGenome:
         new_input_nodes = [connection_gene.input_node] + new_node_ids
         new_output_nodes = new_node_ids + [connection_gene.output_node]
         num_new_connections = len(new_input_nodes)
+
+        # Set the last input node as the related dummy to the connection input
+        last_dummy_related_to_connection[(connection_gene.input_node, connection_gene.output_node)] = new_input_nodes[
+            len(new_input_nodes) - 1]
+
         for new_connection_number in range(num_new_connections):
             # Create the new connection gene with a random weight
             new_connection_gene = ConnectionGene(input_node=new_input_nodes[new_connection_number],
@@ -245,6 +258,7 @@ class DeconstructGenome:
                 # Because all the weights apart from the last on to connect to the final node should have constant 1
                 # weights
                 new_connection_gene.keep_constant_weight = True
+
             # Keep track of the new connections we've added
             added_connections.append(new_connection_gene)
 

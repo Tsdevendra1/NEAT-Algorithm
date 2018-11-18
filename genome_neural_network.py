@@ -42,6 +42,10 @@ class GenomeNeuralNetwork:
         self.updated_nodes = genome.updated_nodes
         # A dictionary with the nodes for each layer
         self.layer_nodes = genome.layer_nodes
+        # A dict containing which layer each node is on
+        self.node_layers = genome.node_layers
+        # Key: input_node for a connection that spans multiple layers, value: the last dummy node of the set of connections to reach the final node in the connection
+        self.last_dummy_related_to_connection = genome.last_dummy_related_to_connection
 
         self.x_train = x_train
         self.y_train = y_train
@@ -219,6 +223,40 @@ class GenomeNeuralNetwork:
         # Zeroes out the bias values for each layer where there is a dummy node
         self.ensure_correct_bias()
 
+    def update_genes(self):
+        for connection in self.genome.connections.values():
+            input_node_layer = self.node_layers[connection.input_node]
+            output_node_layer = self.node_layers[connection.output_node]
+            layer_span = output_node_layer - input_node_layer
+
+            if layer_span == 1:
+                # Minus one because of python indexing
+                input_node_position = self.node_map[connection.input_node] - 1
+                output_node_position = self.node_map[connection.output_node] - 1
+
+                # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
+                connection.weight = self.weights_dict[output_node_layer - 1][input_node_position, output_node_position]
+            # If the connection spans multiple layers
+            else:
+                # Start at one because layers start at one
+                last_dummy_node = self.last_dummy_related_to_connection[(connection.input_node, connection.output_node)]
+
+                # Minus one because of python indexing
+                last_dummy_node_position = self.node_map[last_dummy_node] - 1
+                output_node_position = self.node_map[connection.output_node] - 1
+
+                # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
+                connection.weight = self.weights_dict[output_node_layer - 1][
+                    last_dummy_node_position, output_node_position]
+
+        for node in self.genome.nodes.values():
+            if node.node_type != 'source':
+                node_layer = self.node_layers[node.node_id]
+                # Minus one for indexing
+                node_position = self.node_map[node.node_id] - 1
+                # Minus one because node_layers counts the first layer as a layer where as the bias dict doesn't
+                node.bias = self.bias_dict[node_layer - 1][0, node_position]
+
     def optimise(self, error_stop=None):
         """
         Train the neural network
@@ -244,6 +282,8 @@ class GenomeNeuralNetwork:
                 break
 
             print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
+
+        self.update_genes()
 
         return epoch_list, cost_list
 
