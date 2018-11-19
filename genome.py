@@ -1,4 +1,5 @@
 from deconstruct_genome import DeconstructGenome
+import itertools
 import numpy as np
 from gene import ConnectionGene, NodeGene
 import random
@@ -128,7 +129,7 @@ class Genome:
                 inherited_node_gene = random.choice(node_genes)
                 self.nodes[inherited_node_gene.node_id] = inherited_node_gene
 
-    def mutate(self, new_innovation_number):
+    def mutate(self, new_innovation_number, current_gen_innovations, config):
         """
         Will call one of the possible mutation abilities using a random() number generated
         :return:
@@ -136,47 +137,36 @@ class Genome:
         # The innovation is unique so it should not already exist in the list of connections
         assert (new_innovation_number not in self.connections)
 
+
+
         # Unpack the genome after whatever mutation has occured
         self.unpack_genome()
         pass
 
-    def get_new_connection_gene(self, new_innovation_number):
-        viable_start_nodes = []
+    def clean_combinations(self, possible_combinations):
+        """
+        Cleans the possible combinations so that only combinations that are possible are available to be chosen from
+        :param possible_combinations: A iterable of tuples for the possible combinations between nodes
+        :return: A list of viable combinations
+        """
+        cleaned_combinations = []
+        for combination in possible_combinations:
+            input_node = combination[0]
+            output_node = combination[1]
 
-        # Any node that isn't the output node is a viable start_node
-        for node_id, node in self.nodes.items():
-            if node.node_type != 'output':
-                viable_start_nodes.append(node_id)
+            input_node_type = self.nodes[input_node].node_type
 
-        # Pick a random node for the start node
-        start_node = random.choice(viable_start_nodes)
+            input_node_layer = self.node_layers[input_node]
+            output_node_layer = self.node_layers[output_node]
 
-        suitable_end_nodes = []
+            # As long as the node type isn't a source then the connecting node can be on the same layer or greater
+            if input_node_type != 'source' and output_node_layer >= input_node_layer:
+                cleaned_combinations.append(combination)
+            # If the input node type is a source then the connecting node can't be on the same layer
+            elif input_node_type == 'source' and output_node_layer > input_node_layer:
+                cleaned_combinations.append(combination)
 
-        start_node_layer = self.node_layers[start_node]
-
-        # Any node on the current layer for the start node or any node after that layer is a suitable end node as
-        # long as it's not a source node
-        if self.nodes[start_node].node_type != 'source':
-            for layer in range(start_node_layer, self.num_layers_including_input + 1):
-                suitable_end_nodes += self.layer_nodes[layer]
-        # If it's a source node the layer has to be any node in a layer after itself TODO: IS this correct?
-        else:
-            for layer in range(start_node_layer + 1, self.num_layers_including_input + 1):
-                suitable_end_nodes += self.layer_nodes[layer]
-
-        # Can't connect to itself
-        if start_node in set(suitable_end_nodes):
-            suitable_end_nodes.remove(start_node)
-
-        # Pick a random node for the end node
-        end_node = random.choice(suitable_end_nodes)
-
-        # Create the new connection gene
-        new_connection_gene = ConnectionGene(input_node=start_node, output_node=end_node, weight=np.random.randn(),
-                                             innovation_number=new_innovation_number)
-
-        return new_connection_gene
+        return cleaned_combinations
 
     def add_connection(self, new_innovation_number):
         """
@@ -184,31 +174,41 @@ class Genome:
         :param new_innovation_number: The innovation number to be assigned to the new connection gene
         """
 
-        # If there are no hidden nodes then there's no unique new connection we can add that doesn't exist
-        num_hidden_nodes = 0
-        for node in self.nodes.values():
-            if node.node_type == 'hidden':
-                num_hidden_nodes += 1
-        # TODO: Becareful with this because if there are no hidden nodes then this won't ever break.
-        # We need to check if the connection already exists as we don't want to re-create a connection
-        if num_hidden_nodes > 0:
-            while True:
-                connection_already_exists = False
-                new_connection_gene = self.get_new_connection_gene(new_innovation_number=new_innovation_number)
-                for connection in self.connections.values():
-                    if connection.input_node == new_connection_gene.input_node and connection.output_node == new_connection_gene.output_node:
-                        connection_already_exists = True
-                # Restart the loop if exists
-                if connection_already_exists:
-                    continue
-                # Else break the while loop
-                else:
-                    break
+        # Keeps a list of nodes which can't be chosen from to be the start node of the new connection
+        viable_start_nodes = []
+
+        # Any node that isn't the output node is a viable start_node
+        for node_id, node in self.nodes.items():
+            if node.node_type != 'output':
+                viable_start_nodes.append(node_id)
+
+        possible_combinations = itertools.combinations(list(self.nodes.keys()), 2)
+        cleaned_possible_combinations = self.clean_combinations(possible_combinations=possible_combinations)
+
+        # Get all the existing combinations
+        already_existing_connections = set()
+        for connection in self.connections.values():
+            already_existing_connections.add((connection.input_node, connection.output_node))
+
+        possible_new_connections = []
+        for connection in cleaned_possible_combinations:
+            # If it's not an existing combination then we can choose from it randomly
+            if connection not in already_existing_connections:
+                possible_new_connections.append(connection)
+
+        if possible_new_connections:
+            # Pick randomly from the possible new choices
+            new_connection = random.choice(possible_new_connections)
+
+            new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
+                                                 innovation_number=new_innovation_number, weight=np.random.random())
 
             # Add the connection the the genome
             self.connections[new_connection_gene.innovation_number] = new_connection_gene
 
             return new_connection_gene
+        else:
+            print('no new connection possible')
 
     def remove_connection(self):
         """

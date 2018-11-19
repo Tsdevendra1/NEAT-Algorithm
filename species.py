@@ -4,12 +4,16 @@ import numpy as np
 class Species:
     def __init__(self, key, generation):
         self.key = key
+        # Which generation the species was created
         self.created = generation
+        # Keeps track of what generation the fitness improved
         self.last_improved = generation
         self.representative = None
+        # All members of the species
         self.members = {}
         self.fitness = None
         self.adjusted_fitness = None
+        # History of the fitness for the species
         self.fitness_history = []
 
     def update(self, representative, members):
@@ -24,6 +28,9 @@ class SpeciesSet:
         self.species = {}
         # For each genome if you index the dict it will return which species it is a part of
         self.genome_species = {}
+
+    def species_fitness_function(self):
+        pass
 
     def calculate_compatibility_distance(self, species_representative, genome):
         compatibility_distance_1 = species_representative.compute_compatability_distance(other_genome=genome)
