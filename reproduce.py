@@ -32,17 +32,12 @@ class Reproduce:
         """
         pass
 
-    def reproduce(self, species_set, population_size, generation):
+    def get_non_stagnant_species(self, species_set, generation):
         """
-        Handles reproduction of a population
-        :param generation: Which generation number it is
-        :param species_set: The SpeciesSet instance which keeps track of species
-        :param population_size: The population size
-        :return: A new population
+        Checks which species are stagnant ant returns the ones which aren't
+        :param species_set: The species set instance which stores all the species
+        :return: A list of non stagnant species
         """
-        # Check it is a class instance
-        assert (isinstance(species_set, SpeciesSet))
-
         # Keeps track of all the fitnesses for the genomes in the population
         all_fitnesses = []
         # Keeps track of the species which aren't stagnant
@@ -65,6 +60,16 @@ class Reproduce:
             species_set.species = {}
             return {}
 
+        return all_fitnesses, remaining_species
+
+    def get_adjusted_species_sizes(self, all_fitnesses, remaining_species, population_size):
+        """
+        Adjusts the size of the species for their fitness values
+        :param all_fitnesses: A list of all fitness values for all genomes in the population
+        :param remaining_species: A list of species which aren't stagnant
+        :param population_size: The population size
+        :return: A list of sizes for the new remaining species, adjusted for their respective fitness values
+        """
         # Find min and max fitness across the entire population. We use this for explicit fitness sharing.
         min_genome_fitness = min(all_fitnesses)
         max_genome_fitness = max(all_fitnesses)
@@ -86,20 +91,24 @@ class Reproduce:
         # are required to be carried over
         min_species_size = max(self.config.min_species_size, self.config.num_best_genome_carry_over)
 
-        adjusted_species_sizes = self.compute_adjusted_species_sizes(
+        return self.compute_adjusted_species_sizes(
             adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=min_species_size,
             previous_species_sizes=previous_species_sizes, population_size=population_size)
 
-        # Keeps track of the new population (key, object)
+    def get_new_population(self, adjusted_species_sizes, remaining_species, species_set):
+        """
+        Creates the dictionary of the new genomes for the next generation population
+        :param adjusted_species_sizes:
+        :param remaining_species:
+        :param species_set:
+        :param new_population:
+        :return:
+        """
         new_population = {}
+        for species_size, species in zip(adjusted_species_sizes, remaining_species):
+            species_size = max(species_size, self.config.num_best_genome_carry_over)
 
-        # Set the species dict to an empty one for now as the new species will be configured
-        species_set.species = {}
-
-        for adjusted_species_size, species in zip(adjusted_species_sizes, remaining_species):
-            adjusted_species_size = max(adjusted_species_size, self.config.num_best_genome_carry_over)
-
-            assert (adjusted_species_size > 0)
+            assert (species_size > 0)
 
             # List of old species members
             old_species_members = list(species.members.values())
@@ -119,10 +128,10 @@ class Reproduce:
             if self.config.num_best_genome_carry_over > 0:
                 for member in old_species_members[:self.config.num_best_genome_carry_over]:
                     new_population[member.key] = member
-                    adjusted_species_size -= 1
+                    species_size -= 1
 
             # If there are no more genomes for the current species, then restart the loop for the next species
-            if adjusted_species_size <= 0:
+            if species_size <= 0:
                 continue
 
             # Only use the survival threshold fraction to use as parents for the next generation.
@@ -139,8 +148,8 @@ class Reproduce:
             current_generation_innovations = {}
 
             # Randomly choose parents and choose whilst there can still be additional genomes for the given species
-            while adjusted_species_size > 0:
-                adjusted_species_size -= 1
+            while species_size > 0:
+                species_size -= 1
 
                 # TODO: Can a genome mate with itself?
                 parent_1 = random.choice(old_species_members)
@@ -149,13 +158,13 @@ class Reproduce:
                 self.genome_indexer += 1
                 genome_id = self.genome_indexer
 
-
                 child = Genome(key=genome_id)
                 # Create the genome from the parents
                 child.crossover(genome_1=parent_1, genome_2=parent_2)
 
                 # Increment the global innovation number since a mutation will occur
                 self.global_innovation_number += 1
+                # TODO: Sort out saving of the innovation number things and returning
                 child.mutate(new_innovation_number=, current_gen_innovations=, config=self.config)
 
                 new_population[child.key] = child
@@ -163,4 +172,28 @@ class Reproduce:
 
         return new_population
 
+    def reproduce(self, species_set, population_size, generation):
+        """
+        Handles reproduction of a population
+        :param generation: Which generation number it is
+        :param species_set: The SpeciesSet instance which keeps track of species
+        :param population_size: The population size
+        :return: A new population
+        """
+        # Check it is a class instance
+        assert (isinstance(species_set, SpeciesSet))
 
+        all_fitnesses, remaining_species = self.get_non_stagnant_species(species_set=species_set, generation=generation)
+
+        adjusted_species_sizes = self.get_adjusted_species_sizes(all_fitnesses=all_fitnesses,
+                                                                 population_size=population_size,
+                                                                 remaining_species=remaining_species)
+
+        # Set the species dict to an empty one for now as the new species will be configured later
+        species_set.species = {}
+
+        # Keeps track of the new population (key, object)
+        new_population = self.get_new_population(adjusted_species_sizes=adjusted_species_sizes, species_set=species_set,
+                                                 remaining_species=remaining_species)
+
+        return new_population
