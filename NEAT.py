@@ -37,7 +37,7 @@ class NEAT:
             if use_backprop:
                 genome_nn.optimise()
 
-            cost = genome_nn.run_one_pass(input_data=self.x_train, labels=self.y_train)
+            cost = genome_nn.run_one_pass(input_data=self.x_train, labels=self.y_train, return_cost_only=True)
             # The fitness is the negative of the cost. Because less cost = greater fitness
             genome.fitness = -cost
 

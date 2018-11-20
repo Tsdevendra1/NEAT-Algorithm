@@ -168,10 +168,11 @@ class GenomeNeuralNetwork:
         # Zeroes out the bias values for each layer where there is a dummy node
         self.ensure_correct_bias()
 
-    def run_one_pass(self, input_data, labels):
+    def run_one_pass(self, input_data, labels, return_cost_only=False):
         """
         One pass counts as one forward propagation and one backware propogation including the optimisation of the
         paramters
+        :type return_cost_only: True or false of it you just want the cost instead of optimising as well
         :return: The cost for the current step
         """
 
@@ -188,18 +189,19 @@ class GenomeNeuralNetwork:
         # Asserting that the prediction gives the same number of outputs as expected
         assert (labels.shape[0] == prediction.shape[0])
 
-        # Excluded bias gradients here
-        weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_layers,
-                                                              layer_inputs=layer_input_dict,
-                                                              layer_weights=self.weights_dict,
-                                                              layer_activation_functions=self.activation_function_dict,
-                                                              expected_y=labels, predicted_y=prediction)
-
-        self.optimise_parameters(weight_gradients=weight_gradients, bias_gradients=bias_gradients)
-
         # Define cost function
         loss = -((labels * np.log(prediction)) + ((1 - labels) * np.log(1 - prediction)))
         cost = (1 / n_examples) * np.sum(loss + 1e-8, axis=0)
+
+        if not return_cost_only:
+            # Excluded bias gradients here
+            weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_layers,
+                                                                  layer_inputs=layer_input_dict,
+                                                                  layer_weights=self.weights_dict,
+                                                                  layer_activation_functions=self.activation_function_dict,
+                                                                  expected_y=labels, predicted_y=prediction)
+
+            self.optimise_parameters(weight_gradients=weight_gradients, bias_gradients=bias_gradients)
 
         return cost[0]
 
