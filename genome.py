@@ -137,7 +137,16 @@ class Genome:
         # The innovation is unique so it should not already exist in the list of connections
         assert (new_innovation_number not in self.connections)
 
-
+        # Add connection if
+        if np.random.randn() < config.add_connection_mutation_chance:
+            self.add_connection(new_innovation_number=new_innovation_number,
+                                current_gen_innovations=current_gen_innovations)
+        # Add node if
+        if np.random.randn() < config.add_node_mutation_chance:
+            self.add_node(new_innovation_number=new_innovation_number, current_gen_innovations=current_gen_innovations)
+        # Mutate weight if
+        if np.random.randn() < config.weight_mutation_chance:
+            self.mutate_weight(config=config)
 
         # Unpack the genome after whatever mutation has occured
         self.unpack_genome()
@@ -168,7 +177,7 @@ class Genome:
 
         return cleaned_combinations
 
-    def add_connection(self, new_innovation_number):
+    def add_connection(self, new_innovation_number, current_gen_innovations):
         """
         Add a random connection
         :param new_innovation_number: The innovation number to be assigned to the new connection gene
@@ -200,8 +209,18 @@ class Genome:
             # Pick randomly from the possible new choices
             new_connection = random.choice(possible_new_connections)
 
-            new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
-                                                 innovation_number=new_innovation_number, weight=np.random.random())
+            if new_connection in current_gen_innovations:
+                # If the connection was already made then use whatever the innovation number that was assigned to that connection
+                new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
+                                                     innovation_number=current_gen_innovations[new_connection],
+                                                     weight=np.random.random())
+
+            else:
+                new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
+                                                     innovation_number=new_innovation_number, weight=np.random.random())
+
+                # Save the connection as a current gen innovation
+                current_gen_innovations[new_connection] = new_innovation_number
 
             # Add the connection the the genome
             self.connections[new_connection_gene.innovation_number] = new_connection_gene
@@ -238,7 +257,7 @@ class Genome:
         # Delete the connection
         del self.connections[connection_to_remove]
 
-    def add_node(self, new_innovation_number):
+    def add_node(self, new_innovation_number, current_gen_innovations):
         """
         Add a node between two existing nodes
         """
@@ -254,11 +273,27 @@ class Genome:
         input_node = connection_to_add_node.input_node
         output_node = connection_to_add_node.output_node
 
-        # Create new connection genes
-        first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
-                                              innovation_number=new_innovation_number)
-        second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
-                                               innovation_number=new_innovation_number + 1)
+        # Create new connection gene
+        first_combination = (input_node, new_node.node_id)
+        if first_combination in current_gen_innovations:
+            first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
+                                                  innovation_number=current_gen_innovations[first_combination])
+        else:
+            first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
+                                                  innovation_number=new_innovation_number)
+            # save the innovation if it doesn't already exist
+            current_gen_innovations[(first_combination)] = new_innovation_number
+
+        second_combination = (new_node.node_id, output_node)
+
+        if second_combination in current_gen_innovations:
+            second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
+                                                   innovation_number=current_gen_innovations[second_combination])
+        else:
+            second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
+                                                   innovation_number=new_innovation_number + 1)
+            # save the innovation if it doesn't already exist
+            current_gen_innovations[(second_combination)] = new_innovation_number + 1
 
         self.connections[first_new_connection.innovation_number] = first_new_connection
         self.connections[second_new_connection.innovation_number] = second_new_connection
@@ -279,8 +314,7 @@ class Genome:
         # Delete the node
         del self.nodes[node_to_delete]
 
-    def compute_compatibility_distance(self, other_genome, excess_coefficient, disjoint_coefficient,
-                                       match_genes_coefficient):
+    def compute_compatibility_distance(self, other_genome, config):
         """
         Calculates the compabitility distance between two genomes
         :param other_genome: The other genome being compared with
@@ -319,14 +353,31 @@ class Genome:
                 else:
                     num_excess += 1
             else:
-                raise KeyError('This innovation number should have returned for one of the connections')
+                raise KeyError('This innovation number should have returned for one of the genomes')
 
         average_weight_diff = np.mean(matching_genes)
 
-        compatibility_distance = ((disjoint_coefficient * num_disjoint) / max_num_genes) + (
-                (excess_coefficient * num_excess) / max_num_genes) + (match_genes_coefficient * average_weight_diff)
+        compatibility_distance = ((config.disjoint_coefficient * num_disjoint) / max_num_genes) + (
+                (config.excess_coefficient * num_excess) / max_num_genes) + (
+                                         config.match_genes_coefficient * average_weight_diff)
 
         return compatibility_distance
+
+    def mutate_weight(self, config):
+
+        for connection in self.connections.values():
+            # Should include the 90% chance and 10% chance weight change
+            random_chance = np.random.randn()
+            assert (0 <= random_chance <= 1)
+            # 90% chance for the weight to be perturbed by a small amount
+            if random_chance < 0.9:
+                # TODO: I'm not sure if the weight change amount should be hard coded
+                # Choose randomly to see if the value will be a positive or negative amount
+                weight_change = random.choice([-config.weight_change_amount, config.weight_change_amount])
+                connection.weight += weight_change
+            # 10% chance for the weight to be assigned a random weight
+            else:
+                connection.weight = np.random.randn()
 
 
 def main():

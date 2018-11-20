@@ -23,7 +23,8 @@ class Species:
 
 class SpeciesSet:
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.species_indexer = 0
         self.species = {}
         # For each genome if you index the dict it will return which species it is a part of
@@ -33,8 +34,10 @@ class SpeciesSet:
         pass
 
     def calculate_compatibility_distance(self, species_representative, genome):
-        compatibility_distance_1 = species_representative.compute_compatability_distance(other_genome=genome)
-        compatibility_distance_2 = genome.compute_compatibility_distance(other_genome=species_representative)
+        compatibility_distance_1 = species_representative.compute_compatability_distance(other_genome=genome,
+                                                                                         config=self.config)
+        compatibility_distance_2 = genome.compute_compatibility_distance(other_genome=species_representative,
+                                                                         config=self.config)
 
         # There's no reason for this to be different depending on who you choose to be the other genome
         assert (compatibility_distance_1 == compatibility_distance_2)
@@ -142,7 +145,9 @@ class SpeciesSet:
         self.save_species_info(new_representatives=new_representatives, new_members=new_members, population=population,
                                generation=generation)
 
+        # Mean compatability distance
         mean_genome_compatibility_distance = np.mean(list(dict_of_compatibility_distances.values()))
+        # Standard deviation
         stdev_genome_compatibility_distance = np.std(list(dict_of_compatibility_distances.values()))
 
         print(

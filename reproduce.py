@@ -105,6 +105,11 @@ class Reproduce:
         :return:
         """
         new_population = {}
+        # TODO: Keep track of the innovations that have occured
+        # This dict will maintain which new connections have been added this generation as well as their innovation
+        # number: (1(input),3(output)): 9
+        current_generation_innovations = {}
+
         for species_size, species in zip(adjusted_species_sizes, remaining_species):
             species_size = max(species_size, self.config.num_best_genome_carry_over)
 
@@ -142,10 +147,6 @@ class Reproduce:
             reproduction_cutoff = max(reproduction_cutoff, 2)
             old_species_members = old_species_members[:reproduction_cutoff]
 
-            # TODO: Keep track of the innovations that have occured
-            # This dict will maintain which new connections have been added this generation as well as their innovation
-            # number: (1(input),3(output)): 9
-            current_generation_innovations = {}
 
             # Randomly choose parents and choose whilst there can still be additional genomes for the given species
             while species_size > 0:
@@ -165,7 +166,7 @@ class Reproduce:
                 # Increment the global innovation number since a mutation will occur
                 self.global_innovation_number += 1
                 # TODO: Sort out saving of the innovation number things and returning
-                child.mutate(new_innovation_number=, current_gen_innovations=, config=self.config)
+                child.mutate(new_innovation_number=self.global_innovation_number, current_gen_innovations=current_generation_innovations, config=self.config)
 
                 new_population[child.key] = child
                 self.ancestors[child.key] = (parent_1.key, parent_2.key)
