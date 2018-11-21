@@ -23,18 +23,57 @@ class Reproduce:
     def compute_adjusted_species_sizes(self, adjusted_species_fitnesses, previous_species_sizes, population_size,
                                        min_species_size):
         """
-        Compute the number of offspring per species, proportinal to their fitnesses
+        Compute the number of offspring per species, proportional to their fitnesses (See page 110 of NEAT paper)
         :param adjusted_species_fitnesses:
         :param previous_species_sizes:
         :param population_size:
         :param min_species_size:
         :return:
         """
-        pass
+        adjusted_fitness_sum = sum(adjusted_species_fitnesses)
+
+        adjusted_species_sizes = []
+
+        for adjusted_fitness, previous_size in zip(adjusted_species_fitnesses, previous_species_sizes):
+            if adjusted_fitness_sum > 0:
+                # Calculate the adjusted species size for how much of the overall fitness they account for. If this
+                # value is less than the min_species_size then we set it to that instead
+                species_size = max(min_species_size, ((adjusted_fitness / adjusted_fitness_sum) * population_size))
+
+            else:
+                species_size = min_species_size
+
+            # TODO: I'm not sure what this is mean't to do?
+            # difference = (species_size - previous_size) * 0.5
+            # rounded_difference = int(round(difference))
+            #
+            # adjusted_size = previous_size
+            #
+            # if abs(rounded_difference) > 0:
+            #     adjusted_size += rounded_difference
+            # elif difference > 0:
+            #     adjusted_size += 1
+            # elif difference < 0:
+            #     adjusted_size -= 1
+
+            adjusted_species_sizes.append(species_size)
+
+        # There may not be the exact number of population size due to floating point precision. So instead we give this
+        # extra to the best species
+        if sum(adjusted_species_sizes) < population_size:
+            max_fitness_index = adjusted_species_fitnesses.index(max(adjusted_species_fitnesses))
+            adjusted_species_sizes[max_fitness_index] += 1
+
+        assert (sum(adjusted_species_sizes) == population_size)
+
+        return adjusted_species_sizes
+
+    # TODO: Finish this function
 
     def get_non_stagnant_species(self, species_set, generation):
         """
         Checks which species are stagnant ant returns the ones which aren't
+        :param generation: Which generation number it is
         :param species_set: The species set instance which stores all the species
         :return: A list of non stagnant species
         """
@@ -78,8 +117,12 @@ class Reproduce:
 
         # TODO: Not sure if this is the right method to do adjusted fitness
         for species in remaining_species:
-            mean_species_fitness = np.mean([member.fitness for member in species.members.values()])
-            adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
+            # The adjusted fitness is the mean of the species members fitnesses TODO: Is this correct?
+            adjusted_fitness = np.mean([member.fitness for member in species.members.values()])
+
+            # TODO: comment back in if correct
+            # mean_species_fitness = np.mean([member.fitness for member in species.members.values()])
+            # adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
             species.adjusted_fitness = adjusted_fitness
 
         adjusted_species_fitnesses = [species.adjusted_fitness for species in remaining_species]
@@ -117,8 +160,8 @@ class Reproduce:
 
             # List of old species members
             old_species_members = list(species.members.values())
-            # Keeps track of current species member
-            species_members = {}
+            # Reset the members for the current species
+            species.members = {}
             # Save the species in the species set object
             species_set.species[species.key] = species
 
@@ -147,7 +190,6 @@ class Reproduce:
             reproduction_cutoff = max(reproduction_cutoff, 2)
             old_species_members = old_species_members[:reproduction_cutoff]
 
-
             # Randomly choose parents and choose whilst there can still be additional genomes for the given species
             while species_size > 0:
                 species_size -= 1
@@ -166,7 +208,8 @@ class Reproduce:
                 # Increment the global innovation number since a mutation will occur
                 self.global_innovation_number += 1
                 # TODO: Sort out saving of the innovation number things and returning
-                child.mutate(new_innovation_number=self.global_innovation_number, current_gen_innovations=current_generation_innovations, config=self.config)
+                child.mutate(new_innovation_number=self.global_innovation_number,
+                             current_gen_innovations=current_generation_innovations, config=self.config)
 
                 new_population[child.key] = child
                 self.ancestors[child.key] = (parent_1.key, parent_2.key)

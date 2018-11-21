@@ -2,29 +2,33 @@ from genome_neural_network import GenomeNeuralNetwork
 from reproduce import Reproduce
 from species import SpeciesSet
 
-
 # Exception used to check if there are no more species
+from stagnation import Stagnation
+
+
 class CompleteExtinctionException(Exception):
     pass
 
 
 class NEAT:
 
-    def __init__(self, x_training_data, y_training_data, fitness_threshold=None):
+    def __init__(self, x_training_data, y_training_data, config, fitness_threshold):
         self.population = None
-        self.reproduction = Reproduce()
+        self.config = config
+        self.reproduction = Reproduce(stagnation=Stagnation, config=config)
         # Track the best genome across generations
         self.best_all_time_genome = None
         # If the fitness threshold is met it will stop the algorithm (if set)
         self.fitness_threshold = fitness_threshold
-        self.species = SpeciesSet()
+        self.species_set = SpeciesSet(config=config)
         self.x_train = x_training_data
         self.y_train = y_training_data
 
     def evaluate_population(self, use_backprop):
         """
         Calculates the fitness value for each individual genome in the population
-        :return:
+        :type use_backprop: True or false on whether you're calculating the fitness using backprop or not
+        :return: The best genome of the population
         """
 
         # Should return the best genome
@@ -68,14 +72,15 @@ class NEAT:
                 break
 
             # Reproduce and get the next generation
-            self.population = self.reproduction.reproduce(species_instance=self.species,
-                                                          population_size=len(self.population))
+            self.population = self.reproduction.reproduce(species_set=self.species_set,
+                                                          population_size=len(self.population), generation=current_gen)
 
             # Check if there are any species, if not raise an exception. TODO: Let user reset population if extinction
-            if not self.species.species:
+            if not self.species_set.species:
                 raise CompleteExtinctionException()
 
             # Speciate the current generation
-            self.species.speciate(population=self.population, generation=current_gen)
+            self.species_set.speciate(population=self.population, generation=current_gen,
+                                      compatibility_threshold=self.config.compatability_threshold)
 
         return self.best_all_time_genome

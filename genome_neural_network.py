@@ -172,6 +172,8 @@ class GenomeNeuralNetwork:
         """
         One pass counts as one forward propagation and one backware propogation including the optimisation of the
         paramters
+        :param labels: The correct labels
+        :param input_data: the input data used to train
         :type return_cost_only: True or false of it you just want the cost instead of optimising as well
         :return: The cost for the current step
         """

@@ -273,25 +273,27 @@ class Genome:
         input_node = connection_to_add_node.input_node
         output_node = connection_to_add_node.output_node
 
-        # Create new connection gene
+        # Create new connection gene. Which has a weight of 1
         first_combination = (input_node, new_node.node_id)
         if first_combination in current_gen_innovations:
             first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
-                                                  innovation_number=current_gen_innovations[first_combination])
+                                                  innovation_number=current_gen_innovations[first_combination],
+                                                  weight=1)
         else:
             first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
-                                                  innovation_number=new_innovation_number)
-            # save the innovation if it doesn't already exist
-            current_gen_innovations[(first_combination)] = new_innovation_number
-
+                                                  innovation_number=new_innovation_number,
+                                                  weight=1)
         second_combination = (new_node.node_id, output_node)
 
+        # The second connection keeps the weight of the connection it replaced
         if second_combination in current_gen_innovations:
             second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
-                                                   innovation_number=current_gen_innovations[second_combination])
+                                                   innovation_number=current_gen_innovations[second_combination],
+                                                   weight=connection_to_add_node.weight)
         else:
             second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
-                                                   innovation_number=new_innovation_number + 1)
+                                                   innovation_number=new_innovation_number + 1,
+                                                   weight=connection_to_add_node.weight)
             # save the innovation if it doesn't already exist
             current_gen_innovations[(second_combination)] = new_innovation_number + 1
 
@@ -324,6 +326,8 @@ class Genome:
         :return: The compatibility distance
         """
         max_num_genes = max(len(self.connections), len(other_genome.connections))
+        # In the paper they state that if the max number of genes is less than 20 then you don't need to divide by a normalising value
+        max_num_genes = max_num_genes if max_num_genes > 20 else 1
 
         num_excess = 0
         num_disjoint = 0
@@ -348,7 +352,7 @@ class Genome:
             if genome_1_connection and genome_2_connection:
                 matching_genes.append(abs(genome_1_connection.weight - genome_2_connection.weight))
             elif genome_1_connection or genome_2_connection:
-                if innovation_number < lowest_max_innovation_number:
+                if innovation_number <= lowest_max_innovation_number:
                     num_disjoint += 1
                 else:
                     num_excess += 1
@@ -359,7 +363,7 @@ class Genome:
 
         compatibility_distance = ((config.disjoint_coefficient * num_disjoint) / max_num_genes) + (
                 (config.excess_coefficient * num_excess) / max_num_genes) + (
-                                         config.match_genes_coefficient * average_weight_diff)
+                                         config.matching_genes_coefficient * average_weight_diff)
 
         return compatibility_distance
 

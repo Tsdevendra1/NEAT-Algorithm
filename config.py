@@ -1,4 +1,5 @@
 class Config:
+    # TODO: Ensure each of these are used somewhere in the code
     """
     Compatibility distance
     """

@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 
+from config import Config
 from genome_neural_network import GenomeNeuralNetwork
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
 from deconstruct_genome import DeconstructGenome
@@ -443,7 +444,7 @@ class TestGenomeMutatation(unittest.TestCase):
         # Because we replaced 1 connection with two
         expected_number_connections = number_of_beginning_connections + 2
 
-        self.genome.add_node(new_innovation_number=7)
+        self.genome.add_node(new_innovation_number=7, current_gen_innovations={})
 
         self.assertEqual(len(self.genome.connections), expected_number_connections)
 
@@ -456,6 +457,8 @@ class TestGenomeMutatation(unittest.TestCase):
 
         # One connection should have been disabled from the node addition
         self.assertEqual(number_of_disabled_connections, disabled_counters)
+
+        self.assertTrue(self.genome.connections[7].weight == 1)
 
     def test_remove_node(self):
         pass
@@ -502,6 +505,45 @@ class TestGenomeMutatation(unittest.TestCase):
             actual_genes.append(connection.innovation_number)
 
         self.assertEqual(expected_genes, actual_genes)
+
+    def test_compatibility_distance(self):
+        node_list_1 = [NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='source'),
+                       NodeGene(node_id=3, node_type='hidden'),
+                       NodeGene(node_id=4, node_type='hidden'),
+                       NodeGene(node_id=5, node_type='output')]
+
+        connection_list_1 = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=1),
+                             ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=2),
+                             ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                             ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                             ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=5),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=8, enabled=True, weight=6)]
+
+        connection_list_2 = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=1),
+                             ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=2),
+                             ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                             ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                             ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=5),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=6),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=7, enabled=True, weight=6),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=9, enabled=True, weight=6),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=10, enabled=True, weight=6)]
+
+        genome_1 = Genome(connections=connection_list_1, nodes=node_list_1, key=1)
+        genome_2 = Genome(connections=connection_list_1, nodes=node_list_1, key=2)
+        genome_3 = Genome(connections=connection_list_2, nodes=node_list_1, key=3)
+
+        compatibility_distance_1 = genome_1.compute_compatibility_distance(other_genome=genome_2, config=Config)
+        compatibility_distance_2 = genome_2.compute_compatibility_distance(other_genome=genome_2, config=Config)
+
+        compatibility_distance_3 = genome_3.compute_compatibility_distance(other_genome=genome_1, config=Config)
+        compatibility_distance_4 = genome_1.compute_compatibility_distance(other_genome=genome_3, config=Config)
+
+        self.assertTrue(compatibility_distance_1 == 0)
+        self.assertTrue(compatibility_distance_1 == compatibility_distance_2)
+        self.assertEqual(compatibility_distance_3, 5)
+        self.assertEqual(compatibility_distance_3, compatibility_distance_4)
 
 
 if __name__ == '__main__':
