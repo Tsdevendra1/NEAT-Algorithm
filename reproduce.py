@@ -244,7 +244,7 @@ class Reproduce:
 
                 # Increment the global innovation number since a mutation will occur
                 child.mutate(reproduction_instance=self,
-                             current_gen_innovations=self.innovation_tracker, config=self.config)
+                             innovation_tracker=self.innovation_tracker, config=self.config)
 
                 new_population[child.key] = child
                 self.ancestors[child.key] = (parent_1.key, parent_2.key)

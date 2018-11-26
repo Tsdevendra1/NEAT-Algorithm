@@ -136,7 +136,7 @@ class Genome:
         # Unpack the genome after we have configured it
         self.unpack_genome()
 
-    def mutate(self, reproduction_instance, current_gen_innovations, config):
+    def mutate(self, reproduction_instance, innovation_tracker, config):
         """
         Will call one of the possible mutation abilities using a random() number generated
         :return:
@@ -152,14 +152,14 @@ class Genome:
         # Add connection if
         if add_connection_roll < config.add_connection_mutation_chance:
             self.add_connection(reproduction_instance=reproduction_instance,
-                                current_gen_innovations=current_gen_innovations)
+                                innovation_tracker=innovation_tracker)
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
 
         # Add node if
         if add_node_roll < config.add_node_mutation_chance:
             self.add_node(reproduction_instance=reproduction_instance,
-                          current_gen_innovations=current_gen_innovations)
+                          innovation_tracker=innovation_tracker)
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
 
@@ -202,10 +202,12 @@ class Genome:
 
         return cleaned_combinations
 
-    def add_connection(self, reproduction_instance, current_gen_innovations):
+    def add_connection(self, reproduction_instance, innovation_tracker):
         """
         Add a random connection
-        :param new_innovation_number: The innovation number to be assigned to the new connection gene
+        :param innovation_tracker: The innovations that have happened in the past
+        :param reproduction_instance: An instance of the reproduction class so we can access the global innovation number
+        
         """
 
         # Keeps a list of nodes which can't be chosen from to be the start node of the new connection
@@ -234,11 +236,11 @@ class Genome:
             # Pick randomly from the possible new choices
             new_connection = random.choice(possible_new_connections)
 
-            if new_connection in current_gen_innovations:
+            if new_connection in innovation_tracker:
                 # If the connection was already made then use whatever the innovation number that was assigned to
                 # that connection
                 new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
-                                                     innovation_number=current_gen_innovations[new_connection],
+                                                     innovation_number=innovation_tracker[new_connection],
                                                      weight=np.random.random())
 
             else:
@@ -248,7 +250,7 @@ class Genome:
                                                      weight=np.random.random())
 
                 # Save the connection as a current gen innovation
-                current_gen_innovations[new_connection] = reproduction_instance.global_innovation_number
+                innovation_tracker[new_connection] = reproduction_instance.global_innovation_number
 
             # Add the connection the the genome
             self.connections[new_connection_gene.innovation_number] = new_connection_gene
@@ -397,7 +399,7 @@ class Genome:
                 for connection in output_connections:
                     del self.connections[connection.innovation_number]
 
-    def add_node(self, reproduction_instance, current_gen_innovations):
+    def add_node(self, reproduction_instance, innovation_tracker):
         """
         Add a node between two existing nodes
         """
@@ -415,9 +417,9 @@ class Genome:
 
         # Create new connection gene. Which has a weight of 1
         first_combination = (input_node, new_node.node_id)
-        if first_combination in current_gen_innovations:
+        if first_combination in innovation_tracker:
             first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
-                                                  innovation_number=current_gen_innovations[first_combination],
+                                                  innovation_number=innovation_tracker[first_combination],
                                                   weight=1)
         else:
             # Increment since there is a new innovation
@@ -426,13 +428,13 @@ class Genome:
                                                   innovation_number=reproduction_instance.global_innovation_number,
                                                   weight=1)
             # Save the innovation since it's new
-            current_gen_innovations[first_combination] = reproduction_instance.global_innovation_number
+            innovation_tracker[first_combination] = reproduction_instance.global_innovation_number
         second_combination = (new_node.node_id, output_node)
 
         # The second connection keeps the weight of the connection it replaced
-        if second_combination in current_gen_innovations:
+        if second_combination in innovation_tracker:
             second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
-                                                   innovation_number=current_gen_innovations[second_combination],
+                                                   innovation_number=innovation_tracker[second_combination],
                                                    weight=connection_to_add_node.weight)
         else:
             # Increment since there is a new innovation
@@ -441,7 +443,7 @@ class Genome:
                                                    innovation_number=reproduction_instance.global_innovation_number,
                                                    weight=connection_to_add_node.weight)
             # save the innovation if it doesn't already exist
-            current_gen_innovations[second_combination] = reproduction_instance.global_innovation_number
+            innovation_tracker[second_combination] = reproduction_instance.global_innovation_number
 
         # Add the new node and connections
         self.nodes[new_node.node_id] = new_node

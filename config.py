@@ -33,7 +33,7 @@ class Config:
     add_connection_mutation_chance = 0.3
     # TODO: Find correct chance for these values
     remove_node_mutation_chance = 0.01
-    remove_connection_mutation_chance = 0.05
+    remove_connection_mutation_chance = 0.01
 
     """
     Speciation

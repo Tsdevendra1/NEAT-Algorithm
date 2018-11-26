@@ -7,6 +7,8 @@ from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNet
 from deconstruct_genome import DeconstructGenome
 from genome import Genome
 from gene import ConnectionGene, NodeGene
+from reproduce import Reproduce
+from stagnation import Stagnation
 
 
 class TestForwardProp(unittest.TestCase):
@@ -193,7 +195,7 @@ class TestNeuralNetworkOneLayer(unittest.TestCase):
         self.assertEqual(self.neural_network.weights_dict[2].shape, expected_shape_layer_2)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise(print_epoch_cost=True)
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.002
@@ -223,7 +225,7 @@ class TestNeuralNetworkMultiLayer(unittest.TestCase):
                                             activation_function_dict=activations_dict, learning_rate=0.1)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise(print_epoch_cost=True)
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.0
@@ -341,6 +343,14 @@ class TestGenomeUnpack(unittest.TestCase):
             genome = Genome(connections=connection_list, nodes=node_list, key=1)
             self.assertTrue(genome)
 
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=3, node_type='output')]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1)]
+
+        genome_2 = Genome(connections=connection_list, nodes=node_list, key=2)
+        self.assertTrue(genome_2)
+
     def test_unpack_genome_2(self):
         """
         Testing another genome which would normally fail if the unpack genome method is not coded correctly
@@ -442,13 +452,21 @@ class TestGenomeMutatation(unittest.TestCase):
 
         self.genome = Genome(connections=connection_list, nodes=node_list, key=2)
 
+    def test_add_connection_2(self):
+        """
+        Can't let two source nodes connect to each other
+        :return:
+        """
+
     def test_add_connection(self):
-        expected_number_of_connections = 7
-        self.genome.add_connection(new_innovation_number=7, current_gen_innovations={})
+        reproduce = Reproduce(config=Config, stagnation=Stagnation)
+        reproduce.global_innovation_number = 7
+        new_connection = self.genome.add_connection(
+            reproduction_instance=reproduce,
+            innovation_tracker={})
 
-        self.assertEqual(len(self.genome.connections), expected_number_of_connections)
+        self.assertTrue(len(self.genome.connections) == 7)
 
-        new_connection = self.genome.connections[7]
         # Unpack the new genome
         self.genome.unpack_genome()
 
@@ -487,10 +505,20 @@ class TestGenomeMutatation(unittest.TestCase):
         self.assertTrue(genome.nodes[5])
 
         genome.unpack_genome()
-        print('Node layers: ', genome.node_layers)
 
-        print('Exisiting nodes: ', list(genome.nodes.values()))
-        print('Existing connections: ', list(genome.connections.values()))
+    def test_remove_connections_2(self):
+        for i in range(100):
+            node_list = [NodeGene(node_id=1, node_type='source'),
+                         NodeGene(node_id=2, node_type='source'),
+                         NodeGene(node_id=3, node_type='output', bias=0)]
+
+            connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1),
+                               ConnectionGene(input_node=2, output_node=3, innovation_number=2)]
+
+            genome = Genome(connections=connection_list, nodes=node_list, key=2)
+            genome.remove_connection()
+            genome.unpack_genome()
+            self.assertTrue(genome)
 
     def test_add_node(self):
         number_of_beginning_connections = len(self.genome.connections)
@@ -499,7 +527,10 @@ class TestGenomeMutatation(unittest.TestCase):
         # Because we replaced 1 connection with two
         expected_number_connections = number_of_beginning_connections + 2
 
-        self.genome.add_node(new_innovation_number=7, current_gen_innovations={})
+        reproduce = Reproduce(config=Config, stagnation=Stagnation)
+        reproduce.global_innovation_number = 7
+        self.genome.add_node(reproduction_instance=reproduce,
+                             innovation_tracker={})
 
         self.assertEqual(len(self.genome.connections), expected_number_connections)
 
@@ -513,7 +544,7 @@ class TestGenomeMutatation(unittest.TestCase):
         # One connection should have been disabled from the node addition
         self.assertEqual(number_of_disabled_connections, disabled_counters)
 
-        self.assertTrue(self.genome.connections[7].weight == 1)
+        self.assertTrue(self.genome.connections[8].weight == 1)
 
     def test_remove_node(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
@@ -531,14 +562,8 @@ class TestGenomeMutatation(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
 
-        print(genome.nodes.values())
-        print(genome.connections.values())
         genome.remove_node()
         genome.unpack_genome()
-        print('\n')
-        print('After')
-        print(genome.nodes.values())
-        print(genome.connections.values())
 
     def test_cross_over(self):
         node_list_1 = [NodeGene(node_id=1, node_type='source'),
