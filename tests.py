@@ -326,6 +326,21 @@ class TestGenomeUnpack(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_unpack_genome_3(self):
+        """
+        Testing another genome which would normally fail if the unpack genome method is not coded correctly
+        """
+        for i in range(1000):
+            node_list = [NodeGene(node_id=1, node_type='source'),
+                         NodeGene(node_id=2, node_type='source'),
+                         NodeGene(node_id=3, node_type='output')]
+
+            connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1),
+                               ConnectionGene(input_node=2, output_node=3, innovation_number=2)]
+
+            genome = Genome(connections=connection_list, nodes=node_list, key=1)
+            self.assertTrue(genome)
+
     def test_unpack_genome_2(self):
         """
         Testing another genome which would normally fail if the unpack genome method is not coded correctly

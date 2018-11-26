@@ -20,32 +20,43 @@ class Reproduce:
         # Key: The tuple of the connection e.g. (1,3) value: the innovation number
         self.innovation_tracker = {}
 
-    def create_new_population(self, population_size):
+    def create_new_population(self, population_size, num_features):
         population = {}
 
-        # Save the innovations for the first generation. These are hard coded
-        self.innovation_tracker[(1, 3)] = 1
-        self.innovation_tracker[(1, 2)] = 2
+        node_list = []
+        connection_list = []
+        # Create the source nodes
+        for node in range(num_features):
+            node_list.append(NodeGene(node_id=node, node_type='source'))
 
-        # The new innovations above mean we increment the innovation number track by two
-        self.global_innovation_number += 2
+        # Add the output node
+        node_list.append(NodeGene(node_id=num_features, node_type='output', bias=0))
+
+        # Save the innovations for the first generation.
+        for source_node_id in range(num_features):
+            # Increment for the new innovation
+            self.global_innovation_number += 1
+            # The output node will always have the node_id equal to the number of features
+            self.innovation_tracker[(source_node_id, num_features)] = self.global_innovation_number
+
+        # For each feature there will be a connection to the output
+        for i in range(num_features):
+            connection = (i, num_features)
+            # The connection was already saved, so this should return true
+            assert (connection in self.innovation_tracker)
+            connection_list.append(ConnectionGene(input_node=i, output_node=num_features,
+                                                  innovation_number=self.innovation_tracker[connection], enabled=True))
 
         # Create a population of size population_size
         for index in range(population_size):
-            # The starting population is a simple connection of the source's to the output
-            node_list = [NodeGene(node_id=1, node_type='source'),
-                         NodeGene(node_id=2, node_type='source'),
-                         NodeGene(node_id=3, node_type='output', bias=0)]
-            connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True,
-                                              weight=np.random.randn()),
-                               ConnectionGene(input_node=2, output_node=3, innovation_number=2, enabled=True,
-                                              weight=np.random.randn())]
+            # Set all the connections to a random weight for each genome
+            for connection in connection_list:
+                connection.weight = np.random.randn()
             # Increment since the index value has been assigned
             self.genome_indexer += 1
 
             # Create the genome
             population[index] = Genome(connections=connection_list, nodes=node_list, key=self.genome_indexer)
-
 
         return population
 

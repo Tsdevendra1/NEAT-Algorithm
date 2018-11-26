@@ -61,9 +61,9 @@ class GenomeNeuralNetwork:
         # Minus one because we include the data input as a layer in 'nodes_per_layer'
         self.num_layers = max(self.nodes_per_layer) - 1
 
-
         # So far there have only been two implementations for the activation type
         assert (activation_type in ('relu', 'sigmoid'))
+        
         # Set the activation functions for each layer
         self.initialise_activation_functions(activation_type=activation_type)
 

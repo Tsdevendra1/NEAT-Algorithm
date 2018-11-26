@@ -27,7 +27,8 @@ class NEAT:
         self.y_train = y_training_data
 
         # Initialise the starting population
-        self.population = self.reproduction.create_new_population(population_size=population_size)
+        self.population = self.reproduction.create_new_population(population_size=population_size,
+                                                                  num_features=x_training_data.shape[1])
 
         # Speciate the initial population
         self.species_set.speciate(population=self.population, compatibility_threshold=3, generation=0)
