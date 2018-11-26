@@ -68,7 +68,6 @@ class Genome:
         if len(self.layer_nodes[self.num_layers_including_input]) != 1:
             raise Exception('Invalid genome has been unpacked')
 
-        assert (len(self.layer_nodes[self.num_layers_including_input]) == 1)
 
     def configure_genes(self, connections, nodes):
         """
