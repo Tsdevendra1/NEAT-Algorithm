@@ -430,12 +430,31 @@ class TestGenomeMutatation(unittest.TestCase):
         self.assertTrue(new_connection.input_node != new_connection.output_node)
 
     def test_remove_connection(self):
-        number_of_beginning_connections = len(self.genome.connections)
-        expected_number_of_connections = 5
-        self.genome.remove_connection()
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='output')]
 
-        self.assertEqual(number_of_beginning_connections, 6)
-        self.assertEqual(len(self.genome.connections), expected_number_of_connections)
+        # Note that one of the connections isn't enabled
+        connection_list = [
+            ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True),
+            ConnectionGene(input_node=4, output_node=3, innovation_number=5, enabled=True),
+            ConnectionGene(input_node=3, output_node=5, innovation_number=8, enabled=True)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=2)
+        genome.remove_connection()
+        # TODO: Check how this works
+        # Check that the source nodes are always there
+        self.assertTrue(genome.nodes[1])
+        self.assertTrue(genome.nodes[2])
+        self.assertTrue(genome.nodes[5])
+
+        genome.unpack_genome()
+        print('Node layers: ', genome.node_layers)
+
+        print('Exisiting nodes: ', list(genome.nodes.values()))
+        print('Existing connections: ', list(genome.connections.values()))
 
     def test_add_node(self):
         number_of_beginning_connections = len(self.genome.connections)

@@ -4,7 +4,7 @@ import sys
 class Stagnation:
 
     @staticmethod
-    def update(species_set, generation):
+    def update(species_set, generation, config):
         """
         Required interface method. Updates species fitness history information,
         checking for ones that have not improved in max_stagnation generations,
@@ -52,14 +52,14 @@ class Stagnation:
             stagnant_time = generation - species.last_improved
             is_stagnant = False
 
-            if num_non_stagnant > species_set.config.num_species_min:
+            if num_non_stagnant > config.num_species_min:
                 # Check if the stagnation time for the species is greater than the max set in the config
-                is_stagnant = (stagnant_time >= species_set.config.max_stagnation_generations)
+                is_stagnant = (stagnant_time >= config.max_stagnation_generations)
 
             # This will ensure that whatever the value of species_min is will be allowed to continue un-stagnated even
             # if they are. Example: if self.config.num_species_min = 2, then as long as the index is the last two of the
             # length of species_data it will set is_stagnant to False
-            if (len(species_data) - index) <= species_set.config.num_species_min:
+            if (len(species_data) - index) <= config.num_species_min:
                 is_stagnant = False
 
             if is_stagnant:

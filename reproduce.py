@@ -20,7 +20,8 @@ class Reproduce:
     def create_new_population(self):
         pass
 
-    def compute_adjusted_species_sizes(self, adjusted_species_fitnesses, previous_species_sizes, population_size,
+    @staticmethod
+    def compute_adjusted_species_sizes(adjusted_species_fitnesses, previous_species_sizes, population_size,
                                        min_species_size):
         """
         Compute the number of offspring per species, proportional to their fitnesses (See page 110 of NEAT paper)
@@ -68,8 +69,6 @@ class Reproduce:
 
         return adjusted_species_sizes
 
-    # TODO: Finish this function
-
     def get_non_stagnant_species(self, species_set, generation):
         """
         Checks which species are stagnant ant returns the ones which aren't
@@ -83,7 +82,8 @@ class Reproduce:
         remaining_species = []
 
         # (Id, species instance, boolean)
-        for species_id, species, is_stagnant in self.stagnation.update(species_set=species_set, generation=generation):
+        for species_id, species, is_stagnant in self.stagnation.update(species_set=species_set, generation=generation,
+                                                                       config=self.config):
             if is_stagnant:
                 # TODO: What to do here??
                 pass
@@ -118,12 +118,11 @@ class Reproduce:
         # TODO: Not sure if this is the right method to do adjusted fitness
         for species in remaining_species:
             # The adjusted fitness is the mean of the species members fitnesses TODO: Is this correct?
-            adjusted_fitness = np.mean([member.fitness for member in species.members.values()])
+            species.adjusted_fitness = np.mean([member.fitness for member in species.members.values()])
 
             # TODO: comment back in if correct
             # mean_species_fitness = np.mean([member.fitness for member in species.members.values()])
             # adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
-            species.adjusted_fitness = adjusted_fitness
 
         adjusted_species_fitnesses = [species.adjusted_fitness for species in remaining_species]
 
@@ -148,7 +147,6 @@ class Reproduce:
         :return:
         """
         new_population = {}
-        # TODO: Keep track of the innovations that have occured
         # This dict will maintain which new connections have been added this generation as well as their innovation
         # number: (1(input),3(output)): 9
         current_generation_innovations = {}
@@ -207,7 +205,6 @@ class Reproduce:
 
                 # Increment the global innovation number since a mutation will occur
                 self.global_innovation_number += 1
-                # TODO: Sort out saving of the innovation number things and returning
                 child.mutate(new_innovation_number=self.global_innovation_number,
                              current_gen_innovations=current_generation_innovations, config=self.config)
 

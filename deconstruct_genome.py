@@ -167,7 +167,6 @@ class DeconstructGenome:
                                              node_layers=node_layers, input_node_layer=input_node_layer,
                                              nodes_per_layer=nodes_per_layer, node_map=node_map,
                                              layer_nodes=layer_nodes)
-                # TODO: Update the active nodes and biases?
 
                 # Turn off the connection we're in
                 connection.enabled = False

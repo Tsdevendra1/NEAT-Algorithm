@@ -27,6 +27,9 @@ class Config:
 
     add_node_mutation_chance = 0.03
     add_connection_mutation_chance = 0.3
+    # TODO: Find correct chance for these values
+    remove_node_mutatation_chance = 0.01
+    remove_connection_mutatation_chance = 0.05
 
     """
     Speciation
@@ -44,7 +47,6 @@ class Config:
     min_species_size = 2
     # How may of the best performing genomes are carried over for each species
     num_best_genome_carry_over = 2
-
 
     """
     Survival

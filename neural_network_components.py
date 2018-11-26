@@ -11,6 +11,7 @@ class ActivationFunctions:
 
     @staticmethod
     def sigmoid(x):
+        # TODO: Create the version for the genome using -4.9
         activation = 1 / (1 + np.exp(-x))
 
         return activation

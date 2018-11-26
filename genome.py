@@ -1,4 +1,5 @@
 from deconstruct_genome import DeconstructGenome
+from graph_algorithm import Graph
 import itertools
 import numpy as np
 from gene import ConnectionGene, NodeGene
@@ -148,9 +149,14 @@ class Genome:
         if np.random.randn() < config.weight_mutation_chance:
             self.mutate_weight(config=config)
 
+        if np.random.randn() < config.remove_node_mutation_chance:
+            self.remove_node()
+
+        if np.random.randn() < config.remove_connection_mutation_chance:
+            self.remove_connection()
+
         # Unpack the genome after whatever mutation has occured
         self.unpack_genome()
-        pass
 
     def clean_combinations(self, possible_combinations):
         """
@@ -229,33 +235,142 @@ class Genome:
         else:
             print('no new connection possible')
 
+    def keep_node(self, node):
+        """
+        A node is suitable to delete if it it doesn't have both an input connection and output connection
+        :param node: The node to check if it can be deleted
+        :return: Whether a node should be kept or not
+        """
+        # Keep track if the node has any other input or output connections once the connection we have removed is
+        # deleted
+        has_input_connection = False
+        has_output_connection = False
+        connections_list = []
+        for connection in self.connections.values():
+
+            # Check if there is an actual input into the node
+            if connection.output_node == node:
+                has_input_connection = True
+                connections_list.append(connection)
+
+            # check if there is an output connection for the node
+            if connection.input_node == node:
+                has_output_connection = True
+                connections_list.append(connection)
+
+        return has_input_connection and has_output_connection, connections_list
+
+    def check_which_connections_removable(self):
+        """
+        :return:
+        Returns a list of connections which can be removed
+        """
+        # Check to see that there is at least two source connections and two output connections so that if one get's
+        # removed it's still a valid neural network
+        num_source_connections = 0
+        num_output_connections = 0
+        # All the connections that aren't linked to the output
+        connections_excluding_output = []
+        # All the connections that aren't linked to the source
+        connections_excluding_source = []
+        # All the connections that aren't linked to either source or output
+        connections_excluding_source_and_output = []
+        for connection in self.connections.values():
+            # TODO: Check for other mutations about connection being enabled
+            # Add all the connections which don't have the output as the output node
+            if self.nodes[connection.output_node].node_type == 'output':
+                # Only counts if the connection is enabled
+                if connection.enabled:
+                    num_output_connections += 1
+            else:
+                connections_excluding_output.append(connection)
+
+            if self.nodes[connection.input_node].node_type == 'source':
+                # Only counts if the connection is enabled
+                if connection.enabled:
+                    num_source_connections += 1
+            else:
+                connections_excluding_source.append(connection)
+
+            if self.nodes[connection.input_node] != 'source' and self.nodes[connection.output_node] != 'output':
+                connections_excluding_source_and_output.append(connection)
+
+        # Means it doesn't matter which one is picked, there will still be a valid path to the end, so we can choose any
+        if num_source_connections > 1 and num_output_connections > 1:
+            choice_list = list(self.connections.values())
+        # Means that there aren't enough source connections so we can't remove any of them
+        elif num_output_connections > 1:
+            choice_list = connections_excluding_source
+        # Means there aren't enough output connections so we can't remove any
+        elif num_source_connections > 1:
+            choice_list = connections_excluding_output
+        # Means there aren't enough source and output connections so we can't choose any of those connections to remove
+        else:
+            choice_list = connections_excluding_source_and_output
+
+        return choice_list
+
     def remove_connection(self):
         """
-        Remove a random existing connection from the genome
+        Removes a random existing connection form the genome
         """
-        viable_connection_to_remove = []
 
-        source_input_node_connections = {}
-        # TODO: NEAT doesn't have remove node or connection
-
+        graph = Graph()
+        source_nodes = []
+        output_nodes = []
+        # Add the connections to the graph
         for connection in self.connections.values():
-            if self.nodes[connection.input_node].node_type == 'source':
-                if connection.input_node not in source_input_node_connections:
-                    source_input_node_connections[connection.input_node] = 1
-                else:
-                    source_input_node_connections[connection.input_node] += 1
+            graph.add_edge(start_node=connection.input_node, end_node=connection.output_node)
+            input_node = self.nodes[connection.input_node]
+            output_node = self.nodes[connection.output_node]
+            if input_node.node_type == 'source':
+                source_nodes.append(input_node)
+            if output_node.node_type == 'output':
+                output_nodes.append(output_node)
 
-        for connection in self.connections.values():
+        # Only keep the unique nodes to there are no duplicates in the list
+        source_nodes = list(set(source_nodes))
+        output_nodes = list(set(output_nodes))
 
-            # Any connection that doesn't include the source node can be removed # TODO: Is this correct?
-            if self.nodes[connection.input_node].node_type != 'source':
-                viable_connection_to_remove.append(connection.innovation_number)
+        # There shouldn't be more than one output node
+        assert (len(output_nodes) == 1)
 
-        # Pick a random connection to remove
-        connection_to_remove = random.choice(viable_connection_to_remove)
+        # Keeps track of how many paths there are from the source to the input's
+        num_source_to_output_paths = 0
+        for node in source_nodes:
+            num_source_to_output_paths += graph.count_paths(start_node=node.node_id, end_node=output_nodes[0].node_id)
 
-        # Delete the connection
-        del self.connections[connection_to_remove]
+        # If there is only one path from the source to the output we shouldn't delete any of the connections since
+        # it would make it an invalid network
+        if num_source_to_output_paths > 2:
+            choice_list = self.check_which_connections_removable()
+            connection_to_remove = random.choice(choice_list)
+
+            input_node = connection_to_remove.input_node
+            input_node_type = self.nodes[connection_to_remove.input_node].node_type
+            output_node = connection_to_remove.output_node
+            output_node_type = self.nodes[connection_to_remove.output_node].node_type
+
+            # Delete the connection
+            del self.connections[connection_to_remove.innovation_number]
+
+            # Check if the input_node can be kept, delete if not. This is only the case if it is not a source/output
+            # node. Because we want to allow them to be able to have connections in the future
+            keep_input, input_connections = self.keep_node(node=input_node)
+            if input_node_type != 'source' and input_node_type != 'output' and not keep_input:
+                del self.nodes[input_node]
+                # Delete connections related to input node
+                for connection in input_connections:
+                    del self.connections[connection.innovation_number]
+
+            # Check if the output_node can be kept, delete if not. This is only the case if it is not a source node.
+            # Because we want to allow source nodes to have connections in the future
+            keep_output, output_connections = self.keep_node(node=output_node)
+            if output_node_type != 'source' and output_node_type != 'output' and not keep_output:
+                del self.nodes[output_node]
+                # Delete connections related to output node
+                for connection in output_connections:
+                    del self.connections[connection.innovation_number]
 
     def add_node(self, new_innovation_number, current_gen_innovations):
         """
@@ -302,7 +417,7 @@ class Genome:
 
         return first_new_connection, second_new_connection
 
-    def delete_node(self):
+    def remove_node(self):
         viable_nodes_to_be_delete = []
 
         for node in self.nodes.values():
@@ -313,8 +428,19 @@ class Genome:
         # Randomly choose node to delete
         node_to_delete = random.choice(viable_nodes_to_be_delete)
 
+        # The node to be deleted will have connections which also need to be deleted
+        connections_to_delete = []
+
+        for connection in self.connections.values():
+            if connection.input_node == node_to_delete or connection.output_node == node_to_delete:
+                connections_to_delete.append(connection)
+
         # Delete the node
         del self.nodes[node_to_delete]
+
+        # Delete all the connections related to the node
+        for connection in connections_to_delete:
+            del self.connections[connection.innovation_number]
 
     def compute_compatibility_distance(self, other_genome, config):
         """
