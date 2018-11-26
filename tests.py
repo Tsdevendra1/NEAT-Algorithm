@@ -408,7 +408,7 @@ class TestGenomeMutatation(unittest.TestCase):
 
     def test_add_connection(self):
         expected_number_of_connections = 7
-        self.genome.add_connection(new_innovation_number=7)
+        self.genome.add_connection(new_innovation_number=7, current_gen_innovations={})
 
         self.assertEqual(len(self.genome.connections), expected_number_of_connections)
 
@@ -480,7 +480,29 @@ class TestGenomeMutatation(unittest.TestCase):
         self.assertTrue(self.genome.connections[7].weight == 1)
 
     def test_remove_node(self):
-        pass
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='output')]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True, weight=1),
+                           ConnectionGene(input_node=1, output_node=4, innovation_number=2, enabled=True, weight=2),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=3, enabled=True, weight=3),
+                           ConnectionGene(input_node=2, output_node=4, innovation_number=4, enabled=True, weight=4),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=5),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=6)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        print(genome.nodes.values())
+        print(genome.connections.values())
+        genome.remove_node()
+        genome.unpack_genome()
+        print('\n')
+        print('After')
+        print(genome.nodes.values())
+        print(genome.connections.values())
 
     def test_cross_over(self):
         node_list_1 = [NodeGene(node_id=1, node_type='source'),

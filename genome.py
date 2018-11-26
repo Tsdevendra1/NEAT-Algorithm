@@ -310,11 +310,7 @@ class Genome:
 
         return choice_list
 
-    def remove_connection(self):
-        """
-        Removes a random existing connection form the genome
-        """
-
+    def check_num_paths(self):
         graph = Graph()
         source_nodes = []
         output_nodes = []
@@ -340,9 +336,18 @@ class Genome:
         for node in source_nodes:
             num_source_to_output_paths += graph.count_paths(start_node=node.node_id, end_node=output_nodes[0].node_id)
 
+        return num_source_to_output_paths
+
+    def remove_connection(self):
+        """
+        Removes a random existing connection form the genome
+        """
+
+        num_source_to_output_paths = self.check_num_paths()
+
         # If there is only one path from the source to the output we shouldn't delete any of the connections since
         # it would make it an invalid network
-        if num_source_to_output_paths > 2:
+        if num_source_to_output_paths > 1:
             choice_list = self.check_which_connections_removable()
             connection_to_remove = random.choice(choice_list)
 
@@ -418,29 +423,44 @@ class Genome:
         return first_new_connection, second_new_connection
 
     def remove_node(self):
-        viable_nodes_to_be_delete = []
+        num_source_to_output_paths = self.check_num_paths()
 
-        for node in self.nodes.values():
-            # Any node that isn't the source or output node can be deleted
-            if node.node_type != 'source' or node.node_type != 'output':
-                viable_nodes_to_be_delete.append(node.node_id)
+        # Otherwise if you delete a node and it only has one path, you make it an invalid network as there is not path
+        # from the source to the output
+        if num_source_to_output_paths > 1:
+            viable_nodes_to_be_delete = []
+            connections_able_to_remove = self.check_which_connections_removable()
 
-        # Randomly choose node to delete
-        node_to_delete = random.choice(viable_nodes_to_be_delete)
+            # for node in self.nodes.values():
+            #     # Any node that isn't the source or output node can be deleted
+            #     if node.node_type != 'source' or node.node_type != 'output':
+            #         viable_nodes_to_be_delete.append(node.node_id)
 
-        # The node to be deleted will have connections which also need to be deleted
-        connections_to_delete = []
+            for connection in connections_able_to_remove:
+                if self.nodes[connection.input_node].node_type != 'source':
+                    viable_nodes_to_be_delete.append(connection.input_node)
+                if self.nodes[connection.output_node].node_type != 'output':
+                    viable_nodes_to_be_delete.append(connection.output_node)
 
-        for connection in self.connections.values():
-            if connection.input_node == node_to_delete or connection.output_node == node_to_delete:
-                connections_to_delete.append(connection)
+            # Remove duplicates
+            viable_nodes_to_be_delete = list(set(viable_nodes_to_be_delete))
 
-        # Delete the node
-        del self.nodes[node_to_delete]
+            # Randomly choose node to delete
+            node_to_delete = random.choice(viable_nodes_to_be_delete)
 
-        # Delete all the connections related to the node
-        for connection in connections_to_delete:
-            del self.connections[connection.innovation_number]
+            # The node to be deleted will have connections which also need to be deleted
+            connections_to_delete = []
+
+            for connection in self.connections.values():
+                if connection.input_node == node_to_delete or connection.output_node == node_to_delete:
+                    connections_to_delete.append(connection)
+
+            # Delete the node
+            del self.nodes[node_to_delete]
+
+            # Delete all the connections related to the node
+            for connection in connections_to_delete:
+                del self.connections[connection.innovation_number]
 
     def compute_compatibility_distance(self, other_genome, config):
         """
