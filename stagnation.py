@@ -15,7 +15,7 @@ class Stagnation:
         """
 
         species_data = []
-        for species_id, species in species_set.species:
+        for species_id, species in species_set.species.items():
             if species.fitness_history:
                 # If there is fitness_history get the previous generation fitness
                 prev_fitness = max(species.fitness_history)
@@ -24,7 +24,8 @@ class Stagnation:
                 prev_fitness = -sys.float_info.max
 
             # Calculate the fitness for the species
-            species.fitness = species_set.species_fitness_function(species.members)
+            species.fitness = species_set.species_fitness_function(species_members=species.members,
+                                                                   function_type='mean')
 
             # Keep track of historical fitness
             species.fitness_history.append(species.fitness)
@@ -40,11 +41,13 @@ class Stagnation:
         # Sort the species data into ascending fitness order.
         species_data.sort(key=lambda x: x[1].fitness)
 
+        # Keeps track of which species are stagnant or not
         results = []
+        # Keeps track of each species's fitness
         species_fitnesses = []
         num_non_stagnant = len(species_data)
 
-        for index, species_id, species in enumerate(species_data):
+        for index, (species_id, species) in enumerate(species_data):
             # Override stagnant state if marking this species as stagnant would
             # result in the total number of species dropping below the limit.
             # Because species are in ascending fitness order, less fit species

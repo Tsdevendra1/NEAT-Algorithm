@@ -322,6 +322,27 @@ class TestDeconstructGenomeClass(unittest.TestCase):
         self.assertEqual(expected_answer.tolist(), output.tolist())
 
 
+class TestGenomeUnpack(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_unpack_genome_2(self):
+        """
+        Testing another genome which would normally fail if the unpack genome method is not coded correctly
+        """
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='output'),
+                     NodeGene(node_id=4, node_type='hidden')]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=4, innovation_number=1),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=2),
+                           ConnectionGene(input_node=4, output_node=3, innovation_number=6)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        self.assertTrue(genome)
+
+
 class TestGenomeNeuralNetwork(unittest.TestCase):
     def setUp(self):
         pass

@@ -1,3 +1,4 @@
+from gene import NodeGene, ConnectionGene
 from genome import Genome
 from species import SpeciesSet
 import random
@@ -16,9 +17,37 @@ class Reproduce:
         self.ancestors = {}
         self.genome_indexer = 0
         self.config = config
+        # Key: The tuple of the connection e.g. (1,3) value: the innovation number
+        self.innovation_tracker = {}
 
-    def create_new_population(self):
-        pass
+    def create_new_population(self, population_size):
+        population = {}
+
+        # Save the innovations for the first generation. These are hard coded
+        self.innovation_tracker[(1, 3)] = 1
+        self.innovation_tracker[(1, 2)] = 2
+
+        # The new innovations above mean we increment the innovation number track by two
+        self.global_innovation_number += 2
+
+        # Create a population of size population_size
+        for index in range(population_size):
+            # The starting population is a simple connection of the source's to the output
+            node_list = [NodeGene(node_id=1, node_type='source'),
+                         NodeGene(node_id=2, node_type='source'),
+                         NodeGene(node_id=3, node_type='output', bias=0)]
+            connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=2, output_node=3, innovation_number=2, enabled=True,
+                                              weight=np.random.randn())]
+            # Increment since the index value has been assigned
+            self.genome_indexer += 1
+
+            # Create the genome
+            population[index] = Genome(connections=connection_list, nodes=node_list, key=self.genome_indexer)
+
+
+        return population
 
     @staticmethod
     def compute_adjusted_species_sizes(adjusted_species_fitnesses, previous_species_sizes, population_size,
@@ -36,7 +65,7 @@ class Reproduce:
         adjusted_species_sizes = []
 
         for adjusted_fitness, previous_size in zip(adjusted_species_fitnesses, previous_species_sizes):
-            if adjusted_fitness_sum > 0:
+            if adjusted_fitness_sum is not None:
                 # Calculate the adjusted species size for how much of the overall fitness they account for. If this
                 # value is less than the min_species_size then we set it to that instead
                 species_size = max(min_species_size, ((adjusted_fitness / adjusted_fitness_sum) * population_size))
@@ -96,8 +125,6 @@ class Reproduce:
         if not remaining_species:
             # TODO: Would this ever come here?
             raise Exception('There are no remaining species in the reproduce function')
-            species_set.species = {}
-            return {}
 
         return all_fitnesses, remaining_species
 
@@ -127,15 +154,17 @@ class Reproduce:
         adjusted_species_fitnesses = [species.adjusted_fitness for species in remaining_species]
 
         # Get a list of the amount of members in each of the remaining species
-        previous_species_sizes = [len(species.member) for species in remaining_species]
+        previous_species_sizes = [len(species.members) for species in remaining_species]
 
         # The min species size is the maximum of either the minimum set species size of the number of the best genomes
         # are required to be carried over
         min_species_size = max(self.config.min_species_size, self.config.num_best_genome_carry_over)
 
-        return self.compute_adjusted_species_sizes(
+        adjusted_species_sizes = self.compute_adjusted_species_sizes(
             adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=min_species_size,
             previous_species_sizes=previous_species_sizes, population_size=population_size)
+
+        return adjusted_species_sizes
 
     def get_new_population(self, adjusted_species_sizes, remaining_species, species_set):
         """
@@ -149,7 +178,6 @@ class Reproduce:
         new_population = {}
         # This dict will maintain which new connections have been added this generation as well as their innovation
         # number: (1(input),3(output)): 9
-        current_generation_innovations = {}
 
         for species_size, species in zip(adjusted_species_sizes, remaining_species):
             species_size = max(species_size, self.config.num_best_genome_carry_over)
@@ -206,7 +234,7 @@ class Reproduce:
                 # Increment the global innovation number since a mutation will occur
                 self.global_innovation_number += 1
                 child.mutate(new_innovation_number=self.global_innovation_number,
-                             current_gen_innovations=current_generation_innovations, config=self.config)
+                             current_gen_innovations=self.innovation_tracker, config=self.config)
 
                 new_population[child.key] = child
                 self.ancestors[child.key] = (parent_1.key, parent_2.key)

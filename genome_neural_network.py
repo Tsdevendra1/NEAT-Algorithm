@@ -131,8 +131,10 @@ class GenomeNeuralNetwork:
             for connection in self.layer_connections_dict[layer]:
                 if connection.enabled:
                     # They both need to be set if we're going to create the weight matrix from them
-                    assert (connection.weight is not None)
-                    assert (self.updated_nodes[connection.output_node].bias is not None)
+                    if connection.weight is None:
+                        raise ValueError('You have not set a weight for this connection')
+                    if self.updated_nodes[connection.output_node].bias is None:
+                        raise ValueError('The node doesnt have a bias value, please set one in the nodes list')
 
                     # Get their relative position inside their respective layer
                     input_node_position = self.node_map[connection.input_node] - 1

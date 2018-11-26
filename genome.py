@@ -65,6 +65,9 @@ class Genome:
         self.last_dummy_related_to_connection = return_dict['last_dummy_related_to_connection']
 
         # The last layer should only contain the output node
+        if len(self.layer_nodes[self.num_layers_including_input]) != 1:
+            raise Exception('Invalid genome has been unpacked')
+
         assert (len(self.layer_nodes[self.num_layers_including_input]) == 1)
 
     def configure_genes(self, connections, nodes):
@@ -95,9 +98,11 @@ class Genome:
         assert isinstance(genome_2.fitness, (int, float))
         # They should never be EXACTLY the same. But if this ever gets triggered you should write the crossover case for
         # it
-        assert (genome_1.fitness != genome_2.fitness)
 
         if genome_1.fitness > genome_2.fitness:
+            fittest_parent, second_parent = genome_1, genome_2
+        # If they are equal it mean's its the same genome being used twice
+        elif genome_1.fitness == genome_2.fitness:
             fittest_parent, second_parent = genome_1, genome_2
         else:
             fittest_parent, second_parent = genome_2, genome_1
@@ -130,6 +135,9 @@ class Genome:
                 inherited_node_gene = random.choice(node_genes)
                 self.nodes[inherited_node_gene.node_id] = inherited_node_gene
 
+        # Unpack the genome after we have configured it
+        self.unpack_genome()
+
     def mutate(self, new_innovation_number, current_gen_innovations, config):
         """
         Will call one of the possible mutation abilities using a random() number generated
@@ -138,21 +146,28 @@ class Genome:
         # The innovation is unique so it should not already exist in the list of connections
         assert (new_innovation_number not in self.connections)
 
+        # The rolls to see if each mutation occurs
+        add_connection_roll = np.random.uniform(low=0.0, high=1.0)
+        add_node_roll = np.random.uniform(low=0.0, high=1.0)
+        mutate_weight_roll = np.random.uniform(low=0.0, high=1.0)
+        remove_node_roll = np.random.uniform(low=0.0, high=1.0)
+        remove_connection_roll = np.random.uniform(low=0.0, high=1.0)
+
         # Add connection if
-        if np.random.randn() < config.add_connection_mutation_chance:
+        if add_connection_roll < config.add_connection_mutation_chance:
             self.add_connection(new_innovation_number=new_innovation_number,
                                 current_gen_innovations=current_gen_innovations)
         # Add node if
-        if np.random.randn() < config.add_node_mutation_chance:
+        if add_node_roll < config.add_node_mutation_chance:
             self.add_node(new_innovation_number=new_innovation_number, current_gen_innovations=current_gen_innovations)
         # Mutate weight if
-        if np.random.randn() < config.weight_mutation_chance:
+        if mutate_weight_roll < config.weight_mutation_chance:
             self.mutate_weight(config=config)
 
-        if np.random.randn() < config.remove_node_mutation_chance:
+        if remove_node_roll < config.remove_node_mutation_chance:
             self.remove_node()
 
-        if np.random.randn() < config.remove_connection_mutation_chance:
+        if remove_connection_roll < config.remove_connection_mutation_chance:
             self.remove_connection()
 
         # Unpack the genome after whatever mutation has occured
@@ -403,6 +418,8 @@ class Genome:
             first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
                                                   innovation_number=new_innovation_number,
                                                   weight=1)
+            # Save the innovation since it's new
+            current_gen_innovations[first_combination] = new_innovation_number
         second_combination = (new_node.node_id, output_node)
 
         # The second connection keeps the weight of the connection it replaced
@@ -415,8 +432,10 @@ class Genome:
                                                    innovation_number=new_innovation_number + 1,
                                                    weight=connection_to_add_node.weight)
             # save the innovation if it doesn't already exist
-            current_gen_innovations[(second_combination)] = new_innovation_number + 1
+            current_gen_innovations[second_combination] = new_innovation_number + 1
 
+        # Add the new node and connections
+        self.nodes[new_node.node_id] = new_node
         self.connections[first_new_connection.innovation_number] = first_new_connection
         self.connections[second_new_connection.innovation_number] = second_new_connection
 
@@ -445,22 +464,25 @@ class Genome:
             # Remove duplicates
             viable_nodes_to_be_delete = list(set(viable_nodes_to_be_delete))
 
-            # Randomly choose node to delete
-            node_to_delete = random.choice(viable_nodes_to_be_delete)
+            # If there are any viable nodes to delete
+            if viable_nodes_to_be_delete:
 
-            # The node to be deleted will have connections which also need to be deleted
-            connections_to_delete = []
+                # Randomly choose node to delete
+                node_to_delete = random.choice(viable_nodes_to_be_delete)
 
-            for connection in self.connections.values():
-                if connection.input_node == node_to_delete or connection.output_node == node_to_delete:
-                    connections_to_delete.append(connection)
+                # The node to be deleted will have connections which also need to be deleted
+                connections_to_delete = []
 
-            # Delete the node
-            del self.nodes[node_to_delete]
+                for connection in self.connections.values():
+                    if connection.input_node == node_to_delete or connection.output_node == node_to_delete:
+                        connections_to_delete.append(connection)
 
-            # Delete all the connections related to the node
-            for connection in connections_to_delete:
-                del self.connections[connection.innovation_number]
+                # Delete the node
+                del self.nodes[node_to_delete]
+
+                # Delete all the connections related to the node
+                for connection in connections_to_delete:
+                    del self.connections[connection.innovation_number]
 
     def compute_compatibility_distance(self, other_genome, config):
         """
@@ -515,16 +537,14 @@ class Genome:
 
     def mutate_weight(self, config):
 
+        # Mutate all connection weights
         for connection in self.connections.values():
-            # Should include the 90% chance and 10% chance weight change
-            random_chance = np.random.randn()
+            random_chance = np.random.uniform(low=0.0, high=1.0)
             assert (0 <= random_chance <= 1)
             # 90% chance for the weight to be perturbed by a small amount
             if random_chance < 0.9:
-                # TODO: I'm not sure if the weight change amount should be hard coded
-                # Choose randomly to see if the value will be a positive or negative amount
-                weight_change = random.choice([-config.weight_change_amount, config.weight_change_amount])
-                connection.weight += weight_change
+                # Choose randomly from a range to change the value by
+                connection.weight += np.random.uniform(low=config.weight_range_low, high=config.weight_range_high)
             # 10% chance for the weight to be assigned a random weight
             else:
                 connection.weight = np.random.randn()

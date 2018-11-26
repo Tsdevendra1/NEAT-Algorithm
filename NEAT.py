@@ -12,17 +12,25 @@ class CompleteExtinctionException(Exception):
 
 class NEAT:
 
-    def __init__(self, x_training_data, y_training_data, config, fitness_threshold):
-        self.population = None
+    def __init__(self, x_training_data, y_training_data, config, fitness_threshold, population_size):
+        # Where all the parameters are saved
         self.config = config
+        # Takes care of reproduction of populations
         self.reproduction = Reproduce(stagnation=Stagnation, config=config)
         # Track the best genome across generations
         self.best_all_time_genome = None
         # If the fitness threshold is met it will stop the algorithm (if set)
         self.fitness_threshold = fitness_threshold
+        # A class containing the different species within the population
         self.species_set = SpeciesSet(config=config)
         self.x_train = x_training_data
         self.y_train = y_training_data
+
+        # Initialise the starting population
+        self.population = self.reproduction.create_new_population(population_size=population_size)
+
+        # Speciate the initial population
+        self.species_set.speciate(population=self.population, compatibility_threshold=3, generation=0)
 
     def evaluate_population(self, use_backprop):
         """
@@ -33,7 +41,7 @@ class NEAT:
 
         # Should return the best genome
         current_best_genome = None
-        for genome in self.population:
+        for genome in self.population.values():
             genome_nn = GenomeNeuralNetwork(genome=genome, x_train=self.x_train, y_train=self.y_train,
                                             create_weights_bias_from_genome=True, activation_type='sigmoid',
                                             learning_rate=0.0001, num_epochs=1000, batch_size=64)
@@ -50,7 +58,7 @@ class NEAT:
 
         return current_best_genome
 
-    def run(self, max_num_generations):
+    def run(self, max_num_generations, use_backprop):
         """
         Run the algorithm
         """
@@ -61,7 +69,7 @@ class NEAT:
             current_gen += 1
 
             # Evaluate the current generation and get the best genome in the current generation
-            best_current_genome = self.evaluate_population(use_backprop=False)
+            best_current_genome = self.evaluate_population(use_backprop=use_backprop)
 
             # Keep track of the best genome across generations
             if self.best_all_time_genome is None or best_current_genome.fitness > self.best_all_time_genome.fitness:

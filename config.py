@@ -11,11 +11,14 @@ class Config:
     """
     Mutation
     """
+
+    # Weight changes
     weight_mutation_chance = 0.8
     weight_uniform_mutation_chance = 0.9
     weight_random_mutation_chance = 0.1
-    # The flat amount the weight will be perturbed by
-    weight_change_amount = 0.1
+    # A range to choose from for the weight pertubation amount
+    weight_range_low = 0.1
+    weight_range_high = 0.8
 
     # This is the chance a gene is disabled if it was disabled in either parent
     chance_to_disable = 0.75
@@ -28,8 +31,8 @@ class Config:
     add_node_mutation_chance = 0.03
     add_connection_mutation_chance = 0.3
     # TODO: Find correct chance for these values
-    remove_node_mutatation_chance = 0.01
-    remove_connection_mutatation_chance = 0.05
+    remove_node_mutation_chance = 0.01
+    remove_connection_mutation_chance = 0.05
 
     """
     Speciation

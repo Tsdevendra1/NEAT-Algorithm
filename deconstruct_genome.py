@@ -63,28 +63,37 @@ class DeconstructGenome:
         :return: Sorted connections list
         """
 
-        sorted_list = []
+        sorted_list = list()
+        added_to_list = set()
 
         # First we add the input connections
         for connection in connections:
-            input_node_type = nodes[connection.input_node].node_type
-            output_node_type = nodes[connection.output_node].node_type
-            if input_node_type == 'source' and output_node_type != 'source':
-                sorted_list.append(connection)
+            # Check the connection is enabled and that we haven't already added it to the list
+            if connection.enabled and connection not in added_to_list:
+                input_node_type = nodes[connection.input_node].node_type
+                if input_node_type == 'source':
+                    sorted_list.append(connection)
+                    added_to_list.add(connection)
 
         for connection in connections:
-            input_node_type = nodes[connection.input_node].node_type
-            output_node_type = nodes[connection.output_node].node_type
-            if output_node_type != 'output' and input_node_type != 'source':
-                sorted_list.append(connection)
+            # check the connection is enabled and that we haven't already added it to the list
+            if connection.enabled and connection not in added_to_list:
+                input_node_type = nodes[connection.input_node].node_type
+                output_node_type = nodes[connection.output_node].node_type
+                if output_node_type != 'output' and input_node_type != 'source':
+                    sorted_list.append(connection)
+                    added_to_list.add(connection)
 
         # Then we add the ones left (the ones linked to the output)
         for connection in connections:
-            output_node_type = nodes[connection.output_node].node_type
-            if output_node_type == 'output':
-                sorted_list.append(connection)
+            # check the connection is enabled and that we haven't already added it to the list
+            if connection.enabled and connection not in added_to_list:
+                output_node_type = nodes[connection.output_node].node_type
+                if output_node_type == 'output':
+                    sorted_list.append(connection)
+                    added_to_list.add(connection)
 
-        return sorted_list
+        return list(sorted_list)
 
     @classmethod
     def get_node_layers(cls, connections, nodes):

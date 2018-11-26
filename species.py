@@ -30,11 +30,25 @@ class SpeciesSet:
         # For each genome if you index the dict it will return which species it is a part of
         self.genome_species = {}
 
-    def species_fitness_function(self):
-        pass
+    @staticmethod
+    def species_fitness_function(species_members, function_type):
+        """
+        Finds the fitness for a species. For now all it doesn is find the mean fitness of the species.
+        # TODO: Allow max, min, median fitness function types
+        :param species_members: The members of the species
+        :param function_type: What type of function you want to apply, e.g. mean, max, min, median
+        :return: The fitness value for the species
+        """
+        if function_type not in {'mean', 'max', 'median', 'min'}:
+            raise Exception('Invalid function type specified for species fitness function')
+
+        species_member_fitnesses = [member.fitness for member in species_members.values()]
+
+        if function_type == 'mean':
+            return np.mean(species_member_fitnesses)
 
     def calculate_compatibility_distance(self, species_representative, genome):
-        compatibility_distance_1 = species_representative.compute_compatability_distance(other_genome=genome,
+        compatibility_distance_1 = species_representative.compute_compatibility_distance(other_genome=genome,
                                                                                          config=self.config)
         compatibility_distance_2 = genome.compute_compatibility_distance(other_genome=species_representative,
                                                                          config=self.config)
