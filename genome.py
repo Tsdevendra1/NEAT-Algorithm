@@ -68,7 +68,6 @@ class Genome:
         if len(self.layer_nodes[self.num_layers_including_input]) != 1:
             raise Exception('Invalid genome has been unpacked')
 
-
     def configure_genes(self, connections, nodes):
         """
         :param connections: A list of connection genes
@@ -137,13 +136,11 @@ class Genome:
         # Unpack the genome after we have configured it
         self.unpack_genome()
 
-    def mutate(self, new_innovation_number, current_gen_innovations, config):
+    def mutate(self, reproduction_instance, current_gen_innovations, config):
         """
         Will call one of the possible mutation abilities using a random() number generated
         :return:
         """
-        # The innovation is unique so it should not already exist in the list of connections
-        assert (new_innovation_number not in self.connections)
 
         # The rolls to see if each mutation occurs
         add_connection_roll = np.random.uniform(low=0.0, high=1.0)
@@ -154,23 +151,31 @@ class Genome:
 
         # Add connection if
         if add_connection_roll < config.add_connection_mutation_chance:
-            self.add_connection(new_innovation_number=new_innovation_number,
+            self.add_connection(reproduction_instance=reproduction_instance,
                                 current_gen_innovations=current_gen_innovations)
+            # Unpack the genome after whatever mutation has occured
+            self.unpack_genome()
+
         # Add node if
         if add_node_roll < config.add_node_mutation_chance:
-            self.add_node(new_innovation_number=new_innovation_number, current_gen_innovations=current_gen_innovations)
+            self.add_node(reproduction_instance=reproduction_instance,
+                          current_gen_innovations=current_gen_innovations)
+            # Unpack the genome after whatever mutation has occured
+            self.unpack_genome()
+
         # Mutate weight if
         if mutate_weight_roll < config.weight_mutation_chance:
             self.mutate_weight(config=config)
 
         if remove_node_roll < config.remove_node_mutation_chance:
             self.remove_node()
+            # Unpack the genome after whatever mutation has occured
+            self.unpack_genome()
 
         if remove_connection_roll < config.remove_connection_mutation_chance:
             self.remove_connection()
-
-        # Unpack the genome after whatever mutation has occured
-        self.unpack_genome()
+            # Unpack the genome after whatever mutation has occured
+            self.unpack_genome()
 
     def clean_combinations(self, possible_combinations):
         """
@@ -197,7 +202,7 @@ class Genome:
 
         return cleaned_combinations
 
-    def add_connection(self, new_innovation_number, current_gen_innovations):
+    def add_connection(self, reproduction_instance, current_gen_innovations):
         """
         Add a random connection
         :param new_innovation_number: The innovation number to be assigned to the new connection gene
@@ -230,24 +235,25 @@ class Genome:
             new_connection = random.choice(possible_new_connections)
 
             if new_connection in current_gen_innovations:
-                # If the connection was already made then use whatever the innovation number that was assigned to that connection
+                # If the connection was already made then use whatever the innovation number that was assigned to
+                # that connection
                 new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
                                                      innovation_number=current_gen_innovations[new_connection],
                                                      weight=np.random.random())
 
             else:
+                reproduction_instance.global_innovation_number += 1
                 new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
-                                                     innovation_number=new_innovation_number, weight=np.random.random())
+                                                     innovation_number=reproduction_instance.global_innovation_number,
+                                                     weight=np.random.random())
 
                 # Save the connection as a current gen innovation
-                current_gen_innovations[new_connection] = new_innovation_number
+                current_gen_innovations[new_connection] = reproduction_instance.global_innovation_number
 
             # Add the connection the the genome
             self.connections[new_connection_gene.innovation_number] = new_connection_gene
 
             return new_connection_gene
-        else:
-            print('no new connection possible')
 
     def keep_node(self, node):
         """
@@ -391,7 +397,7 @@ class Genome:
                 for connection in output_connections:
                     del self.connections[connection.innovation_number]
 
-    def add_node(self, new_innovation_number, current_gen_innovations):
+    def add_node(self, reproduction_instance, current_gen_innovations):
         """
         Add a node between two existing nodes
         """
@@ -414,11 +420,13 @@ class Genome:
                                                   innovation_number=current_gen_innovations[first_combination],
                                                   weight=1)
         else:
+            # Increment since there is a new innovation
+            reproduction_instance.global_innovation_number += 1
             first_new_connection = ConnectionGene(input_node=input_node, output_node=new_node.node_id,
-                                                  innovation_number=new_innovation_number,
+                                                  innovation_number=reproduction_instance.global_innovation_number,
                                                   weight=1)
             # Save the innovation since it's new
-            current_gen_innovations[first_combination] = new_innovation_number
+            current_gen_innovations[first_combination] = reproduction_instance.global_innovation_number
         second_combination = (new_node.node_id, output_node)
 
         # The second connection keeps the weight of the connection it replaced
@@ -427,11 +435,13 @@ class Genome:
                                                    innovation_number=current_gen_innovations[second_combination],
                                                    weight=connection_to_add_node.weight)
         else:
+            # Increment since there is a new innovation
+            reproduction_instance.global_innovation_number += 1
             second_new_connection = ConnectionGene(input_node=new_node.node_id, output_node=output_node,
-                                                   innovation_number=new_innovation_number + 1,
+                                                   innovation_number=reproduction_instance.global_innovation_number,
                                                    weight=connection_to_add_node.weight)
             # save the innovation if it doesn't already exist
-            current_gen_innovations[second_combination] = new_innovation_number + 1
+            current_gen_innovations[second_combination] = reproduction_instance.global_innovation_number
 
         # Add the new node and connections
         self.nodes[new_node.node_id] = new_node

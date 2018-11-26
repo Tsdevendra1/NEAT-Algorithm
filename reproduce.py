@@ -232,8 +232,7 @@ class Reproduce:
                 child.crossover(genome_1=parent_1, genome_2=parent_2)
 
                 # Increment the global innovation number since a mutation will occur
-                self.global_innovation_number += 1
-                child.mutate(new_innovation_number=self.global_innovation_number,
+                child.mutate(reproduction_instance=self,
                              current_gen_innovations=self.innovation_tracker, config=self.config)
 
                 new_population[child.key] = child

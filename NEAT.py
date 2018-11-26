@@ -89,6 +89,6 @@ class NEAT:
 
             # Speciate the current generation
             self.species_set.speciate(population=self.population, generation=current_gen,
-                                      compatibility_threshold=self.config.compatability_threshold)
+                                      compatibility_threshold=self.config.compatibility_threshold)
 
         return self.best_all_time_genome

@@ -7,6 +7,7 @@ class Config:
     excess_coefficient = 1
     disjoint_coefficient = 1
     matching_genes_coefficient = 0.4
+    compatibility_threshold = 3
 
     """
     Mutation

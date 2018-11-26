@@ -115,6 +115,13 @@ class SpeciesSet:
                 new_members[species_id] = [genome_id]
 
     def save_species_info(self, new_representatives, generation, new_members, population):
+        """
+        saves the species to a species object and then within the species set instance
+        :param new_representatives: The representatives for the new species
+        :param generation: Which generation number it is
+        :param new_members: The members for each species
+        :param population: A dict of (key: genome instance)
+        """
         # For each genome_id keeps track of which species_id it belongs to
         self.genome_species = {}
 
