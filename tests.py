@@ -457,6 +457,19 @@ class TestGenomeMutatation(unittest.TestCase):
         Can't let two source nodes connect to each other
         :return:
         """
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='output', bias=0)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1),
+                           ConnectionGene(input_node=2, output_node=3, innovation_number=2)]
+
+        for i in range(100):
+            genome = Genome(connections=connection_list, nodes=node_list, key=1)
+            reproduce = Reproduce(config=Config, stagnation=Stagnation)
+            reproduce.global_innovation_number = 7
+            genome.add_connection(reproduction_instance=reproduce, innovation_tracker={})
+            self.assertTrue(len(genome.connections) == 2)
 
     def test_add_connection(self):
         reproduce = Reproduce(config=Config, stagnation=Stagnation)

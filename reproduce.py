@@ -4,6 +4,7 @@ from species import SpeciesSet
 import random
 import numpy as np
 import math
+import copy
 
 
 class Reproduce:
@@ -187,8 +188,6 @@ class Reproduce:
         :return:
         """
         new_population = {}
-        # This dict will maintain which new connections have been added this generation as well as their innovation
-        # number: (1(input),3(output)): 9
 
         for species_size, species in zip(adjusted_species_sizes, remaining_species):
             species_size = max(species_size, self.config.num_best_genome_carry_over)
@@ -232,17 +231,19 @@ class Reproduce:
                 species_size -= 1
 
                 # TODO: Can a genome mate with itself?
-                parent_1 = random.choice(old_species_members)
-                parent_2 = random.choice(old_species_members)
+                # Has to be a deep copy otherwise the connections which are crossed over are also modified if mutation
+                # occurs on the child.
+                parent_1 = copy.deepcopy(random.choice(old_species_members))
+                parent_2 = copy.deepcopy(random.choice(old_species_members))
 
                 self.genome_indexer += 1
                 genome_id = self.genome_indexer
 
                 child = Genome(key=genome_id)
                 # Create the genome from the parents
+                # TODO: Add the percentage chance to make this happen
                 child.crossover(genome_1=parent_1, genome_2=parent_2)
 
-                # Increment the global innovation number since a mutation will occur
                 child.mutate(reproduction_instance=self,
                              innovation_tracker=self.innovation_tracker, config=self.config)
 
@@ -273,6 +274,6 @@ class Reproduce:
 
         # Keeps track of the new population (key, object)
         new_population = self.get_new_population(adjusted_species_sizes=adjusted_species_sizes, species_set=species_set,
-                                                 remaining_species=remaining_species)
+                                                 remaining_species=remaining_species, generation=generation)
 
         return new_population

@@ -56,4 +56,4 @@ class Config:
     Survival
     """
     # Percentage of the population which carries on un-changed(?)
-    survival_threshold = 0.2
+    survival_threshold = 0.1

@@ -39,6 +39,10 @@ class DeconstructGenome:
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
 
+        # The last layer should only contain the output node
+        if len(layer_nodes[max(layer_nodes)]) != 1:
+            raise Exception('Invalid genome has been unpacked')
+
         # Saves all the variables being returned from the function
         return_dict = {}
         return_dict['connection_matrices'] = connection_matrices
@@ -63,7 +67,7 @@ class DeconstructGenome:
         :return: Sorted connections list
         """
 
-        sorted_list = list()
+        sorted_list = []
         added_to_list = set()
 
         # First we add the input connections
@@ -93,7 +97,10 @@ class DeconstructGenome:
                     sorted_list.append(connection)
                     added_to_list.add(connection)
 
-        return list(sorted_list)
+        if not sorted_list:
+            raise Exception('There are no connections specified for this genome')
+
+        return sorted_list
 
     @classmethod
     def get_node_layers(cls, connections, nodes):

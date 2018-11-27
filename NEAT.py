@@ -80,9 +80,12 @@ class NEAT:
             if self.best_all_time_genome.fitness > self.fitness_threshold:
                 break
 
+
             # Reproduce and get the next generation
             self.population = self.reproduction.reproduce(species_set=self.species_set,
                                                           population_size=len(self.population), generation=current_gen)
+
+
 
             # Check if there are any species, if not raise an exception. TODO: Let user reset population if extinction
             if not self.species_set.species:

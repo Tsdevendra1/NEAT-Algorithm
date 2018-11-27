@@ -86,6 +86,17 @@ class Genome:
         for node in nodes:
             self.nodes[node.node_id] = node
 
+    def check_connection_enabled_amount(self, generation=None, parent_1=None, parent_2=None):
+        """
+        Checks how many enabled connections there are
+        """
+        num_enabled = 0
+        for connection in self.connections.values():
+            if connection.enabled:
+                num_enabled += 1
+
+        return num_enabled
+
     def crossover(self, genome_1, genome_2):
         """
         :param genome_1:
@@ -94,8 +105,6 @@ class Genome:
         """
         assert isinstance(genome_1.fitness, (int, float))
         assert isinstance(genome_2.fitness, (int, float))
-        # They should never be EXACTLY the same. But if this ever gets triggered you should write the crossover case for
-        # it
 
         if genome_1.fitness > genome_2.fitness:
             fittest_parent, second_parent = genome_1, genome_2
@@ -132,6 +141,10 @@ class Genome:
                 node_genes = [fittest_node, second_node]
                 inherited_node_gene = random.choice(node_genes)
                 self.nodes[inherited_node_gene.node_id] = inherited_node_gene
+
+        for genome in [genome_1, genome_2]:
+            if not genome.check_connection_enabled_amount():
+                raise Exception
 
         # Unpack the genome after we have configured it
         self.unpack_genome()
@@ -187,6 +200,10 @@ class Genome:
         for combination in possible_combinations:
             input_node = combination[0]
             output_node = combination[1]
+
+            # Skip the loop if it's connecting two source nodes
+            if self.nodes[input_node].node_type == 'source' and self.nodes[output_node].node_type == 'source':
+                continue
 
             input_node_type = self.nodes[input_node].node_type
 
@@ -408,7 +425,13 @@ class Genome:
         new_node = NodeGene(node_id=(max(self.nodes.keys()) + 1), node_type='hidden', bias=np.random.randn())
 
         # The connection where the node will be added
-        connection_to_add_node = random.choice(list(self.connections.values()))
+        connections_list = list(self.connections.values())
+        # Remove any connections which aren't enabled as a candidate where a node can be added
+        for connection in connections_list:
+            if not connection.enabled:
+                connections_list.remove(connection)
+
+        connection_to_add_node = random.choice(connections_list)
         # Disable the connection since it will be replaced
         connection_to_add_node.enabled = False
 
