@@ -50,14 +50,19 @@ class Reproduce:
 
         # Create a population of size population_size
         for index in range(population_size):
+            # Deep copies otherwise changing the connection weight change's it for every genome that has the same
+            # reference to the class
+            deep_copy_connections = copy.deepcopy(connection_list)
+            deep_copy_nodes = copy.deepcopy(node_list)
             # Set all the connections to a random weight for each genome
-            for connection in connection_list:
+            for connection in deep_copy_connections:
                 connection.weight = np.random.randn()
             # Increment since the index value has been assigned
             self.genome_indexer += 1
 
             # Create the genome
-            population[index] = Genome(connections=connection_list, nodes=node_list, key=self.genome_indexer)
+            population[index] = Genome(connections=deep_copy_connections, nodes=deep_copy_nodes,
+                                       key=self.genome_indexer)
 
         return population
 
@@ -98,7 +103,7 @@ class Reproduce:
             # elif difference < 0:
             #     adjusted_size -= 1
 
-            adjusted_species_sizes.append(species_size)
+            adjusted_species_sizes.append(round(species_size))
 
         # There may not be the exact number of population size due to floating point precision. So instead we give this
         # extra to the best species
@@ -206,7 +211,7 @@ class Reproduce:
 
             # Double check that it is descending
             if len(old_species_members) > 1:
-                assert (old_species_members[0].fitness > old_species_members[1].fitness)
+                assert (old_species_members[0].fitness >= old_species_members[1].fitness)
 
             # If we have specified a number of genomes to carry over, carry them over to the new population
             if self.config.num_best_genome_carry_over > 0:
@@ -241,7 +246,6 @@ class Reproduce:
 
                 child = Genome(key=genome_id)
                 # Create the genome from the parents
-                # TODO: Add the percentage chance to make this happen
                 child.crossover(genome_1=parent_1, genome_2=parent_2)
 
                 child.mutate(reproduction_instance=self,
@@ -274,6 +278,6 @@ class Reproduce:
 
         # Keeps track of the new population (key, object)
         new_population = self.get_new_population(adjusted_species_sizes=adjusted_species_sizes, species_set=species_set,
-                                                 remaining_species=remaining_species, generation=generation)
+                                                 remaining_species=remaining_species)
 
         return new_population

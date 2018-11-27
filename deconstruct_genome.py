@@ -24,7 +24,7 @@ class DeconstructGenome:
         # Keeps track of number of nodes for each layer
         nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
         # Keeps track of which number node each node is in their respective layer
-        node_map = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes)
+        node_map = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes, nodes=nodes)
         added_nodes, added_connections, last_dummy_related_to_connection = cls.find_ghost_nodes(
             nodes_per_layer=nodes_per_layer, node_layers=node_layers,
             node_map=node_map, connections=connections,
@@ -110,23 +110,32 @@ class DeconstructGenome:
         :return: node_layers: A dictionary containing which layer each node is on, layer_nodes: A dictionary containing
                 a list for each layer of what nodes are in that layer
         """
-        num_nodes = len(nodes)
+
+        active_nodes = set()
+
+        for connection in connections:
+            if connection.enabled:
+                if connection.input_node not in active_nodes:
+                    active_nodes.add(connection.input_node)
+                if connection.output_node not in active_nodes:
+                    active_nodes.add(connection.output_node)
 
         # Keeps track of which node is in which layer. (Have to add one because of python indexing starting at 0)
-        node_layers = {key: 0 for key in list(nodes.keys())}
+        node_layers = {key: 0 for key in list(active_nodes)}
         # Will be used to keep track of progress of finding which node is in which layer
-        old_layers = {key: -1 for key in list(nodes.keys())}
+        old_layers = {key: -1 for key in list(active_nodes)}
 
         # Until there is no change between our last guess and the next one
         while old_layers != node_layers:
             old_layers = node_layers
             for connection in connections:
-                # Update the index of the input node to the max between 1 or the current value at the index
-                node_layers[connection.input_node] = max(1, node_layers[connection.input_node])
-                # Update the index of the output node between what the input layer is +1 or the current value of the
-                # output node
-                node_layers[connection.output_node] = max(node_layers[connection.output_node],
-                                                          (node_layers[connection.input_node] + 1))
+                if connection.enabled:
+                    # Update the index of the input node to the max between 1 or the current value at the index
+                    node_layers[connection.input_node] = max(1, node_layers[connection.input_node])
+                    # Update the index of the output node between what the input layer is +1 or the current value of the
+                    # output node
+                    node_layers[connection.output_node] = max(node_layers[connection.output_node],
+                                                              (node_layers[connection.input_node] + 1))
 
         layer_nodes = {key: [] for key in node_layers.values()}
         for node_id, layer in node_layers.items():
@@ -135,8 +144,38 @@ class DeconstructGenome:
         return node_layers, layer_nodes
 
     @classmethod
-    def get_node_map(cls, num_layers, layer_nodes):
+    def get_non_connected_source_node_positions(cls, nodes, node_map):
         """
+        Gives a position to source nodes which don't have any connections
+        :param nodes: A dictionary (node_id, node_gene)
+        :param node_map: Keeps track of what position each node is within it's respective layer
+        """
+        # Get all the source nodes
+        source_nodes = []
+        for node in nodes.values():
+            if node.node_type == 'source':
+                source_nodes.append(node.node_id)
+
+        # Find the max position for source nodes
+        not_in_map = []
+        max_in_layer_position = None
+        for source_node in source_nodes:
+            if source_node in node_map:
+                # Find the max position for the source nodes in that source node layer
+                if max_in_layer_position is None or node_map[source_node] > max_in_layer_position:
+                    max_in_layer_position = node_map[source_node]
+            else:
+                not_in_map.append(source_node)
+
+        # Give all the source nodes not in the map a position value
+        for node in not_in_map:
+            max_in_layer_position += 1
+            node_map[node] = max_in_layer_position
+
+    @classmethod
+    def get_node_map(cls, num_layers, layer_nodes, nodes):
+        """
+        :param nodes: All the nodes in the genome
         :param num_layers: Number of layers for the genome
         :param layer_nodes: A dictionary with a list of nodes for each layer
         :return: A dictionary containing for each node_id which number node they are in their respective layer
@@ -148,6 +187,10 @@ class DeconstructGenome:
             for node_id in layer_nodes[layer]:
                 node_map[node_id] = counter
                 counter += 1
+
+        # Get the position for source nodes which aren't connected to anything
+        cls.get_non_connected_source_node_positions(nodes=nodes, node_map=node_map)
+
         return node_map
 
     @classmethod

@@ -63,18 +63,23 @@ class GenomeNeuralNetwork:
 
         # So far there have only been two implementations for the activation type
         assert (activation_type in ('relu', 'sigmoid'))
-        
+
         # Set the activation functions for each layer
         self.initialise_activation_functions(activation_type=activation_type)
 
         self.initialise_parameters(have_bias=True,
                                    create_weight_bias_matrix_from_genome=create_weights_bias_from_genome)
 
+        self.modify_x_data_for_sources()
+
         # This is to check that there is an activation function specified for each layer
         assert (len(self.connection_matrices_per_layer) == len(self.activation_function_dict))
 
         # The activation function for the last layer should be a sigmoid due to how the gradients were calculated
         assert (self.activation_function_dict[len(self.connection_matrices_per_layer)] == ActivationFunctions.sigmoid)
+
+        if self.x_train.shape[1] != self.weights_dict[1].shape[0]:
+            raise Exception('The training data has not been correctly modified to fit the connections')
 
         if show_connections:
             for key, value in self.layer_connections_dict.items():
@@ -134,7 +139,7 @@ class GenomeNeuralNetwork:
                     if self.updated_nodes[connection.output_node].bias is None:
                         raise ValueError('The node doesnt have a bias value, please set one in the nodes list')
 
-                    # Get their relative position inside their respective layer
+                    # Get their relative position inside their respective layer. Minus one for python indexing
                     input_node_position = self.node_map[connection.input_node] - 1
                     output_node_position = self.node_map[connection.output_node] - 1
                     self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
@@ -291,6 +296,38 @@ class GenomeNeuralNetwork:
 
         return epoch_list, cost_list
 
+    def modify_x_data_for_sources(self):
+        """
+        Since not every genome will have a connection for all the source nodes, we must account for this in the
+        training data by removing features if there isn't a connection to it.
+        """
+
+        not_connection_sources = set()
+        source_nodes = {}
+
+        # Find the source nodes in the genome
+        for node in self.genome.nodes.values():
+            if node.node_type == 'source':
+                if node not in source_nodes:
+                    source_nodes[node.node_id] = 0
+
+        # Check how many connections there are for each source node
+        for connection in self.genome.connections.values():
+            if connection.enabled:
+                if connection.input_node in source_nodes:
+                    source_nodes[connection.input_node] += 1
+
+        # Filter the one's which don't have any connections
+        for node_id, connections_amount in source_nodes.items():
+            if connections_amount == 0:
+                not_connection_sources.add(node_id)
+
+        for node in not_connection_sources:
+            # Get the position of the node inside it's own layer. Minus 1 for python indexing
+            node_position = self.node_map[node] - 1
+            # Delete the corresponding column
+            self.x_train = np.delete(self.x_train, 0, node_position)
+
 
 def main():
     node_list = [NodeGene(node_id=1, node_type='source'),
@@ -312,11 +349,13 @@ def main():
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
 
+
+
     genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train, learning_rate=0.1,
                                     create_weights_bias_from_genome=False, activation_type='sigmoid',
                                     show_connections=True)
 
-    optimise = True
+    optimise = False
 
     if optimise:
         epochs, cost = genome_nn.optimise(error_stop=0.09)

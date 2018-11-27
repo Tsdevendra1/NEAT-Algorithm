@@ -45,10 +45,60 @@ class Genome:
 
             self.unpack_genome()
 
+    def check_any_disabled_connections_in_path(self):
+        """
+        For a given path, if one of the connection genes is disabled, it will disable all the connection genes for that path
+        :return:
+        """
+        connections_by_tuple = {}
+        for connection in self.connections.values():
+            connections_by_tuple[(connection.input_node, connection.output_node)] = connection
+
+        # TODO: Write a test for this where if one connection is not enabled but another path utilises hthe rest of the patch
+        # TODO: Keep track of the number of enabled and disabled?
+        _, all_paths = self.check_num_paths(return_paths=True)
+        connection_gene_enabled_tracker = {}
+        for node_paths in all_paths:
+            for path in node_paths:
+                any_disabled = False
+                connection_gene_list = []
+                for index in range(len(path) - 1):
+                    connection_gene = connections_by_tuple[(path[index], path[index + 1])]
+                    connection_gene_list.append(connection_gene)
+                    if not connection_gene.enabled:
+                        any_disabled = True
+
+                for connection in connection_gene_list:
+                    if connection not in connection_gene_enabled_tracker:
+                        if any_disabled:
+                            connection_gene_enabled_tracker[connection] = [False]
+                        else:
+                            connection_gene_enabled_tracker[connection] = [True]
+                    else:
+                        if any_disabled:
+                            connection_gene_enabled_tracker[connection].append(False)
+                        else:
+                            connection_gene_enabled_tracker[connection].append(True)
+
+        for connection, true_false_list in connection_gene_enabled_tracker.items():
+            num_true = 0
+            for boolean in true_false_list:
+                if boolean:
+                    num_true += 1
+                    break
+            if num_true == 0:
+                connection.enabled = False
+
+
+
+
     def unpack_genome(self):
         """
         Deconstructs the genome into a structure that can be used for the neural network it represents
         """
+
+        self.check_any_disabled_connections_in_path()
+
         # Unpack the genome and get the returning dictionary
         return_dict = DeconstructGenome.unpack_genome(genome=self)
 
@@ -63,6 +113,11 @@ class Genome:
         self.layer_nodes = return_dict['layer_nodes']
         self.num_layers_including_input = max(self.layer_nodes)
         self.last_dummy_related_to_connection = return_dict['last_dummy_related_to_connection']
+
+        # Check that there are valid paths for the neural network
+        num_source_to_output_paths = self.check_num_paths()
+        if num_source_to_output_paths == 0:
+            raise Exception('There is no valid path from any source to the output')
 
         # The last layer should only contain the output node
         if len(self.layer_nodes[self.num_layers_including_input]) != 1:
@@ -144,7 +199,10 @@ class Genome:
 
         for genome in [genome_1, genome_2]:
             if not genome.check_connection_enabled_amount():
-                raise Exception
+                raise Exception('One or both of the parents in crossover doesnt have valid connections')
+
+        if not self.check_connection_enabled_amount():
+            raise Exception('There are no valid connections for this genome')
 
         # Unpack the genome after we have configured it
         self.unpack_genome()
@@ -349,7 +407,7 @@ class Genome:
 
         return choice_list
 
-    def check_num_paths(self):
+    def check_num_paths(self, return_paths=False):
         graph = Graph()
         source_nodes = []
         output_nodes = []
@@ -372,10 +430,21 @@ class Genome:
 
         # Keeps track of how many paths there are from the source to the input's
         num_source_to_output_paths = 0
+        all_paths = []
         for node in source_nodes:
-            num_source_to_output_paths += graph.count_paths(start_node=node.node_id, end_node=output_nodes[0].node_id)
+            if return_paths:
+                path_amount, paths = graph.count_paths(start_node=node.node_id, end_node=output_nodes[0].node_id,
+                                                       return_paths=True)
+                num_source_to_output_paths += path_amount
+                all_paths.append(paths)
+            else:
+                num_source_to_output_paths += graph.count_paths(start_node=node.node_id,
+                                                                end_node=output_nodes[0].node_id)
 
-        return num_source_to_output_paths
+        if return_paths:
+            return num_source_to_output_paths, all_paths
+        else:
+            return num_source_to_output_paths
 
     def remove_connection(self):
         """
@@ -518,9 +587,14 @@ class Genome:
                 for connection in connections_to_delete:
                     del self.connections[connection.innovation_number]
 
+        num_enabled_after = self.check_connection_enabled_amount()
+        if num_enabled_after == 0:
+            raise Exception('You have removed all the connections due to a node removal')
+
     def compute_compatibility_distance(self, other_genome, config):
         """
         Calculates the compabitility distance between two genomes
+        :param config: Contains parameters
         :param other_genome: The other genome being compared with
         :param excess_coefficient:
         :param disjoint_coefficient:

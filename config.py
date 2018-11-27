@@ -1,4 +1,9 @@
 class Config:
+    """
+    Population
+    """
+    population_size = 150
+
     # TODO: Ensure each of these are used somewhere in the code
     """
     Compatibility distance
@@ -19,7 +24,7 @@ class Config:
     weight_random_mutation_chance = 0.1
     # A range to choose from for the weight pertubation amount
     weight_range_low = 0.1
-    weight_range_high = 0.8
+    weight_range_high = 1.0
 
     # This is the chance a gene is disabled if it was disabled in either parent
     chance_to_disable = 0.75
@@ -50,10 +55,11 @@ class Config:
     # Minimum species size
     min_species_size = 2
     # How may of the best performing genomes are carried over for each species
-    num_best_genome_carry_over = 2
+    num_best_genome_carry_over = round(chance_for_mutation_without_crossover * population_size)
 
     """
     Survival
     """
     # Percentage of the population which carries on un-changed(?)
     survival_threshold = 0.1
+

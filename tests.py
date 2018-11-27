@@ -372,6 +372,23 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_creation_genome_nn(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=0.5),
+                     NodeGene(node_id=3, node_type='hidden', bias=1.2)]
+
+        connection_list = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=True, weight=9),
+                           ConnectionGene(input_node=1, output_node=2, innovation_number=6, enabled=False, weight=5),
+                           ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=False, weight=5),
+                           ConnectionGene(input_node=3, output_node=2, innovation_number=7, enabled=True, weight=7)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data = np.array([[1, 0]])
+        y_data = np.array([[1]])
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                        x_train=x_data, y_train=y_data)
+
     def test_update_gene(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
                      NodeGene(node_id=2, node_type='source'),
@@ -659,6 +676,61 @@ class TestGenomeMutatation(unittest.TestCase):
         self.assertTrue(compatibility_distance_1 == compatibility_distance_2)
         self.assertEqual(compatibility_distance_3, 5)
         self.assertEqual(compatibility_distance_3, compatibility_distance_4)
+
+
+class TestNEATClass(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_genome_forward_pass_after_connection_removed(self):
+        """
+        Test that when there isn't a connection to the source, we delete that column in the x_data
+        :return:
+        """
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='output', bias=0)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=3, innovation_number=1, weight=np.random.randn())]
+
+        x_data, y_data = create_data(n_generated=5000)
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=2)
+
+        genome_nn = GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data, learning_rate=0.1,
+                                        create_weights_bias_from_genome=True, activation_type='relu')
+
+        # Because we deleted one column due to there not being a connection to the second source
+        self.assertTrue(genome_nn.x_train.shape[1] == 1)
+
+        cost = genome_nn.run_one_pass(input_data=genome_nn.x_train, labels=y_data, return_cost_only=True)
+
+        self.assertTrue(cost)
+
+
+class TestConnectionDisabled(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_connection_disabled_along_path(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='hidden'),
+                     NodeGene(node_id=3, node_type='output', bias=0)]
+
+        connection_list = [
+            ConnectionGene(input_node=1, output_node=5, innovation_number=1, weight=np.random.randn(), enabled=False),
+            ConnectionGene(input_node=2, output_node=4, innovation_number=4, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=5, output_node=4, innovation_number=3, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=4, output_node=3, innovation_number=2, weight=np.random.randn(), enabled=True)]
+        self.assertTrue(connection_list[2].enabled is True)
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        # See check_any_disabled_connections_in_path which should set it to false since one of the connections in it's
+        # path is disabled
+        self.assertTrue(connection_list[2].enabled is False)
 
 
 if __name__ == '__main__':
