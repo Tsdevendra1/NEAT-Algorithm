@@ -54,9 +54,7 @@ class Genome:
         for connection in self.connections.values():
             connections_by_tuple[(connection.input_node, connection.output_node)] = connection
 
-        # TODO: Write a test for this where if one connection is not enabled but another path utilises hthe rest of the patch
-        # TODO: Keep track of the number of enabled and disabled?
-        _, all_paths = self.check_num_paths(return_paths=True)
+        _, all_paths = self.check_num_paths(only_add_enabled_connections=False, return_paths=True)
         connection_gene_enabled_tracker = {}
         for node_paths in all_paths:
             for path in node_paths:
@@ -88,19 +86,22 @@ class Genome:
                     break
             if num_true == 0:
                 connection.enabled = False
-
-
-
+        return all_paths
 
     def unpack_genome(self):
         """
         Deconstructs the genome into a structure that can be used for the neural network it represents
         """
 
-        self.check_any_disabled_connections_in_path()
+        all_paths = self.check_any_disabled_connections_in_path()
+
+        # Check that there are valid paths for the neural network
+        num_source_to_output_paths = self.check_num_paths(only_add_enabled_connections=True)
+        if num_source_to_output_paths == 0:
+            raise Exception('There is no valid path from any source to the output')
 
         # Unpack the genome and get the returning dictionary
-        return_dict = DeconstructGenome.unpack_genome(genome=self)
+        return_dict = DeconstructGenome.unpack_genome(genome=self, all_paths=all_paths)
 
         self.connection_matrices_per_layer = return_dict['connection_matrices']
         self.no_activations_matrix_per_layer = return_dict['bias_matrices']
@@ -113,11 +114,6 @@ class Genome:
         self.layer_nodes = return_dict['layer_nodes']
         self.num_layers_including_input = max(self.layer_nodes)
         self.last_dummy_related_to_connection = return_dict['last_dummy_related_to_connection']
-
-        # Check that there are valid paths for the neural network
-        num_source_to_output_paths = self.check_num_paths()
-        if num_source_to_output_paths == 0:
-            raise Exception('There is no valid path from any source to the output')
 
         # The last layer should only contain the output node
         if len(self.layer_nodes[self.num_layers_including_input]) != 1:
@@ -265,7 +261,10 @@ class Genome:
 
             input_node_type = self.nodes[input_node].node_type
 
-            input_node_layer = self.node_layers[input_node]
+            try:
+                input_node_layer = self.node_layers[input_node]
+            except KeyError:
+                raise Exception
             output_node_layer = self.node_layers[output_node]
 
             # As long as the node type isn't a source then the connecting node can be on the same layer or greater
@@ -276,6 +275,18 @@ class Genome:
                 cleaned_combinations.append(combination)
 
         return cleaned_combinations
+
+    def get_activate_nodes(self):
+        """
+        :return: A list of nodes which are attached to active connections. Otherwise we assume the node is switched off
+        """
+        active_nodes = set()
+        for connection in self.connections.values():
+            if connection.enabled:
+                active_nodes.add(connection.input_node)
+                active_nodes.add(connection.output_node)
+
+        return list(active_nodes)
 
     def add_connection(self, reproduction_instance, innovation_tracker):
         """
@@ -293,7 +304,7 @@ class Genome:
             if node.node_type != 'output':
                 viable_start_nodes.append(node_id)
 
-        possible_combinations = itertools.combinations(list(self.nodes.keys()), 2)
+        possible_combinations = itertools.combinations(self.get_activate_nodes(), 2)
         cleaned_possible_combinations = self.clean_combinations(possible_combinations=possible_combinations)
 
         # Get all the existing combinations
@@ -407,19 +418,29 @@ class Genome:
 
         return choice_list
 
-    def check_num_paths(self, return_paths=False):
+    def check_num_paths(self, only_add_enabled_connections, return_paths=False):
         graph = Graph()
         source_nodes = []
         output_nodes = []
         # Add the connections to the graph
         for connection in self.connections.values():
-            graph.add_edge(start_node=connection.input_node, end_node=connection.output_node)
-            input_node = self.nodes[connection.input_node]
-            output_node = self.nodes[connection.output_node]
-            if input_node.node_type == 'source':
-                source_nodes.append(input_node)
-            if output_node.node_type == 'output':
-                output_nodes.append(output_node)
+            if only_add_enabled_connections:
+                if connection.enabled:
+                    graph.add_edge(start_node=connection.input_node, end_node=connection.output_node)
+                    input_node = self.nodes[connection.input_node]
+                    output_node = self.nodes[connection.output_node]
+                    if input_node.node_type == 'source':
+                        source_nodes.append(input_node)
+                    if output_node.node_type == 'output':
+                        output_nodes.append(output_node)
+            else:
+                graph.add_edge(start_node=connection.input_node, end_node=connection.output_node)
+                input_node = self.nodes[connection.input_node]
+                output_node = self.nodes[connection.output_node]
+                if input_node.node_type == 'source':
+                    source_nodes.append(input_node)
+                if output_node.node_type == 'output':
+                    output_nodes.append(output_node)
 
         # Only keep the unique nodes to there are no duplicates in the list
         source_nodes = list(set(source_nodes))
@@ -451,7 +472,7 @@ class Genome:
         Removes a random existing connection form the genome
         """
 
-        num_source_to_output_paths = self.check_num_paths()
+        num_source_to_output_paths = self.check_num_paths(only_add_enabled_connections=True)
 
         # If there is only one path from the source to the output we shouldn't delete any of the connections since
         # it would make it an invalid network
@@ -545,7 +566,7 @@ class Genome:
         return first_new_connection, second_new_connection
 
     def remove_node(self):
-        num_source_to_output_paths = self.check_num_paths()
+        num_source_to_output_paths = self.check_num_paths(only_add_enabled_connections=True)
 
         # Otherwise if you delete a node and it only has one path, you make it an invalid network as there is not path
         # from the source to the output

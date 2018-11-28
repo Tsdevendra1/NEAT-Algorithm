@@ -54,12 +54,10 @@ class Config:
     """
     # Minimum species size
     min_species_size = 2
-    # How may of the best performing genomes are carried over for each species
-    num_best_genome_carry_over = round(chance_for_mutation_without_crossover * population_size)
 
     """
     Survival
     """
     # Percentage of the population which carries on un-changed(?)
-    survival_threshold = 0.1
+    survival_threshold = 0.2
 

@@ -74,7 +74,7 @@ class Reproduce:
         :param adjusted_species_fitnesses:
         :param previous_species_sizes:
         :param population_size:
-        :param min_species_size:
+        :param min_species_sizes:
         :return:
         """
         adjusted_fitness_sum = sum(adjusted_species_fitnesses)
@@ -111,7 +111,8 @@ class Reproduce:
             max_fitness_index = adjusted_species_fitnesses.index(max(adjusted_species_fitnesses))
             adjusted_species_sizes[max_fitness_index] += 1
 
-        assert (sum(adjusted_species_sizes) == population_size)
+        if sum(adjusted_species_sizes) != population_size:
+            raise Exception('The population size is larger than configured')
 
         return adjusted_species_sizes
 
@@ -173,12 +174,8 @@ class Reproduce:
         # Get a list of the amount of members in each of the remaining species
         previous_species_sizes = [len(species.members) for species in remaining_species]
 
-        # The min species size is the maximum of either the minimum set species size of the number of the best genomes
-        # are required to be carried over
-        min_species_size = max(self.config.min_species_size, self.config.num_best_genome_carry_over)
-
         adjusted_species_sizes = self.compute_adjusted_species_sizes(
-            adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=min_species_size,
+            adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=self.config.min_species_size,
             previous_species_sizes=previous_species_sizes, population_size=population_size)
 
         return adjusted_species_sizes
@@ -195,7 +192,6 @@ class Reproduce:
         new_population = {}
 
         for species_size, species in zip(adjusted_species_sizes, remaining_species):
-            species_size = max(species_size, self.config.num_best_genome_carry_over)
 
             assert (species_size > 0)
 
@@ -214,8 +210,9 @@ class Reproduce:
                 assert (old_species_members[0].fitness >= old_species_members[1].fitness)
 
             # If we have specified a number of genomes to carry over, carry them over to the new population
-            if self.config.num_best_genome_carry_over > 0:
-                for member in old_species_members[:self.config.num_best_genome_carry_over]:
+            num_genomes_without_crossover = int(round(species_size * self.config.chance_for_mutation_without_crossover))
+            if num_genomes_without_crossover > 0:
+                for member in old_species_members[:num_genomes_without_crossover]:
                     new_population[member.key] = member
                     species_size -= 1
 
@@ -231,15 +228,24 @@ class Reproduce:
             reproduction_cutoff = max(reproduction_cutoff, 2)
             old_species_members = old_species_members[:reproduction_cutoff]
 
+            assert (len(old_species_members) > 1)
+
             # Randomly choose parents and choose whilst there can still be additional genomes for the given species
             while species_size > 0:
                 species_size -= 1
 
-                # TODO: Can a genome mate with itself?
+                parent_1 = None
+                parent_2 = None
+
+                # Ensure you never mate the same genome with itself
+                while parent_1 == parent_2:
+                    parent_1 = random.choice(old_species_members)
+                    parent_2 = random.choice(old_species_members)
+
                 # Has to be a deep copy otherwise the connections which are crossed over are also modified if mutation
                 # occurs on the child.
-                parent_1 = copy.deepcopy(random.choice(old_species_members))
-                parent_2 = copy.deepcopy(random.choice(old_species_members))
+                parent_1 = copy.deepcopy(parent_1)
+                parent_2 = copy.deepcopy(parent_2)
 
                 self.genome_indexer += 1
                 genome_id = self.genome_indexer

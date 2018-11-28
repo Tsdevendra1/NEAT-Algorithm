@@ -8,7 +8,7 @@ import numpy as np
 class DeconstructGenome:
 
     @classmethod
-    def unpack_genome(cls, genome):
+    def unpack_genome(cls, genome, all_paths):
         """
         :param genome: The genome to be deconstructed
         :return: See GenomeNeuralNetwork class for details
@@ -16,7 +16,7 @@ class DeconstructGenome:
         # We use deep copies because we don't want to make changes to the genome itself
         nodes = copy.deepcopy(genome.nodes)
         connections = copy.deepcopy(list(genome.connections.values()))
-        connections = cls.sort_connections(connections, nodes=nodes)
+        connections = cls.sort_connections(connections, nodes=nodes, all_paths=all_paths)
 
         # Get's which node is on which layer
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, nodes=nodes)
@@ -39,10 +39,6 @@ class DeconstructGenome:
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
 
-        # The last layer should only contain the output node
-        if len(layer_nodes[max(layer_nodes)]) != 1:
-            raise Exception('Invalid genome has been unpacked')
-
         # Saves all the variables being returned from the function
         return_dict = {}
         return_dict['connection_matrices'] = connection_matrices
@@ -58,17 +54,42 @@ class DeconstructGenome:
         return return_dict
 
     @classmethod
-    def sort_connections(cls, connections, nodes):
+    def sort_connections(cls, connections, nodes, all_paths):
         """
         In order for the unpack genome method to work the connections list must be sorted such that the connections
         which connect to the output layer must always be last in the list
+        :param all_paths: A list of all the paths from the source nodes to the output nodes
         :param nodes: A dictionary of the nodes (node_id, node_gene)
         :param connections: The list of connection genes
         :return: Sorted connections list
         """
 
-        sorted_list = []
+        # sorted_list = []
         added_to_list = set()
+
+        connections_by_tuple = {}
+        for connection in connections:
+            connections_by_tuple[(connection.input_node, connection.output_node)] = connection
+
+        middle_node_connections = []
+        # For all the paths for a given source node
+        for source_node_paths in all_paths:
+            # For each path for a given source node
+            for path in source_node_paths:
+                # Go through the connections for the path
+                for index in range(len(path) - 1):
+                    input_node = path[index]
+                    output_node = path[index + 1]
+
+                    # The connections which have a source or output node will be collected later
+                    if nodes[input_node].node_type != 'source' and nodes[output_node].node_type != 'output':
+                        connection_tuple = (input_node, output_node)
+
+                        if connection_tuple not in added_to_list and connections_by_tuple[connection_tuple].enabled:
+                            middle_node_connections.append(connections_by_tuple[connection_tuple])
+                            added_to_list.add(connection_tuple)
+
+        source_node_connections = []
 
         # First we add the input connections
         for connection in connections:
@@ -76,17 +97,20 @@ class DeconstructGenome:
             if connection.enabled and connection not in added_to_list:
                 input_node_type = nodes[connection.input_node].node_type
                 if input_node_type == 'source':
-                    sorted_list.append(connection)
+                    source_node_connections.append(connection)
                     added_to_list.add(connection)
 
-        for connection in connections:
-            # check the connection is enabled and that we haven't already added it to the list
-            if connection.enabled and connection not in added_to_list:
-                input_node_type = nodes[connection.input_node].node_type
-                output_node_type = nodes[connection.output_node].node_type
-                if output_node_type != 'output' and input_node_type != 'source':
-                    sorted_list.append(connection)
-                    added_to_list.add(connection)
+        # #
+        # for connection in connections:
+        #     # check the connection is enabled and that we haven't already added it to the list
+        #     if connection.enabled and connection not in added_to_list:
+        #         input_node_type = nodes[connection.input_node].node_type
+        #         output_node_type = nodes[connection.output_node].node_type
+        #         if output_node_type != 'output' and input_node_type != 'source':
+        #             sorted_list.append(connection)
+        #             added_to_list.add(connection)
+
+        output_node_connections = []
 
         # Then we add the ones left (the ones linked to the output)
         for connection in connections:
@@ -94,8 +118,10 @@ class DeconstructGenome:
             if connection.enabled and connection not in added_to_list:
                 output_node_type = nodes[connection.output_node].node_type
                 if output_node_type == 'output':
-                    sorted_list.append(connection)
+                    output_node_connections.append(connection)
                     added_to_list.add(connection)
+
+        sorted_list = source_node_connections + middle_node_connections + output_node_connections
 
         if not sorted_list:
             raise Exception('There are no connections specified for this genome')
@@ -140,6 +166,10 @@ class DeconstructGenome:
         layer_nodes = {key: [] for key in node_layers.values()}
         for node_id, layer in node_layers.items():
             layer_nodes[layer].append(node_id)
+
+        # The last layer should only contain the output node
+        if len(layer_nodes[max(layer_nodes)]) != 1:
+            raise Exception('Invalid genome has been unpacked')
 
         return node_layers, layer_nodes
 

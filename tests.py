@@ -259,10 +259,9 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
     def test_unpack_genome(self):
         expected_answer = np.ones((2, 2))
-        answer = DeconstructGenome.unpack_genome(genome=self.genome)['connection_matrices']
 
         # check that the first layer weights are the correct ones
-        self.assertEqual(answer[1].tolist(), expected_answer.tolist())
+        self.assertEqual(self.genome.connection_matrices_per_layer[1].tolist(), expected_answer.tolist())
 
     def test_unpack_genome_broken_link(self):
         """
@@ -286,9 +285,11 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=2)
 
-        answer = DeconstructGenome.unpack_genome(genome=genome)['connection_matrices']
 
-        self.assertEqual(answer[1].tolist(), expected_answer.tolist())
+
+        self.assertEqual(genome.connection_matrices_per_layer[1].tolist(), expected_answer.tolist())
+
+
 
     def test_forward_prop(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
@@ -366,6 +367,24 @@ class TestGenomeUnpack(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
         self.assertTrue(genome)
+
+    def test_unpack_genome_4(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                     NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=5, node_type='hidden', bias=0.5),
+                     NodeGene(node_id=6, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=2, node_type='output', bias=1.5)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=4, innovation_number=1, enabled=True, weight=9),
+                           ConnectionGene(input_node=4, output_node=2, innovation_number=5, enabled=True, weight=3),
+                           ConnectionGene(input_node=0, output_node=5, innovation_number=2, enabled=True, weight=2),
+                           ConnectionGene(input_node=5, output_node=3, innovation_number=4, enabled=True, weight=4),
+                           ConnectionGene(input_node=3, output_node=4, innovation_number=3, enabled=True, weight=3),
+                           ConnectionGene(input_node=1, output_node=2, innovation_number=7, enabled=True, weight=7)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
 
 
 class TestGenomeNeuralNetwork(unittest.TestCase):
@@ -731,6 +750,36 @@ class TestConnectionDisabled(unittest.TestCase):
         # See check_any_disabled_connections_in_path which should set it to false since one of the connections in it's
         # path is disabled
         self.assertTrue(connection_list[2].enabled is False)
+
+    def test_check_num_paths(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='hidden'),
+                     NodeGene(node_id=3, node_type='output', bias=0)]
+
+        connection_list = [
+            ConnectionGene(input_node=1, output_node=5, innovation_number=1, weight=np.random.randn(), enabled=False),
+            ConnectionGene(input_node=2, output_node=4, innovation_number=4, weight=np.random.randn(), enabled=False),
+            ConnectionGene(input_node=5, output_node=4, innovation_number=3, weight=np.random.randn(), enabled=False),
+            ConnectionGene(input_node=4, output_node=3, innovation_number=2, weight=np.random.randn(), enabled=True)]
+
+        genome = Genome(key=1)
+        genome.configure_genes(connections=connection_list, nodes=node_list)
+        self.assertRaises(AssertionError, genome.unpack_genome)
+
+
+class TestGenomeReproduction(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_compute_adjusted_species_sizes(self):
+        adjusted_species_fitnesses = [-0.8673206530825687, -0.8270084870465362, -0.7681448674214546,
+                                      -0.7068577488259461]
+        previous_species_sizes = [1, 1, 80, 68]
+        population_size = 150
+        min_species_size = 38
 
 
 if __name__ == '__main__':

@@ -115,6 +115,8 @@ class NEAT:
             self.species_set.speciate(population=self.population, generation=current_gen,
                                       compatibility_threshold=self.config.compatibility_threshold)
 
+            print(self.best_all_time_genome.fitness)
+
         return self.best_all_time_genome
 
     def ensure_no_duplicate_genes(self):
