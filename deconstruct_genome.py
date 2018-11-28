@@ -24,7 +24,7 @@ class DeconstructGenome:
         # Keeps track of number of nodes for each layer
         nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
         # Keeps track of which number node each node is in their respective layer
-        node_map = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes, nodes=nodes)
+        node_map, source_nodes = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes, nodes=nodes)
         added_nodes, added_connections, last_dummy_related_to_connection = cls.find_ghost_nodes(
             nodes_per_layer=nodes_per_layer, node_layers=node_layers,
             node_map=node_map, connections=connections,
@@ -39,6 +39,13 @@ class DeconstructGenome:
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
 
+        output_node = None
+        for node in nodes.values():
+            if node.node_type == 'output':
+                output_node = node
+                break
+        cls.confirm_correct_configuration(output_node=output_node.node_id, source_nodes=source_nodes, layer_nodes=layer_nodes)
+
         # Saves all the variables being returned from the function
         return_dict = {}
         return_dict['connection_matrices'] = connection_matrices
@@ -52,6 +59,19 @@ class DeconstructGenome:
         return_dict['node_layers'] = node_layers
         return_dict['last_dummy_related_to_connection'] = last_dummy_related_to_connection
         return return_dict
+
+    @classmethod
+    def confirm_correct_configuration(cls, output_node, source_nodes, layer_nodes):
+        """
+        The source nodes should always be in the first layer and the output node should always be in the last layer
+        :param output_node: The output node
+        :param source_nodes: A list of the source_nodes
+        :param layer_nodes: A dict containing which nodes are in which layer
+        """
+        for node in source_nodes:
+            assert (node in layer_nodes[1])
+
+        assert (output_node in layer_nodes[max(layer_nodes)])
 
     @classmethod
     def sort_connections(cls, connections, nodes, all_paths):
@@ -187,20 +207,24 @@ class DeconstructGenome:
                 source_nodes.append(node.node_id)
 
         # Find the max position for source nodes
-        not_in_map = []
+        source_nodes_in_map = []
+        source_nodes_not_in_map = []
         max_in_layer_position = None
         for source_node in source_nodes:
             if source_node in node_map:
                 # Find the max position for the source nodes in that source node layer
                 if max_in_layer_position is None or node_map[source_node] > max_in_layer_position:
                     max_in_layer_position = node_map[source_node]
+                source_nodes_in_map.append(source_node)
             else:
-                not_in_map.append(source_node)
+                source_nodes_not_in_map.append(source_node)
 
         # Give all the source nodes not in the map a position value
-        for node in not_in_map:
+        for node in source_nodes_not_in_map:
             max_in_layer_position += 1
             node_map[node] = max_in_layer_position
+
+        return source_nodes_in_map
 
     @classmethod
     def get_node_map(cls, num_layers, layer_nodes, nodes):
@@ -219,9 +243,9 @@ class DeconstructGenome:
                 counter += 1
 
         # Get the position for source nodes which aren't connected to anything
-        cls.get_non_connected_source_node_positions(nodes=nodes, node_map=node_map)
+        source_nodes = cls.get_non_connected_source_node_positions(nodes=nodes, node_map=node_map)
 
-        return node_map
+        return node_map, source_nodes
 
     @classmethod
     def find_ghost_nodes(cls, nodes_per_layer, node_layers, node_map, connections, layer_nodes):

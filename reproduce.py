@@ -213,34 +213,40 @@ class Reproduce:
             num_genomes_without_crossover = int(round(species_size * self.config.chance_for_mutation_without_crossover))
             if num_genomes_without_crossover > 0:
                 for member in old_species_members[:num_genomes_without_crossover]:
+                    child = copy.deepcopy(member)
+
+                    child.mutate(reproduction_instance=self,
+                                 innovation_tracker=self.innovation_tracker, config=self.config)
+
+                    new_population[child.key] = child
+                    self.ancestors[child.key] = ()
                     new_population[member.key] = member
                     species_size -= 1
+                    assert (species_size >= 0)
+
+            if species_size == 0:
+                random_test = []
 
             # If there are no more genomes for the current species, then restart the loop for the next species
             if species_size <= 0:
                 continue
 
             # Only use the survival threshold fraction to use as parents for the next generation.
-            reproduction_cutoff = int(math.ceil(self.config.survival_threshold *
+            reproduction_cutoff = int(math.ceil((1 - self.config.chance_for_mutation_without_crossover) *
                                                 len(old_species_members)))
 
             # Need at least two parents no matter what the previous result
             reproduction_cutoff = max(reproduction_cutoff, 2)
             old_species_members = old_species_members[:reproduction_cutoff]
 
-            assert (len(old_species_members) > 1)
-
             # Randomly choose parents and choose whilst there can still be additional genomes for the given species
             while species_size > 0:
                 species_size -= 1
 
-                parent_1 = None
-                parent_2 = None
-
-                # Ensure you never mate the same genome with itself
-                while parent_1 == parent_2:
-                    parent_1 = random.choice(old_species_members)
-                    parent_2 = random.choice(old_species_members)
+                # TODO: If you don't allow them to mate with themselves then it's a problem because if the species previous
+                # TODO: size is 1, then how can you do with or without crossover?
+                parent_1 = copy.deepcopy(random.choice(old_species_members))
+                parent_2 = copy.deepcopy(random.choice(old_species_members))
 
                 # Has to be a deep copy otherwise the connections which are crossed over are also modified if mutation
                 # occurs on the child.

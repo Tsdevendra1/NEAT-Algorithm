@@ -35,7 +35,7 @@ class Config:
     inter_species_mating_rate = 0.001
 
     add_node_mutation_chance = 0.03
-    add_connection_mutation_chance = 0.3
+    add_connection_mutation_chance = 0.05
     # TODO: Find correct chance for these values
     remove_node_mutation_chance = 0.01
     remove_connection_mutation_chance = 0.01

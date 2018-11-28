@@ -285,11 +285,7 @@ class TestDeconstructGenomeClass(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=2)
 
-
-
         self.assertEqual(genome.connection_matrices_per_layer[1].tolist(), expected_answer.tolist())
-
-
 
     def test_forward_prop(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
@@ -385,6 +381,49 @@ class TestGenomeUnpack(unittest.TestCase):
                            ConnectionGene(input_node=1, output_node=2, innovation_number=7, enabled=True, weight=7)]
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        self.assertTrue(genome)
+
+    def test_unpack_genome_5(self):
+        # Multiple times due to randomisation of various elements
+        for i in range(100):
+            node_list = [NodeGene(node_id=0, node_type='source'),
+                         NodeGene(node_id=1, node_type='source'),
+                         NodeGene(node_id=2, node_type='output', bias=1.5),
+                         NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                         NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                         NodeGene(node_id=5, node_type='hidden', bias=0.5)]
+
+            connection_list = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=True, weight=9),
+                               ConnectionGene(input_node=1, output_node=5, innovation_number=5, enabled=True, weight=3),
+                               ConnectionGene(input_node=3, output_node=4, innovation_number=2, enabled=True, weight=2),
+                               ConnectionGene(input_node=5, output_node=3, innovation_number=4, enabled=True, weight=4),
+                               ConnectionGene(input_node=4, output_node=2, innovation_number=3, enabled=True, weight=3)]
+
+            genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+            self.assertTrue(genome)
+
+    def test_unpack_genome_6(self):
+        # Multiple times due to randomisation of various elements
+        for i in range(100):
+            node_list = [NodeGene(node_id=0, node_type='source'),
+                         NodeGene(node_id=1, node_type='source'),
+                         NodeGene(node_id=2, node_type='output', bias=1.5),
+                         NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                         NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                         NodeGene(node_id=5, node_type='hidden', bias=0.5)]
+
+            connection_list = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=True, weight=9),
+                               ConnectionGene(input_node=1, output_node=2, innovation_number=5, enabled=True, weight=3),
+                               ConnectionGene(input_node=0, output_node=5, innovation_number=2, enabled=True, weight=2),
+                               ConnectionGene(input_node=3, output_node=4, innovation_number=4, enabled=True, weight=4),
+                               ConnectionGene(input_node=5, output_node=3, innovation_number=3, enabled=True, weight=3),
+                               ConnectionGene(input_node=4, output_node=2, innovation_number=9, enabled=True, weight=3)]
+
+            genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+            self.assertTrue(genome)
 
 
 class TestGenomeNeuralNetwork(unittest.TestCase):
