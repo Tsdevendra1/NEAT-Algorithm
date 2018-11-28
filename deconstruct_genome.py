@@ -19,7 +19,7 @@ class DeconstructGenome:
         connections = cls.sort_connections(connections, nodes=nodes, all_paths=all_paths)
 
         # Get's which node is on which layer
-        node_layers, layer_nodes = cls.get_node_layers(connections=connections, nodes=nodes)
+        node_layers, layer_nodes = cls.get_node_layers(connections=connections, genome=genome)
         num_layers = max(node_layers.values())
         # Keeps track of number of nodes for each layer
         nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
@@ -44,7 +44,8 @@ class DeconstructGenome:
             if node.node_type == 'output':
                 output_node = node
                 break
-        cls.confirm_correct_configuration(output_node=output_node.node_id, source_nodes=source_nodes, layer_nodes=layer_nodes)
+        cls.confirm_correct_configuration(output_node=output_node.node_id, source_nodes=source_nodes,
+                                          layer_nodes=layer_nodes)
 
         # Saves all the variables being returned from the function
         return_dict = {}
@@ -120,16 +121,6 @@ class DeconstructGenome:
                     source_node_connections.append(connection)
                     added_to_list.add(connection)
 
-        # #
-        # for connection in connections:
-        #     # check the connection is enabled and that we haven't already added it to the list
-        #     if connection.enabled and connection not in added_to_list:
-        #         input_node_type = nodes[connection.input_node].node_type
-        #         output_node_type = nodes[connection.output_node].node_type
-        #         if output_node_type != 'output' and input_node_type != 'source':
-        #             sorted_list.append(connection)
-        #             added_to_list.add(connection)
-
         output_node_connections = []
 
         # Then we add the ones left (the ones linked to the output)
@@ -149,7 +140,7 @@ class DeconstructGenome:
         return sorted_list
 
     @classmethod
-    def get_node_layers(cls, connections, nodes):
+    def get_node_layers(cls, connections, genome):
         """
         :param nodes : dict containing (node_id, node_gene)
         :param connections: list of connections from the genome
@@ -190,6 +181,12 @@ class DeconstructGenome:
         # The last layer should only contain the output node
         if len(layer_nodes[max(layer_nodes)]) != 1:
             raise Exception('Invalid genome has been unpacked')
+
+        _, node_layer_from_graph_algorithm = genome.check_num_paths(only_add_enabled_connections=True,
+                                                                 return_graph_layer_nodes=True)
+
+        if node_layer_from_graph_algorithm != node_layers:
+            raise Exception('One of the node_layers is wrong')
 
         return node_layers, layer_nodes
 

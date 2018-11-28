@@ -253,8 +253,8 @@ class TestDeconstructGenomeClass(unittest.TestCase):
     def test_get_node_layer(self):
         expected_answer = {1: 1, 2: 1, 3: 2, 4: 2, 5: 3}
         self.assertEqual(
-            DeconstructGenome.get_node_layers(connections=list(self.genome.connections.values()),
-                                              nodes=self.genome.nodes)[0],
+            DeconstructGenome.get_node_layers(connections=list(self.genome.connections.values()), genome=self.genome)[
+                0],
             expected_answer)
 
     def test_unpack_genome(self):
@@ -806,6 +806,21 @@ class TestConnectionDisabled(unittest.TestCase):
         genome = Genome(key=1)
         genome.configure_genes(connections=connection_list, nodes=node_list)
         self.assertRaises(AssertionError, genome.unpack_genome)
+
+    def test_layer_nodes(self):
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=5, node_type='hidden'),
+                     NodeGene(node_id=3, node_type='output', bias=0)]
+
+        connection_list = [
+            ConnectionGene(input_node=1, output_node=5, innovation_number=1, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=2, output_node=4, innovation_number=4, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=5, output_node=4, innovation_number=3, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=4, output_node=3, innovation_number=2, weight=np.random.randn(), enabled=True)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
 
 
 class TestGenomeReproduction(unittest.TestCase):

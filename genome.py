@@ -418,7 +418,7 @@ class Genome:
 
         return choice_list
 
-    def check_num_paths(self, only_add_enabled_connections, return_paths=False):
+    def check_num_paths(self, only_add_enabled_connections, return_paths=False, return_graph_layer_nodes=False):
         graph = Graph()
         source_nodes = []
         output_nodes = []
@@ -465,7 +465,10 @@ class Genome:
         if return_paths:
             return num_source_to_output_paths, all_paths
         else:
-            return num_source_to_output_paths
+            if return_graph_layer_nodes and only_add_enabled_connections:
+                return num_source_to_output_paths, graph.max_layer_for_node
+            else:
+                return num_source_to_output_paths
 
     def remove_connection(self):
         """
