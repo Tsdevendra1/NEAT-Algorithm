@@ -178,17 +178,17 @@ class DeconstructGenome:
         for node_id, layer in node_layers.items():
             layer_nodes[layer].append(node_id)
 
+        _, node_layer_from_graph_algorithm = genome.check_num_paths(only_add_enabled_connections=True,
+                                                                    return_graph_layer_nodes=True)
+
+        # if node_layer_from_graph_algorithm != node_layers:
+        #     raise Exception('One of the node_layers is wrong')
+
         # The last layer should only contain the output node
         if len(layer_nodes[max(layer_nodes)]) != 1:
             raise Exception('Invalid genome has been unpacked')
 
-        _, node_layer_from_graph_algorithm = genome.check_num_paths(only_add_enabled_connections=True,
-                                                                 return_graph_layer_nodes=True)
-
-        if node_layer_from_graph_algorithm != node_layers:
-            raise Exception('One of the node_layers is wrong')
-
-        return node_layers, layer_nodes
+        return node_layer_from_graph_algorithm, layer_nodes
 
     @classmethod
     def get_non_connected_source_node_positions(cls, nodes, node_map):

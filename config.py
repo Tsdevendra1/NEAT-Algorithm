@@ -27,7 +27,7 @@ class Config:
     weight_range_high = 1.0
 
     # This is the chance a gene is disabled if it was disabled in either parent
-    chance_to_disable = 0.75
+    change_to_disable_gene_if_either_parent_disabled = 0.75
 
     # TODO: Does this mean that there is 75% chance for crossover or is it a fixed 75% (see the paper page 112)
     chance_for_mutation_without_crossover = 0.25

@@ -822,6 +822,20 @@ class TestConnectionDisabled(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
 
+    def test_disable_connection_if_not_part_of_path(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=4, node_type='hidden'),
+                     NodeGene(node_id=2, node_type='output', bias=0)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=4, output_node=2, innovation_number=4, weight=np.random.randn(), enabled=True)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        self.assertTrue(genome.connections[4].enabled is False)
+        self.assertTrue(genome.connections[1].enabled is True)
+
 
 class TestGenomeReproduction(unittest.TestCase):
 

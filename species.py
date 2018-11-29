@@ -23,12 +23,13 @@ class Species:
 
 class SpeciesSet:
 
-    def __init__(self, config):
+    def __init__(self, config, generation_tracker):
         self.config = config
         self.species_indexer = 0
         self.species = {}
         # For each genome if you index the dict it will return which species it is a part of
         self.genome_species = {}
+        self.generation_tracker = generation_tracker
 
     @staticmethod
     def species_fitness_function(species_members, function_type):
@@ -54,7 +55,8 @@ class SpeciesSet:
                                                                          config=self.config)
 
         # There's no reason for this to be different depending on who you choose to be the other genome
-        assert (compatibility_distance_1 == compatibility_distance_2)
+        if compatibility_distance_1 != compatibility_distance_2:
+            raise Exception('There is an error in how compatibility distance is calculated')
 
         return compatibility_distance_1
 
@@ -167,10 +169,8 @@ class SpeciesSet:
                                generation=generation)
 
         # Mean compatability distance
-        mean_genome_compatibility_distance = np.mean(list(dict_of_compatibility_distances.values()))
+        self.generation_tracker.mean_compatibility_distance = np.mean(list(dict_of_compatibility_distances.values()))
         # Standard deviation
-        stdev_genome_compatibility_distance = np.std(list(dict_of_compatibility_distances.values()))
+        self.generation_tracker.std_dev_compatibility_distance = np.std(list(dict_of_compatibility_distances.values()))
+        self.generation_tracker.num_species = len(self.species)
 
-        print(
-            'Mean compatibility distance {}, Stdev compatibility distance {}'.format(mean_genome_compatibility_distance,
-                                                                                     stdev_genome_compatibility_distance))

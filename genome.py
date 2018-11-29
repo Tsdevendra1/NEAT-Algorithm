@@ -1,4 +1,5 @@
 from deconstruct_genome import DeconstructGenome
+import copy
 from graph_algorithm import Graph
 import itertools
 import numpy as np
@@ -56,12 +57,15 @@ class Genome:
 
         _, all_paths = self.check_num_paths(only_add_enabled_connections=False, return_paths=True)
         connection_gene_enabled_tracker = {}
+        all_tuples_for_paths = set()
         for node_paths in all_paths:
             for path in node_paths:
                 any_disabled = False
                 connection_gene_list = []
                 for index in range(len(path) - 1):
-                    connection_gene = connections_by_tuple[(path[index], path[index + 1])]
+                    connection_tuple = (path[index], path[index + 1])
+                    connection_gene = connections_by_tuple[connection_tuple]
+                    all_tuples_for_paths.add(connection_tuple)
                     connection_gene_list.append(connection_gene)
                     if not connection_gene.enabled:
                         any_disabled = True
@@ -78,6 +82,13 @@ class Genome:
                         else:
                             connection_gene_enabled_tracker[connection].append(True)
 
+        # If the connection doesn't feature in any of the paths identified, we disable it as it isn't part of a path
+        # at all
+        for connection in self.connections.values():
+            connection_tuple = (connection.input_node, connection.output_node)
+            if connection_tuple not in all_tuples_for_paths:
+                connection.enabled = False
+
         for connection, true_false_list in connection_gene_enabled_tracker.items():
             num_true = 0
             for boolean in true_false_list:
@@ -92,6 +103,8 @@ class Genome:
         """
         Deconstructs the genome into a structure that can be used for the neural network it represents
         """
+
+        # TODO: Look through connections. If there is a connection which isn't part of a path, disable it
 
         all_paths = self.check_any_disabled_connections_in_path()
 
@@ -137,18 +150,19 @@ class Genome:
         for node in nodes:
             self.nodes[node.node_id] = node
 
-    def check_connection_enabled_amount(self, generation=None, parent_1=None, parent_2=None):
+    def check_connection_enabled_amount(self):
         """
         Checks how many enabled connections there are
         """
-        num_enabled = 0
+        num_enabled_connections = 0
+
         for connection in self.connections.values():
             if connection.enabled:
-                num_enabled += 1
+                num_enabled_connections += 1
 
-        return num_enabled
+        return num_enabled_connections
 
-    def crossover(self, genome_1, genome_2):
+    def crossover(self, genome_1, genome_2, config):
         """
         :param genome_1:
         :param genome_2:
@@ -176,8 +190,14 @@ class Genome:
             # If there is a second gene it means both genomes have the gene and hence we pick randomly for which one is
             # carried over
             else:
+
                 connection_genes = [fittest_connection_gene, second_connection_gene]
-                inherited_gene = random.choice(connection_genes)
+                inherited_gene = copy.deepcopy(random.choice(connection_genes))
+                # There is a chance for the gene to be disabled if ti is
+                if not fittest_connection_gene.enabled or not second_connection_gene.enabled:
+                    chance_to_disable_roll = np.random.uniform(low=0.0, high=1.0)
+                    if chance_to_disable_roll < config.change_to_disable_gene_if_either_parent_disabled:
+                        inherited_gene.enabled = False
                 self.connections[inherited_gene.innovation_number] = inherited_gene
 
         # Inherit the node genes
@@ -197,11 +217,18 @@ class Genome:
             if not genome.check_connection_enabled_amount():
                 raise Exception('One or both of the parents in crossover doesnt have valid connections')
 
-        if not self.check_connection_enabled_amount():
-            raise Exception('There are no valid connections for this genome')
+        # TODO: What to do if you inherit genes and they are all disabled?
+        num_enabled = 0
+        copy_of_connections = copy.deepcopy(list(self.connections.values()))
+        for connection in copy_of_connections:
+            if connection.enabled:
+                num_enabled += 1
 
-        # Unpack the genome after we have configured it
-        self.unpack_genome()
+        if num_enabled > 0:
+            # Unpack the genome after we have configured it
+            self.unpack_genome()
+
+        return num_enabled
 
     def mutate(self, reproduction_instance, innovation_tracker, config):
         """
@@ -276,7 +303,7 @@ class Genome:
 
         return cleaned_combinations
 
-    def get_activate_nodes(self):
+    def get_active_nodes(self):
         """
         :return: A list of nodes which are attached to active connections. Otherwise we assume the node is switched off
         """
@@ -304,7 +331,7 @@ class Genome:
             if node.node_type != 'output':
                 viable_start_nodes.append(node_id)
 
-        possible_combinations = itertools.combinations(self.get_activate_nodes(), 2)
+        possible_combinations = itertools.combinations(self.get_active_nodes(), 2)
         cleaned_possible_combinations = self.clean_combinations(possible_combinations=possible_combinations)
 
         # Get all the existing combinations

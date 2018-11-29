@@ -111,8 +111,12 @@ class Reproduce:
             max_fitness_index = adjusted_species_fitnesses.index(max(adjusted_species_fitnesses))
             adjusted_species_sizes[max_fitness_index] += 1
 
-        if sum(adjusted_species_sizes) != population_size:
-            raise Exception('The population size is larger than configured')
+        # Allow for some leaway in population size (+- 5)
+        range_value = 5
+        range_of_population_sizes = set(range(population_size - range_value,
+                                              population_size + range_value + 1))
+        if sum(adjusted_species_sizes) not in range_of_population_sizes:
+            raise Exception('There is an incorrect number of genomes in the population')
 
         return adjusted_species_sizes
 
@@ -258,13 +262,20 @@ class Reproduce:
 
                 child = Genome(key=genome_id)
                 # Create the genome from the parents
-                child.crossover(genome_1=parent_1, genome_2=parent_2)
+                num_connections_enabled = child.crossover(genome_1=parent_1, genome_2=parent_2, config=self.config)
 
-                child.mutate(reproduction_instance=self,
-                             innovation_tracker=self.innovation_tracker, config=self.config)
+                # If there are no connections enabled we forget about this child and don't add it to the existing
+                # population
+                if num_connections_enabled:
+                    child.mutate(reproduction_instance=self,
+                                 innovation_tracker=self.innovation_tracker, config=self.config)
 
-                new_population[child.key] = child
-                self.ancestors[child.key] = (parent_1.key, parent_2.key)
+                    new_population[child.key] = child
+                    self.ancestors[child.key] = (parent_1.key, parent_2.key)
+                else:
+                    assert num_connections_enabled == 0
+                    species_size += 1
+                    self.genome_indexer -= 1
 
         return new_population
 

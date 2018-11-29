@@ -1,3 +1,5 @@
+from generation_statistics import GenerationStatistics
+import numpy as np
 from genome_neural_network import GenomeNeuralNetwork
 from reproduce import Reproduce
 from species import SpeciesSet
@@ -17,12 +19,13 @@ class NEAT:
         self.config = config
         # Takes care of reproduction of populations
         self.reproduction = Reproduce(stagnation=Stagnation, config=config)
+        self.generation_tracker = GenerationStatistics()
         # Track the best genome across generations
         self.best_all_time_genome = None
         # If the fitness threshold is met it will stop the algorithm (if set)
         self.fitness_threshold = fitness_threshold
         # A class containing the different species within the population
-        self.species_set = SpeciesSet(config=config)
+        self.species_set = SpeciesSet(config=config, generation_tracker=self.generation_tracker)
         self.x_train = x_training_data
         self.y_train = y_training_data
 
@@ -42,8 +45,20 @@ class NEAT:
 
         # Should return the best genome
         current_best_genome = None
-        costs_for_current_gen = {}
+
+        num_nodes_overall = []
+        num_nodes_enabled = []
+        num_connections_overall = []
+        num_connections_enabled = []
+        all_fitnesses = []
+
         for genome in self.population.values():
+            num_nodes_overall.append(len(genome.nodes))
+            num_nodes_enabled.append(len(genome.get_active_nodes()))
+
+            num_connections_overall.append(len(genome.connections))
+            num_connections_enabled.append(genome.check_connection_enabled_amount())
+
             genome_nn = GenomeNeuralNetwork(genome=genome, x_train=self.x_train, y_train=self.y_train,
                                             create_weights_bias_from_genome=True, activation_type='sigmoid',
                                             learning_rate=0.0001, num_epochs=1000, batch_size=64)
@@ -56,18 +71,21 @@ class NEAT:
             # is no connection to one of the sources
             cost = genome_nn.run_one_pass(input_data=genome_nn.x_train, labels=self.y_train, return_cost_only=True)
 
-            # This shouldn't ever happen because due to the floats being different values and the weights being
-            # different for every genome
-            if cost in costs_for_current_gen:
-                costs_for_current_gen[cost] += 1
-            else:
-                costs_for_current_gen[cost] = 1
-
             # The fitness is the negative of the cost. Because less cost = greater fitness
             genome.fitness = -cost
 
+            all_fitnesses.append(genome.fitness)
+
             if current_best_genome is None or genome.fitness > current_best_genome.fitness:
                 current_best_genome = genome
+
+        self.generation_tracker.mean_number_connections_enabled = np.mean(num_connections_enabled)
+        self.generation_tracker.mean_number_connections_overall = np.mean(num_connections_overall)
+
+        self.generation_tracker.mean_number_nodes_enabled = np.mean(num_nodes_enabled)
+        self.generation_tracker.mean_number_nodes_overall = np.mean(num_nodes_overall)
+
+        self.generation_tracker.average_population_fitness = np.mean(all_fitnesses)
 
         return current_best_genome
 
@@ -100,7 +118,7 @@ class NEAT:
             # Allow for some leaway in population size (+- 5)
             range_value = 5
             range_of_population_sizes = set(range(self.config.population_size - range_value,
-                                                      self.config.population_size + range_value + 1))
+                                                  self.config.population_size + range_value + 1))
             if len(self.population) not in range_of_population_sizes:
                 raise Exception('There is an incorrect number of genomes in the population')
 
@@ -115,7 +133,8 @@ class NEAT:
             self.species_set.speciate(population=self.population, generation=current_gen,
                                       compatibility_threshold=self.config.compatibility_threshold)
 
-            print(self.best_all_time_genome.fitness)
+            self.generation_tracker.update_generation_information(generation=current_gen)
+            self.generation_tracker.print_generation_information()
 
         return self.best_all_time_genome
 
