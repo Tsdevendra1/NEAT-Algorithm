@@ -436,8 +436,6 @@ class TestGenomeUnpack(unittest.TestCase):
                      NodeGene(node_id=6, node_type='hidden', bias=-1.5),
                      NodeGene(node_id=7, node_type='hidden', bias=0.5)]
 
-        # TODO: the problem is that there is no input node with a 6
-        # TODO:  if it doens't belong to a path like the ones with 6's turn it off
         connection_list = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=False, weight=9),
                            ConnectionGene(input_node=3, output_node=5, innovation_number=2, enabled=True, weight=3),
                            ConnectionGene(input_node=5, output_node=2, innovation_number=3, enabled=True, weight=2),
@@ -649,7 +647,6 @@ class TestGenomeMutatation(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=2)
         genome.remove_connection()
-        # TODO: Check how this works
         # Check that the source nodes are always there
         self.assertTrue(genome.nodes[1])
         self.assertTrue(genome.nodes[2])
