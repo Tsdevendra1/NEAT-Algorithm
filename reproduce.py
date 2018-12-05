@@ -222,6 +222,9 @@ class Reproduce:
                     child.mutate(reproduction_instance=self,
                                  innovation_tracker=self.innovation_tracker, config=self.config)
 
+                    if not child.check_connection_enabled_amount() and not child.check_num_paths(only_add_enabled_connections=True):
+                        raise Exception('This child has no enabled connections')
+
                     new_population[child.key] = child
                     self.ancestors[child.key] = ()
                     new_population[member.key] = member
@@ -261,6 +264,7 @@ class Reproduce:
                 genome_id = self.genome_indexer
 
                 child = Genome(key=genome_id)
+                # TODO: Save the parent_1 and parent_2 mutation history as well as what connections they had
                 # Create the genome from the parents
                 num_connections_enabled = child.crossover(genome_1=parent_1, genome_2=parent_2, config=self.config)
 
@@ -269,6 +273,9 @@ class Reproduce:
                 if num_connections_enabled:
                     child.mutate(reproduction_instance=self,
                                  innovation_tracker=self.innovation_tracker, config=self.config)
+
+                    if not child.check_connection_enabled_amount() and not child.check_num_paths(only_add_enabled_connections=True):
+                        raise Exception('This child has no enabled connections')
 
                     new_population[child.key] = child
                     self.ancestors[child.key] = (parent_1.key, parent_2.key)

@@ -18,6 +18,9 @@ class Genome:
         # Unique identifier for a genome instance.
         self.key = key
 
+        self.mutations_occured = []
+        self.parents = None
+
         self.connections = {}
         self.nodes = {}
 
@@ -110,6 +113,8 @@ class Genome:
 
         # Check that there are valid paths for the neural network
         num_source_to_output_paths = self.check_num_paths(only_add_enabled_connections=True)
+        if not num_source_to_output_paths:
+            return False
         if num_source_to_output_paths == 0:
             raise Exception('There is no valid path from any source to the output')
 
@@ -131,6 +136,8 @@ class Genome:
         # The last layer should only contain the output node
         if len(self.layer_nodes[self.num_layers_including_input]) != 1:
             raise Exception('Invalid genome has been unpacked')
+
+        return True
 
     def configure_genes(self, connections, nodes):
         """
@@ -179,6 +186,8 @@ class Genome:
         else:
             fittest_parent, second_parent = genome_2, genome_1
 
+        # self.parents = (fittest_parent, second_parent)
+
         # Inherit connection genes
         for fittest_connection_gene in fittest_parent.connections.values():
             second_connection_gene = second_parent.connections.get(fittest_connection_gene.innovation_number)
@@ -226,7 +235,8 @@ class Genome:
 
         if num_enabled > 0:
             # Unpack the genome after we have configured it
-            self.unpack_genome()
+            unpack_went_fine = self.unpack_genome()
+            return unpack_went_fine
 
         return num_enabled
 
@@ -248,12 +258,14 @@ class Genome:
             self.add_connection(reproduction_instance=reproduction_instance,
                                 innovation_tracker=innovation_tracker)
             # Unpack the genome after whatever mutation has occured
+            self.mutations_occured.append('Add Connection')
             self.unpack_genome()
 
         # Add node if
         if add_node_roll < config.add_node_mutation_chance:
             self.add_node(reproduction_instance=reproduction_instance,
                           innovation_tracker=innovation_tracker)
+            self.mutations_occured.append('Add Node')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
 
@@ -263,11 +275,13 @@ class Genome:
 
         if remove_node_roll < config.remove_node_mutation_chance:
             self.remove_node()
+            self.mutations_occured.append('Remove Node')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
 
         if remove_connection_roll < config.remove_connection_mutation_chance:
             self.remove_connection()
+            self.mutations_occured.append('Remove Connection')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
 
@@ -473,6 +487,9 @@ class Genome:
         source_nodes = list(set(source_nodes))
         output_nodes = list(set(output_nodes))
 
+        if not output_nodes:
+            return False
+
         # There shouldn't be more than one output node
         assert (len(output_nodes) == 1)
 
@@ -595,25 +612,46 @@ class Genome:
 
         return first_new_connection, second_new_connection
 
-    def remove_node(self):
+    def get_viable_nodes_to_delete(self):
+        viable_nodes_to_be_delete = []
+        # connections_able_to_remove = self.check_which_connections_removable()
+        num_source_to_output_paths, all_paths = self.check_num_paths(only_add_enabled_connections=True,
+                                                                     return_paths=True)
+
+        # How many times a node comes up in all paths
+        node_count = {}
+        for node_paths in all_paths:
+            for path in node_paths:
+                for node in path:
+                    if node not in node_count:
+                        node_count[node] = 1
+                    else:
+                        node_count[node] += 1
+        for node, node_amount in node_count.items():
+            if node_amount != num_source_to_output_paths:
+                viable_nodes_to_be_delete.append(node)
+
+        # for connection in connections_able_to_remove:
+        #     if self.nodes[connection.input_node].node_type != 'source':
+        #         viable_nodes_to_be_delete.append(connection.input_node)
+        #     if self.nodes[connection.output_node].node_type != 'output':
+        #         viable_nodes_to_be_delete.append(connection.output_node)
+
+        return viable_nodes_to_be_delete
+
+    def remove_node(self, node_to_remove=None):
+        """
+
+        :param node_to_remove: For debug purposes if you want to remove a specific node
+        :return:
+        """
         num_source_to_output_paths = self.check_num_paths(only_add_enabled_connections=True)
 
         # Otherwise if you delete a node and it only has one path, you make it an invalid network as there is not path
         # from the source to the output
         if num_source_to_output_paths > 1:
-            viable_nodes_to_be_delete = []
-            connections_able_to_remove = self.check_which_connections_removable()
 
-            # for node in self.nodes.values():
-            #     # Any node that isn't the source or output node can be deleted
-            #     if node.node_type != 'source' or node.node_type != 'output':
-            #         viable_nodes_to_be_delete.append(node.node_id)
-
-            for connection in connections_able_to_remove:
-                if self.nodes[connection.input_node].node_type != 'source':
-                    viable_nodes_to_be_delete.append(connection.input_node)
-                if self.nodes[connection.output_node].node_type != 'output':
-                    viable_nodes_to_be_delete.append(connection.output_node)
+            viable_nodes_to_be_delete = self.get_viable_nodes_to_delete()
 
             # Remove duplicates
             viable_nodes_to_be_delete = list(set(viable_nodes_to_be_delete))
@@ -622,7 +660,7 @@ class Genome:
             if viable_nodes_to_be_delete:
 
                 # Randomly choose node to delete
-                node_to_delete = random.choice(viable_nodes_to_be_delete)
+                node_to_delete = random.choice(viable_nodes_to_be_delete) if not node_to_remove else node_to_remove
 
                 # The node to be deleted will have connections which also need to be deleted
                 connections_to_delete = []
@@ -686,11 +724,12 @@ class Genome:
             else:
                 raise KeyError('This innovation number should have returned for one of the genomes')
 
-        average_weight_diff = np.mean(matching_genes)
-
         compatibility_distance = ((config.disjoint_coefficient * num_disjoint) / max_num_genes) + (
-                (config.excess_coefficient * num_excess) / max_num_genes) + (
-                                         config.matching_genes_coefficient * average_weight_diff)
+                (config.excess_coefficient * num_excess) / max_num_genes)
+
+        if matching_genes:
+            average_weight_diff = np.mean(matching_genes)
+            compatibility_distance += (config.matching_genes_coefficient * average_weight_diff)
 
         return compatibility_distance
 

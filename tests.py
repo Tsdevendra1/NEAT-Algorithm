@@ -425,6 +425,69 @@ class TestGenomeUnpack(unittest.TestCase):
 
             self.assertTrue(genome)
 
+    def test_unpack_genome_7(self):
+        # Multiple times due to randomisation of various elements
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1.5),
+                     NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                     NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=5, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=6, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=7, node_type='hidden', bias=0.5)]
+
+        # TODO: the problem is that there is no input node with a 6
+        # TODO:  if it doens't belong to a path like the ones with 6's turn it off
+        connection_list = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=False, weight=9),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=2, enabled=True, weight=3),
+                           ConnectionGene(input_node=5, output_node=2, innovation_number=3, enabled=True, weight=2),
+                           ConnectionGene(input_node=1, output_node=5, innovation_number=4, enabled=True, weight=4),
+                           ConnectionGene(input_node=1, output_node=2, innovation_number=5, enabled=False, weight=3),
+                           ConnectionGene(input_node=5, output_node=6, innovation_number=6, enabled=True, weight=3),
+                           ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=3),
+                           ConnectionGene(input_node=1, output_node=7, innovation_number=8, enabled=True, weight=3),
+                           ConnectionGene(input_node=7, output_node=2, innovation_number=9, enabled=True, weight=3),
+                           ConnectionGene(input_node=3, output_node=2, innovation_number=10, enabled=True, weight=3),
+                           ConnectionGene(input_node=1, output_node=3, innovation_number=11, enabled=True, weight=3)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        self.assertTrue(genome.connections[6].enabled is False)
+        self.assertTrue(genome.connections[7].enabled is False)
+
+        self.assertTrue(genome)
+
+    def test_genome_unpack_8(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1.5),
+                     NodeGene(node_id=3, node_type='hidden', bias=0.5),
+                     NodeGene(node_id=4, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=5, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=6, node_type='hidden', bias=-1.5),
+                     NodeGene(node_id=7, node_type='hidden', bias=0.5)]
+
+        connection_list = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=False, weight=9),
+                           ConnectionGene(input_node=0, output_node=4, innovation_number=2, enabled=True, weight=3),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=3, enabled=True, weight=2),
+                           ConnectionGene(input_node=5, output_node=4, innovation_number=4, enabled=True, weight=4),
+                           ConnectionGene(input_node=1, output_node=6, innovation_number=5, enabled=True, weight=3),
+                           ConnectionGene(input_node=6, output_node=2, innovation_number=6, enabled=True, weight=3),
+                           ConnectionGene(input_node=1, output_node=2, innovation_number=7, enabled=False, weight=3),
+                           ConnectionGene(input_node=1, output_node=7, innovation_number=8, enabled=True, weight=3),
+                           ConnectionGene(input_node=7, output_node=2, innovation_number=9, enabled=True, weight=3),
+                           ConnectionGene(input_node=0, output_node=3, innovation_number=10, enabled=True, weight=3),
+                           ConnectionGene(input_node=3, output_node=2, innovation_number=11, enabled=False, weight=3),
+                           ConnectionGene(input_node=3, output_node=4, innovation_number=12, enabled=False, weight=3),
+                           ConnectionGene(input_node=4, output_node=2, innovation_number=13, enabled=True, weight=3)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        self.assertTrue(len(genome.connections) == len(connection_list))
+        self.assertTrue(list(genome.connections.values()) == connection_list)
+
+        self.assertTrue(genome)
+
 
 class TestGenomeNeuralNetwork(unittest.TestCase):
     def setUp(self):
@@ -687,7 +750,7 @@ class TestGenomeMutatation(unittest.TestCase):
         genome_2.fitness = 1
 
         child = Genome(key=4)
-        child.crossover(genome_1=genome_1, genome_2=genome_2)
+        child.crossover(genome_1=genome_1, genome_2=genome_2, config=Config)
 
         expected_genes = [1, 2, 3, 4, 5, 6]
         actual_genes = []
@@ -734,6 +797,40 @@ class TestGenomeMutatation(unittest.TestCase):
         self.assertTrue(compatibility_distance_1 == compatibility_distance_2)
         self.assertEqual(compatibility_distance_3, 5)
         self.assertEqual(compatibility_distance_3, compatibility_distance_4)
+
+    def test_compatibility_distance_2(self):
+        node_list_1 = [NodeGene(node_id=0, node_type='source'),
+                       NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='output'),
+                       NodeGene(node_id=4, node_type='hidden'),
+                       NodeGene(node_id=5, node_type='hidden')]
+
+        connection_list_1 = [ConnectionGene(input_node=0, output_node=2, innovation_number=1, enabled=True, weight=1),
+                             ConnectionGene(input_node=1, output_node=4, innovation_number=6, enabled=True, weight=2),
+                             ConnectionGene(input_node=4, output_node=2, innovation_number=8, enabled=True, weight=3),
+                             ConnectionGene(input_node=4, output_node=5, innovation_number=10, enabled=True, weight=4),
+                             ConnectionGene(input_node=5, output_node=2, innovation_number=11, enabled=True, weight=5),
+                             ConnectionGene(input_node=0, output_node=4, innovation_number=12, enabled=True, weight=6)]
+
+        node_list_2 = [NodeGene(node_id=0, node_type='source'),
+                       NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='output'),
+                       NodeGene(node_id=3, node_type='hidden')]
+
+        connection_list_2 = [ConnectionGene(input_node=1, output_node=2, innovation_number=2, enabled=True, weight=1),
+                             ConnectionGene(input_node=1, output_node=3, innovation_number=3, enabled=True, weight=2),
+                             ConnectionGene(input_node=3, output_node=2, innovation_number=4, enabled=True, weight=3)]
+
+        genome_1 = Genome(connections=connection_list_1, nodes=node_list_1, key=1)
+        genome_2 = Genome(connections=connection_list_2, nodes=node_list_2, key=2)
+
+        genome_2.fitness = -0.974
+
+        compatibility_distance_1 = genome_1.compute_compatibility_distance(other_genome=genome_2, config=Config)
+        compatibility_distance_2 = genome_2.compute_compatibility_distance(other_genome=genome_1, config=Config)
+
+        # The problem is that genome_1 has no fitness
+        self.assertTrue(compatibility_distance_2 == compatibility_distance_1)
 
 
 class TestNEATClass(unittest.TestCase):
@@ -805,7 +902,7 @@ class TestConnectionDisabled(unittest.TestCase):
 
         genome = Genome(key=1)
         genome.configure_genes(connections=connection_list, nodes=node_list)
-        self.assertRaises(AssertionError, genome.unpack_genome)
+        self.assertTrue(genome.unpack_genome() is False)
 
     def test_layer_nodes(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
@@ -842,12 +939,29 @@ class TestGenomeReproduction(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_compute_adjusted_species_sizes(self):
-        adjusted_species_fitnesses = [-0.8673206530825687, -0.8270084870465362, -0.7681448674214546,
-                                      -0.7068577488259461]
-        previous_species_sizes = [1, 1, 80, 68]
-        population_size = 150
-        min_species_size = 38
+    def test_genome_remove_node_mutation(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=0),
+                     NodeGene(node_id=3, node_type='hidden', bias=0),
+                     NodeGene(node_id=4, node_type='hidden', bias=0)]
+
+        connection_list = [
+            ConnectionGene(input_node=1, output_node=2, innovation_number=1, weight=np.random.randn(), enabled=False),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=2, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=3, output_node=2, innovation_number=3, weight=np.random.randn(), enabled=False),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=4, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=3, output_node=4, innovation_number=5, weight=np.random.randn(), enabled=True),
+            ConnectionGene(input_node=4, output_node=2, innovation_number=6, weight=np.random.randn(), enabled=True)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=3)
+        genome.remove_node(node_to_remove=4)
+        self.assertTrue(genome.check_num_paths(only_add_enabled_connections=True) == 0)
+
+        for i in range(100):
+            genome_2 = Genome(connections=connection_list, nodes=node_list, key=3)
+            genome_2.remove_node()
+            self.assertTrue(genome_2.check_num_paths(only_add_enabled_connections=True) > 0)
 
 
 if __name__ == '__main__':

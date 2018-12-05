@@ -20,15 +20,20 @@ class DeconstructGenome:
 
         # Get's which node is on which layer
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, genome=genome)
+
         num_layers = max(node_layers.values())
+
         # Keeps track of number of nodes for each layer
         nodes_per_layer = dict(collections.Counter(list(node_layers.values())))
+
         # Keeps track of which number node each node is in their respective layer
         node_map, source_nodes = cls.get_node_map(num_layers=num_layers, layer_nodes=layer_nodes, nodes=nodes)
+
         added_nodes, added_connections, last_dummy_related_to_connection = cls.find_ghost_nodes(
             nodes_per_layer=nodes_per_layer, node_layers=node_layers,
             node_map=node_map, connections=connections,
             layer_nodes=layer_nodes)
+
         # Update the new connections and nodes
         for node in added_nodes:
             nodes[node.node_id] = node
@@ -39,6 +44,7 @@ class DeconstructGenome:
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
 
+        # Get the output node
         output_node = None
         for node in nodes.values():
             if node.node_type == 'output':
@@ -174,12 +180,12 @@ class DeconstructGenome:
                     node_layers[connection.output_node] = max(node_layers[connection.output_node],
                                                               (node_layers[connection.input_node] + 1))
 
-        layer_nodes = {key: [] for key in node_layers.values()}
-        for node_id, layer in node_layers.items():
-            layer_nodes[layer].append(node_id)
-
         _, node_layer_from_graph_algorithm = genome.check_num_paths(only_add_enabled_connections=True,
                                                                     return_graph_layer_nodes=True)
+
+        layer_nodes = {key: [] for key in node_layer_from_graph_algorithm.values()}
+        for node_id, layer in node_layer_from_graph_algorithm.items():
+            layer_nodes[layer].append(node_id)
 
         # if node_layer_from_graph_algorithm != node_layers:
         #     raise Exception('One of the node_layers is wrong')
@@ -262,7 +268,10 @@ class DeconstructGenome:
         # This will contain the last dummy node in the connections: key: the input node, value: the last dummy node
         last_dummy_related_to_connection = {}
 
-        for connection in connections:
+        deep_copy_list = copy.deepcopy(connections)
+        to_remove = []
+
+        for connection in deep_copy_list:
             # How many layers the connection spans
             input_node_layer = node_layers[connection.input_node]
             output_node_layer = node_layers[connection.output_node]
@@ -270,7 +279,14 @@ class DeconstructGenome:
 
             if layer_span > 1 and connection.enabled:
                 # Remove the connection since it will be replaced
-                connections.remove(connection)
+                for original_connection in connections:
+                    if original_connection.input_node == connection.input_node and original_connection.output_node == connection.output_node:
+                        connections.remove(original_connection)
+                        break
+                else:
+                    raise Exception('Connection not found')
+
+                to_remove.append(connection)
 
                 num_added_nodes = layer_span - 1
                 new_nodes = cls.update_nodes(num_added_nodes=num_added_nodes, added_nodes=added_nodes,
@@ -284,6 +300,7 @@ class DeconstructGenome:
                                        added_connections=added_connections,
                                        connection_replaced_weight=connection.weight,
                                        last_dummy_related_to_connection=last_dummy_related_to_connection)
+
 
         return added_nodes, added_connections, last_dummy_related_to_connection
 

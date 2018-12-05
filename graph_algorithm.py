@@ -38,12 +38,13 @@ class Graph:
             overall_paths.append(copy.deepcopy(path))
         else:
             # Go through all the neighbours looking for the destination
-            for neighbour in self.connections[current_node]:
-                # If we haven't visited the neighbour, look through the neighbour for the destination
-                if not visited[neighbour]:
-                    # Call the function recursively
-                    self.count_path_utils(neighbour, destination, visited, path_count, path, overall_paths,
-                                          layer_number)
+            if current_node in self.connections:
+                for neighbour in self.connections[current_node]:
+                    # If we haven't visited the neighbour, look through the neighbour for the destination
+                    if neighbour in visited and not visited[neighbour]:
+                        # Call the function recursively
+                        self.count_path_utils(neighbour, destination, visited, path_count, path, overall_paths,
+                                              layer_number)
 
         layer_number.pop()
         # Remove current vertex from path[] and mark it as unvisited

@@ -55,7 +55,7 @@ class SpeciesSet:
                                                                          config=self.config)
 
         # There's no reason for this to be different depending on who you choose to be the other genome
-        if compatibility_distance_1 != compatibility_distance_2:
+        if round(compatibility_distance_1, 3) != round(compatibility_distance_2, 3):
             raise Exception('There is an error in how compatibility distance is calculated')
 
         return compatibility_distance_1
@@ -173,4 +173,3 @@ class SpeciesSet:
         # Standard deviation
         self.generation_tracker.std_dev_compatibility_distance = np.std(list(dict_of_compatibility_distances.values()))
         self.generation_tracker.num_species = len(self.species)
-
