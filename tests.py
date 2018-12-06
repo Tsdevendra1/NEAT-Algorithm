@@ -570,7 +570,6 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         self.assertEqual(expected_answer, round(cost, 5))
 
     def test_genome_configuration(self):
-        #TODO: Finish this
         node_list = [NodeGene(node_id=1, node_type='source'),
                      NodeGene(node_id=2, node_type='output', bias=0)]
 
@@ -677,7 +676,8 @@ class TestGenomeMutatation(unittest.TestCase):
                                ConnectionGene(input_node=2, output_node=3, innovation_number=2)]
 
             genome = Genome(connections=connection_list, nodes=node_list, key=2)
-            genome.remove_connection()
+            connection_removed = genome.remove_connection()
+            self.assertTrue(connection_removed in connection_list)
             genome.unpack_genome()
             self.assertTrue(genome)
 
@@ -728,7 +728,6 @@ class TestGenomeMutatation(unittest.TestCase):
         self.assertTrue(genome)
 
     def test_remove_node_2(self):
-        # TODO: Check this works
         node_list = [NodeGene(node_id=0, node_type='source'),
                      NodeGene(node_id=1, node_type='source'),
                      NodeGene(node_id=2, node_type='output')]
@@ -738,7 +737,8 @@ class TestGenomeMutatation(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
 
-        genome.remove_node()
+        node_deleted = genome.remove_node()
+        self.assertTrue(node_deleted in {0, 1})
         genome.unpack_genome()
         self.assertTrue(genome)
 

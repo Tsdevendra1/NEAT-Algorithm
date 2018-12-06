@@ -574,6 +574,8 @@ class Genome:
                 for connection in output_connections:
                     del self.connections[connection.innovation_number]
 
+            return connection_to_remove
+
     def add_node(self, reproduction_instance, innovation_tracker):
         """
         Add a node between two existing nodes
@@ -698,9 +700,10 @@ class Genome:
                 for connection in connections_to_delete:
                     del self.connections[connection.innovation_number]
 
-        num_enabled_after = self.check_connection_enabled_amount()
-        if num_enabled_after == 0:
-            raise Exception('You have removed all the connections due to a node removal')
+                num_enabled_after = self.check_connection_enabled_amount()
+                if num_enabled_after == 0:
+                    raise Exception('You have removed all the connections due to a node removal')
+                return node_to_delete
 
     def compute_compatibility_distance(self, other_genome, config):
         """
