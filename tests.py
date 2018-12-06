@@ -507,6 +507,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         y_data = np.array([[1]])
         genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
                                         x_train=x_data, y_train=y_data)
+        self.assertTrue(genome_nn)
 
     def test_update_gene(self):
         node_list = [NodeGene(node_id=1, node_type='source'),
@@ -567,6 +568,18 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         expected_answer = round(-np.log(ActivationFunctions.sigmoid(4)), 5)
 
         self.assertEqual(expected_answer, round(cost, 5))
+
+    def test_genome_configuration(self):
+        #TODO: Finish this
+        node_list = [NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=0)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=2, innovation_number=1, enabled=True, weight=4)]
+        genome = Genome(nodes=node_list, connections=connection_list, key=1)
+        x_data = np.array([[1, 0]])
+        y_data = np.array([[1]])
+        genome_nn = GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data, learning_rate=0.1,
+                                        create_weights_bias_from_genome=True, activation_type='sigmoid')
 
 
 class TestGenomeMutatation(unittest.TestCase):
@@ -712,6 +725,22 @@ class TestGenomeMutatation(unittest.TestCase):
 
         genome.remove_node()
         genome.unpack_genome()
+        self.assertTrue(genome)
+
+    def test_remove_node_2(self):
+        # TODO: Check this works
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output')]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=2, innovation_number=1, enabled=True, weight=1),
+                           ConnectionGene(input_node=0, output_node=2, innovation_number=2, enabled=True, weight=2)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+
+        genome.remove_node()
+        genome.unpack_genome()
+        self.assertTrue(genome)
 
     def test_cross_over(self):
         node_list_1 = [NodeGene(node_id=1, node_type='source'),

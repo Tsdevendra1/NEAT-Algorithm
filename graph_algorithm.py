@@ -16,6 +16,9 @@ class Graph:
     def count_path_utils(self, current_node, destination, visited, path_count, path, overall_paths, layer_number):
         """
         Checks if we're at the destination, adds one if we are, if not check all the neighbours of the current node
+        :param layer_number: Which layer number we're on
+        :param overall_paths: List containing all the possible paths
+        :param path: The current path (list)
         :param current_node: The node we're currently add
         :param destination: The end of the expected path
         :param visited: A dict which keeps which nodes have been visited or not

@@ -414,48 +414,69 @@ class Genome:
         :return:
         Returns a list of connections which can be removed
         """
-        # Check to see that there is at least two source connections and two output connections so that if one get's
-        # removed it's still a valid neural network
-        num_source_connections = 0
-        num_output_connections = 0
-        # All the connections that aren't linked to the output
-        connections_excluding_output = []
-        # All the connections that aren't linked to the source
-        connections_excluding_source = []
-        # All the connections that aren't linked to either source or output
-        connections_excluding_source_and_output = []
+        # # Check to see that there is at least two source connections and two output connections so that if one get's
+        # # removed it's still a valid neural network
+        # num_source_connections = 0
+        # num_output_connections = 0
+        # # All the connections that aren't linked to the output
+        # connections_excluding_output = []
+        # # All the connections that aren't linked to the source
+        # connections_excluding_source = []
+        # # All the connections that aren't linked to either source or output
+        # connections_excluding_source_and_output = []
+        # for connection in self.connections.values():
+        #     # TODO: Check for other mutations about connection being enabled
+        #     # Add all the connections which don't have the output as the output node
+        #     if self.nodes[connection.output_node].node_type == 'output':
+        #         # Only counts if the connection is enabled
+        #         if connection.enabled:
+        #             num_output_connections += 1
+        #     else:
+        #         connections_excluding_output.append(connection)
+        #
+        #     if self.nodes[connection.input_node].node_type == 'source':
+        #         # Only counts if the connection is enabled
+        #         if connection.enabled:
+        #             num_source_connections += 1
+        #     else:
+        #         connections_excluding_source.append(connection)
+        #
+        #     if self.nodes[connection.input_node] != 'source' and self.nodes[connection.output_node] != 'output':
+        #         connections_excluding_source_and_output.append(connection)
+        #
+        # # Means it doesn't matter which one is picked, there will still be a valid path to the end, so we can choose any
+        # if num_source_connections > 1 and num_output_connections > 1:
+        #     choice_list = list(self.connections.values())
+        # # Means that there aren't enough source connections so we can't remove any of them
+        # elif num_output_connections > 1:
+        #     choice_list = connections_excluding_source
+        # # Means there aren't enough output connections so we can't remove any
+        # elif num_source_connections > 1:
+        #     choice_list = connections_excluding_output
+        # # Means there aren't enough source and output connections so we can't choose any of those connections to remove
+        # else:
+        #     choice_list = connections_excluding_source_and_output
+        num_source_to_output_paths, all_paths = self.check_num_paths(only_add_enabled_connections=True,
+                                                                     return_paths=True)
+
+        connection_count = {}
+        for node_paths in all_paths:
+            for path in node_paths:
+                for index in range(len(path) - 1):
+                    connection_tuple = (path[index], path[index + 1])
+                    if connection_tuple not in connection_count:
+                        connection_count[connection_tuple] = 1
+                    else:
+                        connection_count[connection_tuple] += 1
+
+        connections_by_tuple = {}
         for connection in self.connections.values():
-            # TODO: Check for other mutations about connection being enabled
-            # Add all the connections which don't have the output as the output node
-            if self.nodes[connection.output_node].node_type == 'output':
-                # Only counts if the connection is enabled
-                if connection.enabled:
-                    num_output_connections += 1
-            else:
-                connections_excluding_output.append(connection)
+            connections_by_tuple[(connection.input_node, connection.output_node)] = connection
 
-            if self.nodes[connection.input_node].node_type == 'source':
-                # Only counts if the connection is enabled
-                if connection.enabled:
-                    num_source_connections += 1
-            else:
-                connections_excluding_source.append(connection)
-
-            if self.nodes[connection.input_node] != 'source' and self.nodes[connection.output_node] != 'output':
-                connections_excluding_source_and_output.append(connection)
-
-        # Means it doesn't matter which one is picked, there will still be a valid path to the end, so we can choose any
-        if num_source_connections > 1 and num_output_connections > 1:
-            choice_list = list(self.connections.values())
-        # Means that there aren't enough source connections so we can't remove any of them
-        elif num_output_connections > 1:
-            choice_list = connections_excluding_source
-        # Means there aren't enough output connections so we can't remove any
-        elif num_source_connections > 1:
-            choice_list = connections_excluding_output
-        # Means there aren't enough source and output connections so we can't choose any of those connections to remove
-        else:
-            choice_list = connections_excluding_source_and_output
+        choice_list = []
+        for connection, connection_amount in connection_count.items():
+            if connection_amount != num_source_to_output_paths:
+                choice_list.append(connections_by_tuple[connection])
 
         return choice_list
 
@@ -627,6 +648,7 @@ class Genome:
                         node_count[node] = 1
                     else:
                         node_count[node] += 1
+
         for node, node_amount in node_count.items():
             if node_amount != num_source_to_output_paths:
                 viable_nodes_to_be_delete.append(node)

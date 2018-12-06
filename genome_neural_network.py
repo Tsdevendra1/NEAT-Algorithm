@@ -302,7 +302,6 @@ class GenomeNeuralNetwork:
         training data by removing features if there isn't a connection to it.
         """
 
-        not_connection_sources = set()
         source_nodes = {}
 
         # Find the source nodes in the genome
@@ -317,11 +316,28 @@ class GenomeNeuralNetwork:
                 if connection.input_node in source_nodes:
                     source_nodes[connection.input_node] += 1
 
+        not_connection_sources = set()
+        has_connection_sources = set()
         # Filter the one's which don't have any connections
         for node_id, connections_amount in source_nodes.items():
             if connections_amount == 0:
                 not_connection_sources.add(node_id)
+            else:
+                has_connection_sources.add(node_id)
 
+        # Account for the fact that a source node might be deleted
+        if len(source_nodes) != self.x_train.shape[1]:
+            possible_positions = set(range(self.x_train.shape[1]))
+            included_position_by_node = set()
+            for node_id in has_connection_sources:
+                included_position_by_node.add(self.node_map[node_id] - 1)
+
+            for node_position in possible_positions:
+                if node_position not in included_position_by_node:
+                    # Delete the corresponding column
+                    self.x_train = np.delete(self.x_train, 0, node_position)
+
+        # Delete the columns for the source nodes which don't have connections
         for node in not_connection_sources:
             # Get the position of the node inside it's own layer. Minus 1 for python indexing
             node_position = self.node_map[node] - 1
@@ -348,8 +364,6 @@ def main():
 
     # Test and Train data
     data_train, labels_train = create_data(n_generated=5000)
-
-
 
     genome_nn = GenomeNeuralNetwork(genome=genome, x_train=data_train, y_train=labels_train, learning_rate=0.1,
                                     create_weights_bias_from_genome=False, activation_type='sigmoid',
