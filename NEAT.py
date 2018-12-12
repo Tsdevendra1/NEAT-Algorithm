@@ -1,4 +1,5 @@
 from generation_statistics import GenerationStatistics
+import time
 import numpy as np
 from genome_neural_network import GenomeNeuralNetwork
 from reproduce import Reproduce
@@ -89,7 +90,7 @@ class NEAT:
 
         return current_best_genome
 
-    def run(self, max_num_generations, use_backprop):
+    def run(self, max_num_generations, use_backprop, print_generation_information):
         """
         Run the algorithm
         """
@@ -99,28 +100,39 @@ class NEAT:
             # Every generation increment
             current_gen += 1
 
+            self.generation_tracker.population_size = len(self.population)
+
+            start_evaluate_time = time.time()
             # Evaluate the current generation and get the best genome in the current generation
             best_current_genome = self.evaluate_population(use_backprop=use_backprop)
+            end_evaluate_time = time.time()
+            self.generation_tracker.evaluate_execute_time = end_evaluate_time - start_evaluate_time
 
             # Keep track of the best genome across generations
             if self.best_all_time_genome is None or best_current_genome.fitness > self.best_all_time_genome.fitness:
                 self.best_all_time_genome = best_current_genome
 
+            self.generation_tracker.best_all_time_genome_fitness = self.best_all_time_genome.fitness
+
             # If the fitness threshold is met, stop the algorithm
             if self.best_all_time_genome.fitness > self.fitness_threshold:
                 break
 
+            start_reproduce_time = time.time()
             # Reproduce and get the next generation
             self.population = self.reproduction.reproduce(species_set=self.species_set,
                                                           population_size=self.config.population_size,
                                                           generation=current_gen)
+            end_reproduce_time = time.time()
+            self.generation_tracker.reproduce_execute_time = end_reproduce_time - start_reproduce_time
 
-            # Allow for some leaway in population size (+- 5)
-            range_value = 5
-            range_of_population_sizes = set(range(self.config.population_size - range_value,
-                                                  self.config.population_size + range_value + 1))
-            if len(self.population) not in range_of_population_sizes:
-                raise Exception('There is an incorrect number of genomes in the population')
+            # TODO: Uncomment this if it causes an issue
+            # # Allow for some leaway in population size (+- 5)
+            # range_value = 5
+            # range_of_population_sizes = set(range(self.config.population_size - range_value,
+            #                                       self.config.population_size + range_value + 1))
+            # if len(self.population) not in range_of_population_sizes:
+            #     raise Exception('There is an incorrect number of genomes in the population')
 
             # Check to ensure no genes share the same connection gene addresses
             self.ensure_no_duplicate_genes()
@@ -129,12 +141,16 @@ class NEAT:
             if not self.species_set.species:
                 raise CompleteExtinctionException()
 
+            start_specify_time = time.time()
             # Speciate the current generation
             self.species_set.speciate(population=self.population, generation=current_gen,
                                       compatibility_threshold=self.config.compatibility_threshold)
+            end_specify_time = time.time()
+            self.generation_tracker.species_execute_time = end_specify_time - start_specify_time
 
             self.generation_tracker.update_generation_information(generation=current_gen)
-            self.generation_tracker.print_generation_information()
+            if print_generation_information:
+                self.generation_tracker.print_generation_information(generation_interval_for_graph=50)
 
         return self.best_all_time_genome
 

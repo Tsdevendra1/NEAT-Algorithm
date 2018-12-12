@@ -56,7 +56,7 @@ class Reproduce:
             deep_copy_nodes = copy.deepcopy(node_list)
             # Set all the connections to a random weight for each genome
             for connection in deep_copy_connections:
-                connection.weight = np.random.randn()
+                connection.weight = np.random.normal()
             # Increment since the index value has been assigned
             self.genome_indexer += 1
 
@@ -115,8 +115,9 @@ class Reproduce:
         range_value = 5
         range_of_population_sizes = set(range(population_size - range_value,
                                               population_size + range_value + 1))
-        if sum(adjusted_species_sizes) not in range_of_population_sizes:
-            raise Exception('There is an incorrect number of genomes in the population')
+        # TODO: Re-enabled this is problem occurs
+        # if sum(adjusted_species_sizes) not in range_of_population_sizes:
+        #     raise Exception('There is an incorrect number of genomes in the population')
 
         return adjusted_species_sizes
 

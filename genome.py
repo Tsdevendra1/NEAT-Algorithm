@@ -767,7 +767,7 @@ class Genome:
             # 90% chance for the weight to be perturbed by a small amount
             if random_chance < 0.9:
                 # Choose randomly from a range to change the value by
-                connection.weight += np.random.uniform(low=config.weight_range_low, high=config.weight_range_high)
+                connection.weight += np.random.normal()
             # 10% chance for the weight to be assigned a random weight
             else:
                 connection.weight = np.random.randn()

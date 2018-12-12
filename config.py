@@ -23,7 +23,7 @@ class Config:
     weight_uniform_mutation_chance = 0.9
     weight_random_mutation_chance = 0.1
     # A range to choose from for the weight pertubation amount
-    weight_range_low = 0.1
+    weight_range_low = -1.0
     weight_range_high = 1.0
 
     # This is the chance a gene is disabled if it was disabled in either parent
