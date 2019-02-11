@@ -56,7 +56,7 @@ class Reproduce:
             deep_copy_nodes = copy.deepcopy(node_list)
             # Set all the connections to a random weight for each genome
             for connection in deep_copy_connections:
-                connection.weight = np.random.normal()
+                connection.weight = np.random.randn()
             # Increment since the index value has been assigned
             self.genome_indexer += 1
 
@@ -77,6 +77,8 @@ class Reproduce:
         :param min_species_sizes:
         :return:
         """
+
+        # Sum all the remaining adjusted species fitnesses
         adjusted_fitness_sum = sum(adjusted_species_fitnesses)
 
         adjusted_species_sizes = []
@@ -136,10 +138,16 @@ class Reproduce:
         # (Id, species instance, boolean)
         for species_id, species, is_stagnant in self.stagnation.update(species_set=species_set, generation=generation,
                                                                        config=self.config):
-            if is_stagnant:
-                # TODO: What to do here??
-                pass
-            else:
+            # if is_stagnant:
+            #     # TODO: What to do here??
+            #     pass
+            # else:
+            #     # Save all the fitness in the species that isn't stagnant
+            #     all_fitnesses += [member.fitness for member in species.members.values()]
+            #     remaining_species.append(species)
+
+            # Only save species if it is not stagnant
+            if not is_stagnant:
                 # Save all the fitness in the species that isn't stagnant
                 all_fitnesses += [member.fitness for member in species.members.values()]
                 remaining_species.append(species)
@@ -159,6 +167,7 @@ class Reproduce:
         :param population_size: The population size
         :return: A list of sizes for the new remaining species, adjusted for their respective fitness values
         """
+
         # Find min and max fitness across the entire population. We use this for explicit fitness sharing.
         min_genome_fitness = min(all_fitnesses)
         max_genome_fitness = max(all_fitnesses)
@@ -217,23 +226,30 @@ class Reproduce:
             # If we have specified a number of genomes to carry over, carry them over to the new population
             num_genomes_without_crossover = int(round(species_size * self.config.chance_for_mutation_without_crossover))
             if num_genomes_without_crossover > 0:
+
                 for member in old_species_members[:num_genomes_without_crossover]:
-                    child = copy.deepcopy(member)
 
-                    child.mutate(reproduction_instance=self,
-                                 innovation_tracker=self.innovation_tracker, config=self.config)
+                    # Check if we should carry over a member un-mutated or not
+                    if not self.config.keep_unmutated_top_percentage:
+                        child = copy.deepcopy(member)
 
-                    if not child.check_connection_enabled_amount() and not child.check_num_paths(only_add_enabled_connections=True):
-                        raise Exception('This child has no enabled connections')
+                        child.mutate(reproduction_instance=self,
+                                     innovation_tracker=self.innovation_tracker, config=self.config)
 
-                    new_population[child.key] = child
-                    self.ancestors[child.key] = ()
-                    new_population[member.key] = member
-                    species_size -= 1
-                    assert (species_size >= 0)
+                        if not child.check_connection_enabled_amount() and not child.check_num_paths(
+                                only_add_enabled_connections=True):
+                            raise Exception('This child has no enabled connections')
 
-            if species_size == 0:
-                random_test = []
+                        new_population[child.key] = child
+                        self.ancestors[child.key] = ()
+                        # new_population[member.key] = member
+                        species_size -= 1
+                        assert (species_size >= 0)
+                    else:
+                        # Else we just add the current member to the new population
+                        new_population[member.key] = member
+                        species_size -= 1
+                        assert (species_size >= 0)
 
             # If there are no more genomes for the current species, then restart the loop for the next species
             if species_size <= 0:
@@ -275,7 +291,8 @@ class Reproduce:
                     child.mutate(reproduction_instance=self,
                                  innovation_tracker=self.innovation_tracker, config=self.config)
 
-                    if not child.check_connection_enabled_amount() and not child.check_num_paths(only_add_enabled_connections=True):
+                    if not child.check_connection_enabled_amount() and not child.check_num_paths(
+                            only_add_enabled_connections=True):
                         raise Exception('This child has no enabled connections')
 
                     new_population[child.key] = child

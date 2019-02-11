@@ -368,13 +368,13 @@ class Genome:
                 # that connection
                 new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
                                                      innovation_number=innovation_tracker[new_connection],
-                                                     weight=np.random.random())
+                                                     weight=np.random.randn())
 
             else:
                 reproduction_instance.global_innovation_number += 1
                 new_connection_gene = ConnectionGene(input_node=new_connection[0], output_node=new_connection[1],
                                                      innovation_number=reproduction_instance.global_innovation_number,
-                                                     weight=np.random.random())
+                                                     weight=np.random.randn())
 
                 # Save the connection as a current gen innovation
                 innovation_tracker[new_connection] = reproduction_instance.global_innovation_number
@@ -762,15 +762,46 @@ class Genome:
 
         # Mutate all connection weights
         for connection in self.connections.values():
+            # This determines the chance for it to be a positive or negative change to the weight
+            pos_or_neg_chance = np.random.uniform(low=0.0, high=1.0)
             random_chance = np.random.uniform(low=0.0, high=1.0)
             assert (0 <= random_chance <= 1)
             # 90% chance for the weight to be perturbed by a small amount
             if random_chance < 0.9:
-                # Choose randomly from a range to change the value by
-                connection.weight += np.random.normal()
+                if pos_or_neg_chance < 0.5:
+                    connection.weight += np.random.randn()
+                else:
+                    connection.weight -= np.random.randn()
+
             # 10% chance for the weight to be assigned a random weight
             else:
-                connection.weight = np.random.randn()
+                if pos_or_neg_chance < 0.5:
+                    connection.weight = np.random.randn()
+                else:
+                    connection.weight = -np.random.randn()
+
+
+        for node in self.nodes.values():
+            if node.node_type != 'source':
+                # This determines the chance for it to be a positive or negative change to the weight
+                pos_or_neg_chance = np.random.uniform(low=0.0, high=1.0)
+                random_chance = np.random.uniform(low=0.0, high=1.0)
+                assert (0 <= random_chance <= 1)
+                # 90% chance for the weight to be perturbed by a small amount
+                if random_chance < 0.9:
+                    if pos_or_neg_chance < 0.5:
+                        # Choose randomly from a range to change the value by
+                        node.bias += np.random.randn()
+                    else:
+                        # Choose randomly from a range to change the value by
+                        node.bias -= np.random.randn()
+
+                # 10% chance for the weight to be assigned a random weight
+                else:
+                    if pos_or_neg_chance < 0.5:
+                        node.bias = np.random.randn()
+                    else:
+                        node.bias = -np.random.randn()
 
 
 def main():

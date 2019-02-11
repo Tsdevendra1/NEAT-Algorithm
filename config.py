@@ -59,4 +59,5 @@ class Config:
     """
     # Percentage of the population which carries on un-changed(?)
     survival_threshold = 0.2
-
+    # This means that a certain percentage of the top elite genomes will carry over to the next population un changed
+    keep_unmutated_top_percentage = False

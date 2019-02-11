@@ -150,7 +150,7 @@ class NEAT:
 
             self.generation_tracker.update_generation_information(generation=current_gen)
             if print_generation_information:
-                self.generation_tracker.print_generation_information(generation_interval_for_graph=50)
+                self.generation_tracker.print_generation_information(generation_interval_for_graph=150)
 
         return self.best_all_time_genome
 
