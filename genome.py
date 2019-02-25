@@ -582,7 +582,7 @@ class Genome:
         """
 
         # Create the new node
-        new_node = NodeGene(node_id=(max(self.nodes.keys()) + 1), node_type='hidden', bias=np.random.randn())
+        new_node = NodeGene(node_id=(max(self.nodes.keys()) + 1), node_type='hidden', bias=1)
 
         # The connection where the node will be added
         connections_list = list(self.connections.values())

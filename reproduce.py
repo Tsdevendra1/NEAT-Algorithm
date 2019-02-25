@@ -30,8 +30,8 @@ class Reproduce:
         for node in range(num_features):
             node_list.append(NodeGene(node_id=node, node_type='source'))
 
-        # Add the output node
-        node_list.append(NodeGene(node_id=num_features, node_type='output', bias=0))
+        # Add the output node (There is only one in this case)
+        node_list.append(NodeGene(node_id=num_features, node_type='output', bias=1))
 
         # Save the innovations for the first generation.
         for source_node_id in range(num_features):

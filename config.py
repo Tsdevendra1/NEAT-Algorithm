@@ -11,7 +11,10 @@ class Config:
     # The coefficients used for calculating the compatibility distance between two genomes
     excess_coefficient = 1
     disjoint_coefficient = 1
+    # This is for when the genes are the same so they check the similarity of the weights
     matching_genes_coefficient = 0.4
+
+    # How close they have to be to be considered in the same species
     compatibility_threshold = 3
 
     """
@@ -60,4 +63,4 @@ class Config:
     # Percentage of the population which carries on un-changed(?)
     survival_threshold = 0.2
     # This means that a certain percentage of the top elite genomes will carry over to the next population un changed
-    keep_unmutated_top_percentage = False
+    keep_unmutated_top_percentage = False # (Default should be False)
