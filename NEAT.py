@@ -119,10 +119,19 @@ class NEAT:
                 break
 
             start_reproduce_time = time.time()
+
+            # Reset the number of mutations which have occured for the current generation. The values will be
+            # incremented when reproduction occurs
+            self.generation_tracker.num_generation_add_connection = 0
+            self.generation_tracker.num_generation_add_node = 0
+            self.generation_tracker.num_generation_delete_connection = 0
+            self.generation_tracker.num_generation_delete_node = 0
+
             # Reproduce and get the next generation
             self.population = self.reproduction.reproduce(species_set=self.species_set,
                                                           population_size=self.config.population_size,
-                                                          generation=current_gen)
+                                                          generation=current_gen,
+                                                          generation_tracker=self.generation_tracker)
             end_reproduce_time = time.time()
             self.generation_tracker.reproduce_execute_time = end_reproduce_time - start_reproduce_time
 

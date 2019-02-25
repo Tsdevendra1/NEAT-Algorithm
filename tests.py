@@ -990,5 +990,38 @@ class TestGenomeReproduction(unittest.TestCase):
             self.assertTrue(genome_2.check_num_paths(only_add_enabled_connections=True) > 0)
 
 
+class TestGenomeCompatibility(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_compatibility_test_1(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='hidden', bias=1),
+                     NodeGene(node_id=4, node_type='hidden', bias=1)]
+
+        connection_list_1 = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=2, weight=1.6358, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=3, weight=-0.0385, enabled=False),
+            ConnectionGene(input_node=3, output_node=2, innovation_number=4, weight=-5.0418, enabled=True),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=8, weight=1.831, enabled=True),
+            ConnectionGene(input_node=4, output_node=3, innovation_number=9, weight=1.591, enabled=True)]
+
+        connection_list_2 = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-4.156, enabled=False),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=2, weight=-2.202, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=3, weight=0.92, enabled=True),
+            ConnectionGene(input_node=3, output_node=2, innovation_number=4, weight=-1.67, enabled=True)]
+
+        genome_1 = Genome(connections=connection_list_1, nodes=node_list, key=3)
+        genome_2 = Genome(connections=connection_list_2, nodes=node_list, key=2)
+
+        compat_dist = genome_1.compute_compatibility_distance(other_genome=genome_2, config=Config)
+        self.assertAlmostEqual(compat_dist, 3.19731)
+
+
 if __name__ == '__main__':
     unittest.main()

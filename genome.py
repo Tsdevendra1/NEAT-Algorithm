@@ -240,7 +240,7 @@ class Genome:
 
         return num_enabled
 
-    def mutate(self, reproduction_instance, innovation_tracker, config):
+    def mutate(self, reproduction_instance, innovation_tracker, config, generation_tracker):
         """
         Will call one of the possible mutation abilities using a random() number generated
         :return:
@@ -260,6 +260,7 @@ class Genome:
             # Unpack the genome after whatever mutation has occured
             self.mutations_occured.append('Add Connection')
             self.unpack_genome()
+            generation_tracker.num_generation_add_connection += 1
 
         # Add node if
         if add_node_roll < config.add_node_mutation_chance:
@@ -268,6 +269,7 @@ class Genome:
             self.mutations_occured.append('Add Node')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
+            generation_tracker.num_generation_add_node += 1
 
         # Mutate weight if
         if mutate_weight_roll < config.weight_mutation_chance:
@@ -278,12 +280,14 @@ class Genome:
             self.mutations_occured.append('Remove Node')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
+            generation_tracker.num_generation_delete_node += 1
 
         if remove_connection_roll < config.remove_connection_mutation_chance:
             self.remove_connection()
             self.mutations_occured.append('Remove Connection')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
+            generation_tracker.num_generation_delete_connection += 1
 
     def clean_combinations(self, possible_combinations):
         """
@@ -636,6 +640,9 @@ class Genome:
         return first_new_connection, second_new_connection
 
     def get_viable_nodes_to_delete(self):
+        """
+        :return: A list of nodes which are available to be deleted
+        """
         viable_nodes_to_be_delete = []
         # connections_able_to_remove = self.check_which_connections_removable()
         num_source_to_output_paths, all_paths = self.check_num_paths(only_add_enabled_connections=True,
@@ -779,7 +786,6 @@ class Genome:
                     connection.weight = np.random.randn()
                 else:
                     connection.weight = -np.random.randn()
-
 
         for node in self.nodes.values():
             if node.node_type != 'source':

@@ -95,18 +95,37 @@ class SpeciesSet:
 
             candidates = []
 
+            # Keeps track of the distances with each representative
+            compatibility_distances_dict = {}
+            representative_genomes_list = []
+
             for species_id, representative_id in new_representatives.items():
                 representative_genome = population[representative_id]
                 compatibility_distance = self.calculate_compatibility_distance(
                     species_representative=representative_genome, genome=genome)
 
+                compatibility_distances_dict[representative_genome] = compatibility_distance
+                representative_genomes_list.append(representative_genome)
+
                 dict_of_compatibility_distances[(representative_genome, genome)] = compatibility_distance
                 if compatibility_distance < compatibility_threshold:
                     candidates.append((compatibility_distance, species_id))
 
+            # Check to see if any of the representatives are below the threshold
+            no_distances_less_than_threshold = True
+            for distance in compatibility_distances_dict.values():
+                if distance < compatibility_threshold:
+                    no_distances_less_than_threshold = False
+                    break
+
+            if no_distances_less_than_threshold:
+                # TODO: Remove this if not necessary
+                random = 3
+
             if candidates:
                 _, species_id = min(candidates, key=lambda x: x[0])
                 new_members[species_id].append(genome_id)
+
             # We have to create a new species for the genome since it's not compatible
             else:
                 # increment for a new species

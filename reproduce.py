@@ -194,9 +194,10 @@ class Reproduce:
 
         return adjusted_species_sizes
 
-    def get_new_population(self, adjusted_species_sizes, remaining_species, species_set):
+    def get_new_population(self, adjusted_species_sizes, remaining_species, species_set, generation_tracker):
         """
         Creates the dictionary of the new genomes for the next generation population
+        :param: genetation_tracker:
         :param adjusted_species_sizes:
         :param remaining_species:
         :param species_set:
@@ -289,7 +290,7 @@ class Reproduce:
                 # population
                 if num_connections_enabled:
                     child.mutate(reproduction_instance=self,
-                                 innovation_tracker=self.innovation_tracker, config=self.config)
+                                 innovation_tracker=self.innovation_tracker, config=self.config, generation_tracker=generation_tracker)
 
                     if not child.check_connection_enabled_amount() and not child.check_num_paths(
                             only_add_enabled_connections=True):
@@ -298,15 +299,17 @@ class Reproduce:
                     new_population[child.key] = child
                     self.ancestors[child.key] = (parent_1.key, parent_2.key)
                 else:
+                    # Else if the crossover resulted in an invalid genome.
                     assert num_connections_enabled == 0
                     species_size += 1
                     self.genome_indexer -= 1
 
         return new_population
 
-    def reproduce(self, species_set, population_size, generation):
+    def reproduce(self, species_set, population_size, generation, generation_tracker):
         """
         Handles reproduction of a population
+        :param generation_tracker: An class instance which keeps track of certain parameters for each generation
         :param generation: Which generation number it is
         :param species_set: The SpeciesSet instance which keeps track of species
         :param population_size: The population size
@@ -326,6 +329,6 @@ class Reproduce:
 
         # Keeps track of the new population (key, object)
         new_population = self.get_new_population(adjusted_species_sizes=adjusted_species_sizes, species_set=species_set,
-                                                 remaining_species=remaining_species)
+                                                 remaining_species=remaining_species, generation_tracker=generation_tracker)
 
         return new_population
