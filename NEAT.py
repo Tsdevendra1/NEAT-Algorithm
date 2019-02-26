@@ -126,6 +126,7 @@ class NEAT:
             self.generation_tracker.num_generation_add_node = 0
             self.generation_tracker.num_generation_delete_connection = 0
             self.generation_tracker.num_generation_delete_node = 0
+            self.generation_tracker.num_generation_weight_mutations = 0
 
             # Reproduce and get the next generation
             self.population = self.reproduction.reproduce(species_set=self.species_set,
@@ -160,6 +161,9 @@ class NEAT:
             self.generation_tracker.update_generation_information(generation=current_gen)
             if print_generation_information:
                 self.generation_tracker.print_generation_information(generation_interval_for_graph=150)
+
+            # Gives distribution of the weights in the population connections
+            self.reproduction.show_population_weight_distribution(population=self.population)
 
         return self.best_all_time_genome
 

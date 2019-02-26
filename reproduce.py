@@ -3,6 +3,8 @@ from genome import Genome
 from species import SpeciesSet
 import random
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import math
 import copy
 
@@ -64,7 +66,20 @@ class Reproduce:
             population[index] = Genome(connections=deep_copy_connections, nodes=deep_copy_nodes,
                                        key=self.genome_indexer)
 
+        self.show_population_weight_distribution(population=population)
+
         return population
+
+    @staticmethod
+    def show_population_weight_distribution(population):
+        # See the spread of starting weights
+        list_of_weights = []
+        for genome in population.values():
+            for connection in genome.connections.values():
+                list_of_weights.append(connection.weight)
+
+        sns.distplot(list_of_weights)
+        plt.show()
 
     @staticmethod
     def compute_adjusted_species_sizes(adjusted_species_fitnesses, previous_species_sizes, population_size,
@@ -74,7 +89,7 @@ class Reproduce:
         :param adjusted_species_fitnesses:
         :param previous_species_sizes:
         :param population_size:
-        :param min_species_sizes:
+        :param min_species_size:
         :return:
         """
 
@@ -290,7 +305,8 @@ class Reproduce:
                 # population
                 if num_connections_enabled:
                     child.mutate(reproduction_instance=self,
-                                 innovation_tracker=self.innovation_tracker, config=self.config, generation_tracker=generation_tracker)
+                                 innovation_tracker=self.innovation_tracker, config=self.config,
+                                 generation_tracker=generation_tracker)
 
                     if not child.check_connection_enabled_amount() and not child.check_num_paths(
                             only_add_enabled_connections=True):
@@ -329,6 +345,7 @@ class Reproduce:
 
         # Keeps track of the new population (key, object)
         new_population = self.get_new_population(adjusted_species_sizes=adjusted_species_sizes, species_set=species_set,
-                                                 remaining_species=remaining_species, generation_tracker=generation_tracker)
+                                                 remaining_species=remaining_species,
+                                                 generation_tracker=generation_tracker)
 
         return new_population

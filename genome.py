@@ -253,8 +253,17 @@ class Genome:
         remove_node_roll = np.random.uniform(low=0.0, high=1.0)
         remove_connection_roll = np.random.uniform(low=0.0, high=1.0)
 
-        # Add connection if
-        if add_connection_roll < config.add_connection_mutation_chance:
+        mutation_roll = np.random.uniform(low=0.0, high=1.0)
+
+        # Boundaries for different rolls (These are all higher end of the boundary)
+        add_connection_boundary = config.add_connection_mutation_chance
+        add_node_boundary = add_connection_boundary + config.add_connection_mutation_chance
+        weight_mutation_boundary = add_node_boundary + config.weight_mutation_chance
+        remove_node_boundary = weight_mutation_boundary + config.remove_node_mutation_chance
+        remove_connection_boundary = remove_node_boundary + config.remove_connection_mutation_chance
+
+        # Add connection
+        if 0 <= mutation_roll <= add_connection_boundary:
             self.add_connection(reproduction_instance=reproduction_instance,
                                 innovation_tracker=innovation_tracker)
             # Unpack the genome after whatever mutation has occured
@@ -262,8 +271,9 @@ class Genome:
             self.unpack_genome()
             generation_tracker.num_generation_add_connection += 1
 
-        # Add node if
-        if add_node_roll < config.add_node_mutation_chance:
+        # Add node
+        # if config.add_connection_mutation_chance < mutation_roll <= config.add_connection_mutation_chance + config.add_node_mutation_chance:
+        if add_connection_boundary < mutation_roll <= add_node_boundary:
             self.add_node(reproduction_instance=reproduction_instance,
                           innovation_tracker=innovation_tracker)
             self.mutations_occured.append('Add Node')
@@ -271,18 +281,24 @@ class Genome:
             self.unpack_genome()
             generation_tracker.num_generation_add_node += 1
 
-        # Mutate weight if
-        if mutate_weight_roll < config.weight_mutation_chance:
+        # Mutate weight
+        # if mutate_weight_roll < config.weight_mutation_chance:
+        if add_connection_boundary < mutation_roll <= weight_mutation_boundary:
             self.mutate_weight(config=config)
+            generation_tracker.num_generation_weight_mutations += 1
 
-        if remove_node_roll < config.remove_node_mutation_chance:
+        # Remove node
+        # if remove_node_roll < config.remove_node_mutation_chance:
+        if weight_mutation_boundary < mutation_roll <= remove_node_boundary:
             self.remove_node()
             self.mutations_occured.append('Remove Node')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
             generation_tracker.num_generation_delete_node += 1
 
-        if remove_connection_roll < config.remove_connection_mutation_chance:
+        # Remove connection
+        # if remove_connection_roll < config.remove_connection_mutation_chance:
+        if remove_node_boundary < mutation_roll <= remove_connection_boundary:
             self.remove_connection()
             self.mutations_occured.append('Remove Connection')
             # Unpack the genome after whatever mutation has occured
@@ -338,7 +354,7 @@ class Genome:
         Add a random connection
         :param innovation_tracker: The innovations that have happened in the past
         :param reproduction_instance: An instance of the reproduction class so we can access the global innovation number
-        
+
         """
 
         # Keeps a list of nodes which can't be chosen from to be the start node of the new connection
@@ -770,44 +786,28 @@ class Genome:
         # Mutate all connection weights
         for connection in self.connections.values():
             # This determines the chance for it to be a positive or negative change to the weight
-            pos_or_neg_chance = np.random.uniform(low=0.0, high=1.0)
             random_chance = np.random.uniform(low=0.0, high=1.0)
             assert (0 <= random_chance <= 1)
             # 90% chance for the weight to be perturbed by a small amount
             if random_chance < 0.9:
-                if pos_or_neg_chance < 0.5:
-                    connection.weight += np.random.randn()
-                else:
-                    connection.weight -= np.random.randn()
+                connection.weight += np.random.normal(loc=config.weight_mutation_mean, scale=config.weight_mutation_sigma)
 
             # 10% chance for the weight to be assigned a random weight
             else:
-                if pos_or_neg_chance < 0.5:
-                    connection.weight = np.random.randn()
-                else:
-                    connection.weight = -np.random.randn()
+                connection.weight = np.random.randn()
 
         for node in self.nodes.values():
             if node.node_type != 'source':
                 # This determines the chance for it to be a positive or negative change to the weight
-                pos_or_neg_chance = np.random.uniform(low=0.0, high=1.0)
                 random_chance = np.random.uniform(low=0.0, high=1.0)
                 assert (0 <= random_chance <= 1)
                 # 90% chance for the weight to be perturbed by a small amount
                 if random_chance < 0.9:
-                    if pos_or_neg_chance < 0.5:
-                        # Choose randomly from a range to change the value by
-                        node.bias += np.random.randn()
-                    else:
-                        # Choose randomly from a range to change the value by
-                        node.bias -= np.random.randn()
+                    node.bias += np.random.normal(loc=config.weight_mutation_mean, scale=config.weight_mutation_sigma)
 
                 # 10% chance for the weight to be assigned a random weight
                 else:
-                    if pos_or_neg_chance < 0.5:
-                        node.bias = np.random.randn()
-                    else:
-                        node.bias = -np.random.randn()
+                    node.bias = np.random.randn()
 
 
 def main():

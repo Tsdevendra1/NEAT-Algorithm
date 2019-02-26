@@ -26,9 +26,11 @@ class Config:
     weight_mutation_chance = 0.8
     weight_uniform_mutation_chance = 0.9
     weight_random_mutation_chance = 0.1
-    # A range to choose from for the weight pertubation amount
-    weight_range_low = -1.0
-    weight_range_high = 1.0
+
+    # Standard deviation for the distribution for which we pick the pertubation value from
+    weight_mutation_sigma = 0.5
+    # Mean for the distribution for which we pick the pertubation value from
+    weight_mutation_mean = 0.0
 
     # This is the chance a gene is disabled if it was disabled in either parent
     change_to_disable_gene_if_either_parent_disabled = 0.75
@@ -64,4 +66,4 @@ class Config:
     # Percentage of the population which carries on un-changed(?)
     survival_threshold = 0.2
     # This means that a certain percentage of the top elite genomes will carry over to the next population un changed
-    keep_unmutated_top_percentage = True # (Default should be False)
+    keep_unmutated_top_percentage = True  # (Default should be False)
