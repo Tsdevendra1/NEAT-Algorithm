@@ -21,11 +21,11 @@ class Config:
     """
     Mutation
     """
+    # Whether only one type of mutation can happen at any time.
+    single_mutation_only = False
 
     # Weight changes
     weight_mutation_chance = 0.8
-    weight_uniform_mutation_chance = 0.9
-    weight_random_mutation_chance = 0.1
 
     # Standard deviation for the distribution for which we pick the pertubation value from
     weight_mutation_sigma = 0.5
@@ -41,13 +41,13 @@ class Config:
 
     add_node_mutation_chance = 0.03
     add_connection_mutation_chance = 0.05
-    # TODO: Find correct chance for these values
     remove_node_mutation_chance = 0.01
     remove_connection_mutation_chance = 0.01
 
     """
     Speciation
     """
+
     # Parameters used when check stagnation
     # Allowable number of generations before considered stagnant
     max_stagnation_generations = 15

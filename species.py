@@ -48,9 +48,9 @@ class SpeciesSet:
         if function_type == 'mean':
             return np.mean(species_member_fitnesses)
 
-    def calculate_compatibility_distance(self, species_representative, genome):
+    def calculate_compatibility_distance(self, species_representative, genome, generation_tracker=None):
         compatibility_distance_1 = species_representative.compute_compatibility_distance(other_genome=genome,
-                                                                                         config=self.config)
+                                                                                         config=self.config, generation_tracker=generation_tracker)
         compatibility_distance_2 = genome.compute_compatibility_distance(other_genome=species_representative,
                                                                          config=self.config)
 
@@ -88,7 +88,7 @@ class SpeciesSet:
             unspeciated.remove(new_rep_id)
 
     def find_species_members(self, unspeciated, population, dict_of_compatibility_distances,
-                             new_representatives, new_members, compatibility_threshold):
+                             new_representatives, new_members, compatibility_threshold, generation_tracker):
         while unspeciated:
             genome_id = unspeciated.pop()
             genome = population[genome_id]
@@ -102,7 +102,7 @@ class SpeciesSet:
             for species_id, representative_id in new_representatives.items():
                 representative_genome = population[representative_id]
                 compatibility_distance = self.calculate_compatibility_distance(
-                    species_representative=representative_genome, genome=genome)
+                    species_representative=representative_genome, genome=genome, generation_tracker=generation_tracker)
 
                 compatibility_distances_dict[representative_genome] = compatibility_distance
                 representative_genomes_list.append(representative_genome)
@@ -161,12 +161,13 @@ class SpeciesSet:
             members_dict = dict((genome_id, population[genome_id]) for genome_id in members)
             species_object.update(representative=population[representative_id], members=members_dict)
 
-    def speciate(self, population, compatibility_threshold, generation):
+    def speciate(self, population, compatibility_threshold, generation, generation_tracker=None):
         """
 
         :param generation: Which generation number it is
         :param compatibility_threshold:
         :param population: A dict of (genome_id, genome_class)
+        :param generation_tracker: Tracks attributes for the current generation
         :return:
         """
         unspeciated = set(population)
@@ -182,7 +183,7 @@ class SpeciesSet:
         self.find_species_members(unspeciated=unspeciated,
                                   dict_of_compatibility_distances=dict_of_compatibility_distances,
                                   new_members=new_members, new_representatives=new_representatives,
-                                  compatibility_threshold=compatibility_threshold, population=population)
+                                  compatibility_threshold=compatibility_threshold, population=population, generation_tracker=generation_tracker)
 
         self.save_species_info(new_representatives=new_representatives, new_members=new_members, population=population,
                                generation=generation)

@@ -266,9 +266,11 @@ class GenomeNeuralNetwork:
                 # Minus one because node_layers counts the first layer as a layer where as the bias dict doesn't
                 node.bias = self.bias_dict[node_layer - 1][0, node_position]
 
-    def optimise(self, error_stop=None):
+    def optimise(self, print_epoch, error_stop=None):
         """
         Train the neural network
+        :param print_epoch: Boolean, print the cost every epoch or not
+        :param error_stop: whether to stop if a certange error threshold is reached
         :return: a list of each epoch with the cost associated with it
         """
 
@@ -290,7 +292,15 @@ class GenomeNeuralNetwork:
             if error_stop and epoch_cost < error_stop:
                 break
 
-            print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
+            # Print progress every 10%
+            if epoch % (self.num_epochs * 0.1) == 0 and epoch != 0:
+                percentage_complete = (epoch/self.num_epochs)* 100
+                print('Optimising {}% done...'.format(percentage_complete))
+
+            if print_epoch:
+                print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
+
+        print('Optimising 100% done...')
 
         self.update_genes()
 

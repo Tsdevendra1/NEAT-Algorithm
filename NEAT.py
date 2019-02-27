@@ -52,7 +52,6 @@ class NEAT:
         num_connections_overall = []
         num_connections_enabled = []
         all_fitnesses = []
-
         for genome in self.population.values():
             num_nodes_overall.append(len(genome.nodes))
             num_nodes_enabled.append(len(genome.get_active_nodes()))
@@ -66,7 +65,9 @@ class NEAT:
 
             # Optimise the neural_network_first
             if use_backprop:
-                genome_nn.optimise()
+                print('\n')
+                print('OPTIMISING GENOME')
+                genome_nn.optimise(print_epoch=False)
 
             # We use genome_nn.x_train instead of self.x_train because the genome_nn might have deleted a row if there
             # is no connection to one of the sources
@@ -74,6 +75,11 @@ class NEAT:
 
             # The fitness is the negative of the cost. Because less cost = greater fitness
             genome.fitness = -cost
+
+            # Only print genome fitness after is back prop is used since back prop takes a long time so this can be a
+            #  way of tracking progress in the meantime
+            if use_backprop:
+                print('Genome Fitness After: {}'.format(genome.fitness))
 
             all_fitnesses.append(genome.fitness)
 
@@ -120,13 +126,8 @@ class NEAT:
 
             start_reproduce_time = time.time()
 
-            # Reset the number of mutations which have occured for the current generation. The values will be
-            # incremented when reproduction occurs
-            self.generation_tracker.num_generation_add_connection = 0
-            self.generation_tracker.num_generation_add_node = 0
-            self.generation_tracker.num_generation_delete_connection = 0
-            self.generation_tracker.num_generation_delete_node = 0
-            self.generation_tracker.num_generation_weight_mutations = 0
+            # Reset attributes for the current generation
+            self.generation_tracker.reset_tracker_attributes()
 
             # Reproduce and get the next generation
             self.population = self.reproduction.reproduce(species_set=self.species_set,
@@ -144,7 +145,8 @@ class NEAT:
             # if len(self.population) not in range_of_population_sizes:
             #     raise Exception('There is an incorrect number of genomes in the population')
 
-            # Check to ensure no genes share the same connection gene addresses
+            # Check to ensure no genes share the same connection gene addresses. (This problem has been fixed but is
+            # here just incase now).
             self.ensure_no_duplicate_genes()
 
             # Check if there are any species, if not raise an exception. TODO: Let user reset population if extinction
@@ -154,7 +156,7 @@ class NEAT:
             start_specify_time = time.time()
             # Speciate the current generation
             self.species_set.speciate(population=self.population, generation=current_gen,
-                                      compatibility_threshold=self.config.compatibility_threshold)
+                                      compatibility_threshold=self.config.compatibility_threshold, generation_tracker=self.generation_tracker)
             end_specify_time = time.time()
             self.generation_tracker.species_execute_time = end_specify_time - start_specify_time
 

@@ -25,8 +25,24 @@ class GenerationStatistics:
         self.num_generation_add_connection = None
         self.num_generation_delete_connection = None
         self.num_generation_weight_mutations = None
+        self.perturbation_values_max = None
+        self.perturbation_values_min = None
+        self.perturbation_values_list = None
+        self.num_disjoint_list = None
+        self.num_excess_list = None
+        self.weight_diff_list = None
+        self.avg_num_disjoint = None
+        self.avg_num_excess = None
+        self.avg_weight_diff = None
 
     def update_generation_information(self, generation):
+
+        # Update min and max values of perturbation to weights
+        self.perturbation_values_max = max(self.perturbation_values_list)
+        self.perturbation_values_min = min(self.perturbation_values_list)
+        self.avg_num_disjoint = np.mean(self.num_disjoint_list)
+        self.avg_num_excess = np.mean(self.num_excess_list)
+        self.avg_weight_diff = np.mean(self.weight_diff_list)
 
         information = {}
         for info_type, info_value in self.__dict__.items():
@@ -37,6 +53,21 @@ class GenerationStatistics:
 
         self.generation_information[generation] = information
 
+    def reset_tracker_attributes(self):
+        """
+        Reset the number of mutations which have occured for the current generation.
+        :return:
+        """
+        self.num_generation_add_connection = 0
+        self.num_generation_add_node = 0
+        self.num_generation_delete_connection = 0
+        self.num_generation_delete_node = 0
+        self.num_generation_weight_mutations = 0
+        self.perturbation_values_list = []
+        self.num_excess_list = []
+        self.num_disjoint_list = []
+        self.weight_diff_list = []
+
     def print_generation_information(self, generation_interval_for_graph):
         current_gen = max(self.generation_information.keys())
         print('**************************** Generation {} *******************************'.format(current_gen))
@@ -46,13 +77,23 @@ class GenerationStatistics:
             ('Added Node Mutations', self.generation_information[current_gen]['num_generation_add_node']),
             ('Delete Node Mutations', self.generation_information[current_gen]['num_generation_delete_node']),
             ('Add Connection Mutations', self.generation_information[current_gen]['num_generation_add_connection']),
-            ('Delete Connection Mutations', self.generation_information[current_gen]['num_generation_delete_connection']),
+            ('Delete Connection Mutations',
+             self.generation_information[current_gen]['num_generation_delete_connection']),
             ('Weight Mutations', self.generation_information[current_gen]['num_generation_weight_mutations']),
             ('Average Fitness', self.generation_information[current_gen]['average_population_fitness']),
             ('Best Genome Fitness', self.generation_information[current_gen]['best_all_time_genome_fitness']),
-            ('Average Number of Connections Per Genome', self.generation_information[current_gen]['mean_number_connections_enabled']),
-            ('Average Number of Nodes Per Genome', self.generation_information[current_gen]['mean_number_nodes_enabled']),
+            ('Average Number of Connections Per Genome',
+             self.generation_information[current_gen]['mean_number_connections_enabled']),
+            ('Average Number of Nodes Per Genome',
+             self.generation_information[current_gen]['mean_number_nodes_enabled']),
             ('Average Compatibility Distance', self.generation_information[current_gen]['mean_compatibility_distance']),
+            ('Perturbation Max Value', self.generation_information[current_gen]['perturbation_values_max']),
+            ('Perturbation Min Value', self.generation_information[current_gen]['perturbation_values_min']),
+            ('Average Number of Disjoint Genes', self.generation_information[current_gen]['avg_num_disjoint']),
+            ('Average Number of Excess Genes', self.generation_information[current_gen]['avg_num_excess']),
+            ('Average Weight Difference', self.generation_information[current_gen]['avg_weight_diff']),
+            ('Average Number of Connections', self.generation_information[current_gen]['mean_number_connections_overall']),
+            # ('Average Number of Nodes', self.generation_information[current_gen]['avg_weight_diff']),
         ]
 
         # Make it an ordereddict to keep the order above.

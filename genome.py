@@ -246,24 +246,34 @@ class Genome:
         :return:
         """
 
-        # The rolls to see if each mutation occurs
-        add_connection_roll = np.random.uniform(low=0.0, high=1.0)
-        add_node_roll = np.random.uniform(low=0.0, high=1.0)
-        mutate_weight_roll = np.random.uniform(low=0.0, high=1.0)
-        remove_node_roll = np.random.uniform(low=0.0, high=1.0)
-        remove_connection_roll = np.random.uniform(low=0.0, high=1.0)
+        if config.single_mutation_only:
+            mutation_roll = np.random.uniform(low=0.0, high=1.0)
 
-        mutation_roll = np.random.uniform(low=0.0, high=1.0)
+            # Boundaries for different rolls (These are all higher end of the boundary)
+            add_connection_boundary = config.add_connection_mutation_chance
+            add_node_boundary = add_connection_boundary + config.add_node_mutation_chance
+            remove_node_boundary = add_node_boundary + config.remove_node_mutation_chance
+            remove_connection_boundary = remove_node_boundary + config.remove_connection_mutation_chance
 
-        # Boundaries for different rolls (These are all higher end of the boundary)
-        add_connection_boundary = config.add_connection_mutation_chance
-        add_node_boundary = add_connection_boundary + config.add_connection_mutation_chance
-        weight_mutation_boundary = add_node_boundary + config.weight_mutation_chance
-        remove_node_boundary = weight_mutation_boundary + config.remove_node_mutation_chance
-        remove_connection_boundary = remove_node_boundary + config.remove_connection_mutation_chance
+            add_connection_condition = 0 < mutation_roll <= add_connection_boundary
+            add_node_condition = add_connection_boundary < mutation_roll <= add_node_boundary
+            remove_node_condition = add_node_boundary < mutation_roll <= remove_node_boundary
+            remove_connection_condition = remove_node_boundary < mutation_roll <= remove_connection_boundary
 
-        # Add connection
-        if 0 <= mutation_roll <= add_connection_boundary:
+        else:
+            # The rolls to see if each mutation occurs
+            add_connection_roll = np.random.uniform(low=0.0, high=1.0)
+            add_node_roll = np.random.uniform(low=0.0, high=1.0)
+            remove_node_roll = np.random.uniform(low=0.0, high=1.0)
+            remove_connection_roll = np.random.uniform(low=0.0, high=1.0)
+
+            add_connection_condition = add_connection_roll <= config.add_connection_mutation_chance
+            add_node_condition = add_node_roll <= config.add_node_mutation_chance
+            remove_node_condition = remove_node_roll <= config.remove_node_mutation_chance
+            remove_connection_condition = remove_connection_roll <= config.remove_connection_mutation_chance
+
+            # Add connection
+        if add_connection_condition:
             self.add_connection(reproduction_instance=reproduction_instance,
                                 innovation_tracker=innovation_tracker)
             # Unpack the genome after whatever mutation has occured
@@ -272,8 +282,7 @@ class Genome:
             generation_tracker.num_generation_add_connection += 1
 
         # Add node
-        # if config.add_connection_mutation_chance < mutation_roll <= config.add_connection_mutation_chance + config.add_node_mutation_chance:
-        if add_connection_boundary < mutation_roll <= add_node_boundary:
+        if add_node_condition:
             self.add_node(reproduction_instance=reproduction_instance,
                           innovation_tracker=innovation_tracker)
             self.mutations_occured.append('Add Node')
@@ -281,15 +290,8 @@ class Genome:
             self.unpack_genome()
             generation_tracker.num_generation_add_node += 1
 
-        # Mutate weight
-        # if mutate_weight_roll < config.weight_mutation_chance:
-        if add_connection_boundary < mutation_roll <= weight_mutation_boundary:
-            self.mutate_weight(config=config)
-            generation_tracker.num_generation_weight_mutations += 1
-
         # Remove node
-        # if remove_node_roll < config.remove_node_mutation_chance:
-        if weight_mutation_boundary < mutation_roll <= remove_node_boundary:
+        if remove_node_condition:
             self.remove_node()
             self.mutations_occured.append('Remove Node')
             # Unpack the genome after whatever mutation has occured
@@ -297,13 +299,17 @@ class Genome:
             generation_tracker.num_generation_delete_node += 1
 
         # Remove connection
-        # if remove_connection_roll < config.remove_connection_mutation_chance:
-        if remove_node_boundary < mutation_roll <= remove_connection_boundary:
+        if remove_connection_condition:
             self.remove_connection()
             self.mutations_occured.append('Remove Connection')
             # Unpack the genome after whatever mutation has occured
             self.unpack_genome()
             generation_tracker.num_generation_delete_connection += 1
+
+        # Mutate weight (This is independent of all other mutations)
+        if np.random.uniform(low=0.0, high=1.0) < config.weight_mutation_chance:
+            self.mutate_weight(config=config, generation_tracker=generation_tracker)
+            generation_tracker.num_generation_weight_mutations += 1
 
     def clean_combinations(self, possible_combinations):
         """
@@ -728,7 +734,7 @@ class Genome:
                     raise Exception('You have removed all the connections due to a node removal')
                 return node_to_delete
 
-    def compute_compatibility_distance(self, other_genome, config):
+    def compute_compatibility_distance(self, other_genome, config, generation_tracker=None):
         """
         Calculates the compabitility distance between two genomes
         :param config: Contains parameters
@@ -762,6 +768,7 @@ class Genome:
             genome_1_connection = self.connections.get(innovation_number)
             genome_2_connection = other_genome.connections.get(innovation_number)
 
+            # If both genomes have it, it is a matching gene
             if genome_1_connection and genome_2_connection:
                 matching_genes.append(abs(genome_1_connection.weight - genome_2_connection.weight))
             elif genome_1_connection or genome_2_connection:
@@ -779,9 +786,15 @@ class Genome:
             average_weight_diff = np.mean(matching_genes)
             compatibility_distance += (config.matching_genes_coefficient * average_weight_diff)
 
+        if generation_tracker:
+            generation_tracker.num_disjoint_list.append(num_disjoint)
+            generation_tracker.num_excess_list.append(num_excess)
+            if matching_genes:
+                generation_tracker.weight_diff_list.append(average_weight_diff)
+
         return compatibility_distance
 
-    def mutate_weight(self, config):
+    def mutate_weight(self, config, generation_tracker):
 
         # Mutate all connection weights
         for connection in self.connections.values():
@@ -790,7 +803,10 @@ class Genome:
             assert (0 <= random_chance <= 1)
             # 90% chance for the weight to be perturbed by a small amount
             if random_chance < 0.9:
-                connection.weight += np.random.normal(loc=config.weight_mutation_mean, scale=config.weight_mutation_sigma)
+                perurbation_value = np.random.normal(loc=config.weight_mutation_mean,
+                                                     scale=config.weight_mutation_sigma)
+                generation_tracker.perturbation_values_list.append(perurbation_value)
+                connection.weight += perurbation_value
 
             # 10% chance for the weight to be assigned a random weight
             else:
@@ -803,7 +819,10 @@ class Genome:
                 assert (0 <= random_chance <= 1)
                 # 90% chance for the weight to be perturbed by a small amount
                 if random_chance < 0.9:
-                    node.bias += np.random.normal(loc=config.weight_mutation_mean, scale=config.weight_mutation_sigma)
+                    perurbation_value = np.random.normal(loc=config.weight_mutation_mean,
+                                                         scale=config.weight_mutation_sigma)
+                    generation_tracker.perturbation_values_list.append(perurbation_value)
+                    node.bias += perurbation_value
 
                 # 10% chance for the weight to be assigned a random weight
                 else:
