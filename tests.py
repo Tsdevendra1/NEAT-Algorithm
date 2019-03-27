@@ -171,7 +171,6 @@ class TestNeuralNetworkOneLayer(unittest.TestCase):
 
         self.num_features = self.data_train.shape[1]
 
-        #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
         self.desired_architecture = [6]
         nn_architecture = create_architecture(self.num_features, self.desired_architecture)
 
@@ -215,6 +214,7 @@ class TestNeuralNetworkMultiLayer(unittest.TestCase):
 
         #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
         desired_architecture = [5, 6]
+        # desired_architecture = [2, 2]
         nn_architecture = create_architecture(num_features, desired_architecture)
 
         # Defines the activation functions used for each layer
@@ -225,7 +225,7 @@ class TestNeuralNetworkMultiLayer(unittest.TestCase):
                                             activation_function_dict=activations_dict, learning_rate=0.1)
 
     def test_optimise(self):
-        epochs, cost = self.neural_network.optimise(print_epoch_cost=False)
+        epochs, cost = self.neural_network.optimise(print_epoch_cost=True)
 
         # When this was working 0.002 was the error
         expected_error_after_1000_epochs = 0.0
@@ -490,6 +490,50 @@ class TestGenomeUnpack(unittest.TestCase):
 class TestGenomeNeuralNetwork(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_genome_convergence(self):
+        node_list = [
+            NodeGene(node_id=0, node_type='source'),
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=2, node_type='output', bias=0.5),
+            NodeGene(node_id=3, node_type='hidden', bias=1),
+            NodeGene(node_id=4, node_type='hidden', bias=1),
+            NodeGene(node_id=5, node_type='hidden', bias=1),
+            NodeGene(node_id=6, node_type='hidden', bias=1),
+        ]
+
+        connection_list = [ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
+                           ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
+                           ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
+                           ]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data, y_data = create_data(n_generated=5000)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid', learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+
+        epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
+
+        assert(cost_list[len(cost_list)-1] < 0.001)
+
+        #
+        # #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
+        # self.desired_architecture = [6]
+        # nn_architecture = create_architecture(self.num_features, self.desired_architecture)
+        #
+        # # Defines the activation functions used for each layer
+        # activations_dict = {1: ActivationFunctions.sigmoid, 2: ActivationFunctions.sigmoid}
+        #
+        # self.neural_network = NeuralNetwork(x_train=self.data_train, y_train=self.labels_train,
+        #                                     layer_sizes=nn_architecture,
+        #                                     activation_function_dict=activations_dict, learning_rate=0.1)
 
     def test_creation_genome_nn(self):
         node_list = [NodeGene(node_id=0, node_type='source'),

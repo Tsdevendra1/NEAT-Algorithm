@@ -233,34 +233,48 @@ class GenomeNeuralNetwork:
         self.ensure_correct_bias()
 
     def update_genes(self):
+        """
+        Here we are updating all the connection weights with the optimised weights, after the neural network for the
+        genome has run
+        :return:
+        """
         for connection in self.genome.connections.values():
-            input_node_layer = self.node_layers[connection.input_node]
-            output_node_layer = self.node_layers[connection.output_node]
-            layer_span = output_node_layer - input_node_layer
+            if connection.enabled:
+                input_node_layer = self.node_layers[connection.input_node]
+                output_node_layer = self.node_layers[connection.output_node]
+                layer_span = output_node_layer - input_node_layer
 
-            if layer_span == 1:
-                # Minus one because of python indexing
-                input_node_position = self.node_map[connection.input_node] - 1
-                output_node_position = self.node_map[connection.output_node] - 1
+                if layer_span == 1:
+                    # Minus one because of python indexing
+                    input_node_position = self.node_map[connection.input_node] - 1
+                    output_node_position = self.node_map[connection.output_node] - 1
 
-                # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
-                connection.weight = self.weights_dict[output_node_layer - 1][input_node_position, output_node_position]
-            # If the connection spans multiple layers
-            else:
-                # Start at one because layers start at one
-                last_dummy_node = self.last_dummy_related_to_connection[(connection.input_node, connection.output_node)]
+                    # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
+                    connection.weight = self.weights_dict[output_node_layer - 1][
+                        input_node_position, output_node_position]
+                # If the connection spans multiple layers
+                else:
+                    try:
+                        # Start at one because layers start at one
+                        last_dummy_node = self.last_dummy_related_to_connection[
+                            (connection.input_node, connection.output_node)]
 
-                # Minus one because of python indexing
-                last_dummy_node_position = self.node_map[last_dummy_node] - 1
-                output_node_position = self.node_map[connection.output_node] - 1
+                        # Minus one because of python indexing
+                        last_dummy_node_position = self.node_map[last_dummy_node] - 1
+                        # This is the position within the layer
+                        output_node_position = self.node_map[connection.output_node] - 1
 
-                # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
-                connection.weight = self.weights_dict[output_node_layer - 1][
-                    last_dummy_node_position, output_node_position]
+                        # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
+                        connection.weight = self.weights_dict[output_node_layer - 1][
+                            last_dummy_node_position, output_node_position]
+                    except KeyError as e:
+                        print(e)
 
         for node in self.genome.nodes.values():
-            if node.node_type != 'source':
-                node_layer = self.node_layers[node.node_id]
+            node_layer = self.node_layers.get(node.node_id)
+            # Can't modify the bias of a source node and if the node_layer is not found it means the connection it is
+            #  related to is not enabled
+            if node.node_type != 'source' and node_layer:
                 # Minus one for indexing
                 node_position = self.node_map[node.node_id] - 1
                 # Minus one because node_layers counts the first layer as a layer where as the bias dict doesn't
@@ -293,9 +307,9 @@ class GenomeNeuralNetwork:
                 break
 
             # Print progress every 10%
-            if epoch % (self.num_epochs * 0.1) == 0 and epoch != 0:
-                percentage_complete = (epoch/self.num_epochs)* 100
-                print('Optimising {}% done...'.format(percentage_complete))
+            # if epoch % (self.num_epochs * 0.1) == 0 and epoch != 0:
+            #     percentage_complete = (epoch / self.num_epochs) * 100
+            #     print('Optimising {}% done...'.format(percentage_complete))
 
             if print_epoch:
                 print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))

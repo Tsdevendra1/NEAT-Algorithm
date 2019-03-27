@@ -240,13 +240,17 @@ class Genome:
 
         return num_enabled
 
-    def mutate(self, reproduction_instance, innovation_tracker, config, generation_tracker):
+    def mutate(self, reproduction_instance, innovation_tracker, config, generation_tracker, backprop_mutation=False):
         """
         Will call one of the possible mutation abilities using a random() number generated
         :return:
         """
 
-        if config.single_mutation_only:
+        if config.single_mutation_only and not backprop_mutation:
+            # The boundaries set for different mutation types don't work if the mutation chances add up to more than 1
+            assert (
+                    config.add_connection_mutation_chance + config.add_node_mutation_chance + config.remove_connection_mutation_chance + config.remove_node_mutation_chance
+                    <= 1)
             mutation_roll = np.random.uniform(low=0.0, high=1.0)
 
             # Boundaries for different rolls (These are all higher end of the boundary)
@@ -260,7 +264,7 @@ class Genome:
             remove_node_condition = add_node_boundary < mutation_roll <= remove_node_boundary
             remove_connection_condition = remove_node_boundary < mutation_roll <= remove_connection_boundary
 
-        else:
+        elif not backprop_mutation:
             # The rolls to see if each mutation occurs
             add_connection_roll = np.random.uniform(low=0.0, high=1.0)
             add_node_roll = np.random.uniform(low=0.0, high=1.0)
@@ -271,6 +275,33 @@ class Genome:
             add_node_condition = add_node_roll <= config.add_node_mutation_chance
             remove_node_condition = remove_node_roll <= config.remove_node_mutation_chance
             remove_connection_condition = remove_connection_roll <= config.remove_connection_mutation_chance
+        elif backprop_mutation and config.single_mutation_only:
+            mutation_roll = np.random.uniform(low=0.0, high=1.0)
+
+            # Boundaries for different rolls (These are all higher end of the boundary)
+            add_connection_boundary = config.add_connection_mutation_chance_backprop
+            add_node_boundary = add_connection_boundary + config.add_node_mutation_chance_backprop
+            remove_node_boundary = add_node_boundary + config.remove_node_mutation_chance_backprop
+            remove_connection_boundary = remove_node_boundary + config.remove_connection_mutation_chance_backprop
+
+            add_connection_condition = 0 < mutation_roll <= add_connection_boundary
+            add_node_condition = add_connection_boundary < mutation_roll <= add_node_boundary
+            remove_node_condition = add_node_boundary < mutation_roll <= remove_node_boundary
+            remove_connection_condition = remove_node_boundary < mutation_roll <= remove_connection_boundary
+
+        elif backprop_mutation:
+            # The rolls to see if each mutation occurs
+            add_connection_roll = np.random.uniform(low=0.0, high=1.0)
+            add_node_roll = np.random.uniform(low=0.0, high=1.0)
+            remove_node_roll = np.random.uniform(low=0.0, high=1.0)
+            remove_connection_roll = np.random.uniform(low=0.0, high=1.0)
+
+            add_connection_condition = add_connection_roll <= config.add_connection_mutation_chance_backprop
+            add_node_condition = add_node_roll <= config.add_node_mutation_chance_backprop
+            remove_node_condition = remove_node_roll <= config.remove_node_mutation_chance_backprop
+            remove_connection_condition = remove_connection_roll <= config.remove_connection_mutation_chance_backprop
+        else:
+            raise Exception('Unknown mutation type detected in genome.py, mutation function')
 
             # Add connection
         if add_connection_condition:
@@ -308,7 +339,7 @@ class Genome:
 
         # Mutate weight (This is independent of all other mutations)
         if np.random.uniform(low=0.0, high=1.0) < config.weight_mutation_chance:
-            self.mutate_weight(config=config, generation_tracker=generation_tracker)
+            self.mutate_weight(config=config, generation_tracker=generation_tracker, backprop_mutation=backprop_mutation)
             generation_tracker.num_generation_weight_mutations += 1
 
     def clean_combinations(self, possible_combinations):
@@ -794,23 +825,35 @@ class Genome:
 
         return compatibility_distance
 
-    def mutate_weight(self, config, generation_tracker):
+    def mutate_weight(self, config, generation_tracker, backprop_mutation=False):
+        if not backprop_mutation:
+            assert (config.weight_mutation_perturbe_chance + config.weight_mutation_reset_connection_chance == 1)
+        else:
+            assert (
+                    config.weight_mutation_perturbe_chance_backprop + config.weight_mutation_reset_connection_chance_backprop == 1)
+
+        if backprop_mutation:
+            reset_all_connections_role = np.random.uniform(low=0.0, high=1.0)
 
         # Mutate all connection weights
         for connection in self.connections.values():
-            # This determines the chance for it to be a positive or negative change to the weight
-            random_chance = np.random.uniform(low=0.0, high=1.0)
-            assert (0 <= random_chance <= 1)
-            # 90% chance for the weight to be perturbed by a small amount
-            if random_chance < 0.9:
-                perurbation_value = np.random.normal(loc=config.weight_mutation_mean,
-                                                     scale=config.weight_mutation_sigma)
-                generation_tracker.perturbation_values_list.append(perurbation_value)
-                connection.weight += perurbation_value
-
-            # 10% chance for the weight to be assigned a random weight
-            else:
+            # If reset_all_connections isn't triggered, it'll just pertbe or reset the values as usual
+            if backprop_mutation and reset_all_connections_role < config.weight_mutation_reset_all_connections_chance_backprop:
                 connection.weight = np.random.randn()
+            else:
+                # This determines the chance for it to be a positive or negative change to the weight
+                random_chance = np.random.uniform(low=0.0, high=1.0)
+                assert (0 <= random_chance <= 1)
+                perturbe_prob = config.weight_mutation_perturbe_chance_backprop if backprop_mutation else config.weight_mutation_perturbe_chance
+                if random_chance < perturbe_prob:
+                    perturbation_value = np.random.normal(loc=config.weight_mutation_mean,
+                                                          scale=config.weight_mutation_sigma)
+                    generation_tracker.perturbation_values_list.append(perturbation_value)
+                    connection.weight += perturbation_value
+
+                # 10% chance for the weight to be assigned a random weight
+                else:
+                    connection.weight = np.random.randn()
 
         for node in self.nodes.values():
             if node.node_type != 'source':
@@ -819,14 +862,21 @@ class Genome:
                 assert (0 <= random_chance <= 1)
                 # 90% chance for the weight to be perturbed by a small amount
                 if random_chance < 0.9:
-                    perurbation_value = np.random.normal(loc=config.weight_mutation_mean,
-                                                         scale=config.weight_mutation_sigma)
-                    generation_tracker.perturbation_values_list.append(perurbation_value)
-                    node.bias += perurbation_value
+                    perturbation_value = np.random.normal(loc=config.weight_mutation_mean,
+                                                          scale=config.weight_mutation_sigma)
+                    generation_tracker.perturbation_values_list.append(perturbation_value)
+                    node.bias += perturbation_value
 
                 # 10% chance for the weight to be assigned a random weight
                 else:
                     node.bias = np.random.randn()
+
+    def reset_all_connection_weights(self, config):
+        # Mutate all connection weights
+        for connection in self.connections.values():
+            # Set all weights to a random value
+            connection.weight = np.random.normal(loc=config.weight_mutation_mean,
+                                                 scale=config.weight_mutation_sigma)
 
 
 def main():

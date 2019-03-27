@@ -3,7 +3,7 @@ class Config:
     Population
     """
 
-    population_size = 150
+    population_size = 15
 
     # TODO: Ensure each of these are used somewhere in the code
     """
@@ -26,6 +26,12 @@ class Config:
 
     # Weight changes
     weight_mutation_chance = 0.8
+    weight_mutation_perturbe_chance = 0.9
+    weight_mutation_reset_connection_chance = 0.1
+
+    weight_mutation_perturbe_chance_backprop = 0.9
+    weight_mutation_reset_connection_chance_backprop = 0.1
+    weight_mutation_reset_all_connections_chance_backprop = 0.1
 
     # Standard deviation for the distribution for which we pick the pertubation value from
     weight_mutation_sigma = 0.5
@@ -39,10 +45,24 @@ class Config:
 
     inter_species_mating_rate = 0.001
 
-    add_node_mutation_chance = 0.03
-    add_connection_mutation_chance = 0.05
-    remove_node_mutation_chance = 0.01
-    remove_connection_mutation_chance = 0.01
+
+    add_node_mutation_chance = 0.4
+    add_connection_mutation_chance = 0.5
+    remove_node_mutation_chance = 0.3
+    remove_connection_mutation_chance = 0.2
+
+    ## These chances are used when we're performing mutation whilst using backprop optimisation
+    add_node_mutation_chance_backprop = 0.4
+    add_connection_mutation_chance_backprop = 0.5
+    remove_node_mutation_chance_backprop = 0.05
+    remove_connection_mutation_chance_backprop = 0.05
+    reset_all_weights_mutation_chance_backprop = 0.05
+
+    ## OLD VALUES FOR WHEN WE WERE JUST USING GENETIC ALGORITHM
+    # add_node_mutation_chance = 0.03
+    # add_connection_mutation_chance = 0.05
+    # remove_node_mutation_chance = 0.01
+    # remove_connection_mutation_chance = 0.01
 
     """
     Speciation

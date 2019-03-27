@@ -92,7 +92,8 @@ class GenerationStatistics:
             ('Average Number of Disjoint Genes', self.generation_information[current_gen]['avg_num_disjoint']),
             ('Average Number of Excess Genes', self.generation_information[current_gen]['avg_num_excess']),
             ('Average Weight Difference', self.generation_information[current_gen]['avg_weight_diff']),
-            ('Average Number of Connections', self.generation_information[current_gen]['mean_number_connections_overall']),
+            ('Average Number of Connections',
+             self.generation_information[current_gen]['mean_number_connections_overall']),
             # ('Average Number of Nodes', self.generation_information[current_gen]['avg_weight_diff']),
         ]
 
