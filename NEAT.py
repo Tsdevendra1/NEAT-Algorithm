@@ -2,7 +2,9 @@ from generation_statistics import GenerationStatistics
 import time
 import numpy as np
 from genome_neural_network import GenomeNeuralNetwork
+from gene import NodeGene, ConnectionGene
 from reproduce import Reproduce
+from genome import Genome
 from species import SpeciesSet
 
 # Exception used to check if there are no more species
@@ -52,15 +54,14 @@ class NEAT:
 
             genome_nn = GenomeNeuralNetwork(genome=genome, x_train=self.x_train, y_train=self.y_train,
                                             create_weights_bias_from_genome=True, activation_type='sigmoid',
-                                            learning_rate=0.1, num_epochs=1000, batch_size=64)
+                                            learning_rate=0.1, num_epochs=500, batch_size=64)
 
             # Optimise the neural_network_first. However, the generation should allow for one pass so that we are not
             #  just optimising all the same topologies
+            genome_fitness_before = genome.fitness
             if use_backprop and generation > 1:
                 print('\n')
                 print('OPTIMISING GENOME')
-                # NOTE: Genome fitness can be none due to crossover because fitness value not carried over
-                print('Genome Fitness Before: {}'.format(genome.fitness))
                 genome_nn.optimise(print_epoch=False)
 
             # We use genome_nn.x_train instead of self.x_train because the genome_nn might have deleted a row if there
@@ -73,6 +74,8 @@ class NEAT:
             # Only print genome fitness after is back prop is used since back prop takes a long time so this can be a
             #  way of tracking progress in the meantime
             if use_backprop and generation > 1:
+                # NOTE: Genome fitness can be none due to crossover because fitness value not carried over
+                print('Genome Fitness Before: {}'.format(genome_fitness_before))
                 print('Genome Fitness After: {}'.format(genome.fitness))
 
             if current_best_genome is None or genome.fitness > current_best_genome.fitness:
@@ -102,6 +105,51 @@ class NEAT:
 
         self.generation_tracker.average_population_fitness = np.mean(all_fitnesses)
 
+    def add_successful_genome_for_test(self, current_gen, use_this_genome):
+        """
+        This function adds a pre programmed genome which is known to converge for the XOR dataset.
+        :param current_gen:
+        :param use_this_genome: Whether this genome should be added to the population or not
+        :return:
+        """
+        # Wait for current_gen > 1 because if using backprop the first gen skips using backprop.
+        if current_gen > 1 and use_this_genome:
+            node_list = [
+                NodeGene(node_id=0, node_type='source'),
+                NodeGene(node_id=1, node_type='source'),
+                NodeGene(node_id=2, node_type='output', bias=0.5),
+                NodeGene(node_id=3, node_type='hidden', bias=1),
+                NodeGene(node_id=4, node_type='hidden', bias=1),
+                NodeGene(node_id=5, node_type='hidden', bias=1),
+                NodeGene(node_id=6, node_type='hidden', bias=1),
+            ]
+
+            connection_list = [ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True,
+                                              weight=np.random.randn()),
+                               ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True,
+                                              weight=np.random.rand()),
+                               ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True,
+                                              weight=np.random.randn())
+                               ]
+
+            test_genome = Genome(connections=connection_list, nodes=node_list, key=1)
+            test_genome.fitness = -99999999999
+            self.population[32131231] = test_genome
+
     def run(self, max_num_generations, use_backprop, print_generation_information):
         """
         Run the algorithm
@@ -111,6 +159,8 @@ class NEAT:
         while current_gen < max_num_generations:
             # Every generation increment
             current_gen += 1
+
+            self.add_successful_genome_for_test(current_gen=current_gen, use_this_genome=False)
 
             self.generation_tracker.population_size = len(self.population)
 
