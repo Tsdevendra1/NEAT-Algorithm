@@ -168,6 +168,7 @@ class NEAT:
             # Evaluate the current generation and get the best genome in the current generation
             best_current_genome = self.evaluate_population(use_backprop=use_backprop, generation=current_gen)
             end_evaluate_time = time.time()
+            self.update_population_toplogy_info()
             self.generation_tracker.evaluate_execute_time = end_evaluate_time - start_evaluate_time
 
             # Keep track of the best genome across generations
@@ -222,7 +223,6 @@ class NEAT:
             end_specify_time = time.time()
             self.generation_tracker.species_execute_time = end_specify_time - start_specify_time
 
-            self.update_population_toplogy_info()
 
             self.generation_tracker.update_generation_information(generation=current_gen)
             if print_generation_information:

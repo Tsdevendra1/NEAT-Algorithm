@@ -38,6 +38,10 @@ class Config:
     # Mean for the distribution for which we pick the pertubation value from
     weight_mutation_mean = 0.0
 
+    # Backprop versions
+    weight_mutation_sigma_backprop = 1
+    weight_mutation_mean_backprop = 0.0
+
     # This is the chance a gene is disabled if it was disabled in either parent
     change_to_disable_gene_if_either_parent_disabled = 0.75
 
@@ -52,7 +56,7 @@ class Config:
     remove_connection_mutation_chance = 0.2
 
     ## These chances are used when we're performing mutation whilst using backprop optimisation
-    add_node_mutation_chance_backprop = 0.4
+    add_node_mutation_chance_backprop = 0.7
     add_connection_mutation_chance_backprop = 0.5
     remove_node_mutation_chance_backprop = 0.05
     remove_connection_mutation_chance_backprop = 0.05

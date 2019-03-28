@@ -835,6 +835,11 @@ class Genome:
         if backprop_mutation:
             reset_all_connections_role = np.random.uniform(low=0.0, high=1.0)
 
+        weight_mutation_mean = config.weight_mutation_mean_backprop if backprop_mutation else config.weight_mutation_mean
+        weight_mutation_sigma = config.weight_mutation_sigma_backprop if backprop_mutation else config.weight_mutation_sigma
+
+        print('WEIGHT SIGMA {}'.format(weight_mutation_sigma))
+
         # Mutate all connection weights
         for connection in self.connections.values():
             # If reset_all_connections isn't triggered, it'll just pertbe or reset the values as usual
@@ -846,8 +851,8 @@ class Genome:
                 assert (0 <= random_chance <= 1)
                 perturbe_prob = config.weight_mutation_perturbe_chance_backprop if backprop_mutation else config.weight_mutation_perturbe_chance
                 if random_chance < perturbe_prob:
-                    perturbation_value = np.random.normal(loc=config.weight_mutation_mean,
-                                                          scale=config.weight_mutation_sigma)
+                    perturbation_value = np.random.normal(loc=weight_mutation_mean,
+                                                          scale=weight_mutation_sigma)
                     generation_tracker.perturbation_values_list.append(perturbation_value)
                     connection.weight += perturbation_value
 
@@ -862,8 +867,8 @@ class Genome:
                 assert (0 <= random_chance <= 1)
                 # 90% chance for the weight to be perturbed by a small amount
                 if random_chance < 0.9:
-                    perturbation_value = np.random.normal(loc=config.weight_mutation_mean,
-                                                          scale=config.weight_mutation_sigma)
+                    perturbation_value = np.random.normal(loc=weight_mutation_mean,
+                                                          scale=weight_mutation_sigma)
                     generation_tracker.perturbation_values_list.append(perturbation_value)
                     node.bias += perturbation_value
 
