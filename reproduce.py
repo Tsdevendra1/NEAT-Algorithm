@@ -129,12 +129,14 @@ class Reproduce:
             adjusted_species_sizes[max_fitness_index] += 1
 
         # Allow for some leaway in population size (+- 5)
-        range_value = 5
-        range_of_population_sizes = set(range(population_size - range_value,
-                                              population_size + range_value + 1))
+        # range_value = 5
+        # range_of_population_sizes = set(range(population_size - range_value,
+        #                                       population_size + range_value + 1))
         # TODO: Re-enabled this is problem occurs
         # if sum(adjusted_species_sizes) not in range_of_population_sizes:
         #     raise Exception('There is an incorrect number of genomes in the population')
+
+        print('NEW POPULATION SIZE: {}'.format(sum(adjusted_species_sizes)))
 
         return adjusted_species_sizes
 
@@ -209,7 +211,8 @@ class Reproduce:
 
         return adjusted_species_sizes
 
-    def get_new_population(self, adjusted_species_sizes, remaining_species, species_set, generation_tracker, backprop_mutation):
+    def get_new_population(self, adjusted_species_sizes, remaining_species, species_set, generation_tracker,
+                           backprop_mutation):
         """
         Creates the dictionary of the new genomes for the next generation population
         :param: genetation_tracker:
@@ -250,7 +253,8 @@ class Reproduce:
                         child = copy.deepcopy(member)
 
                         child.mutate(reproduction_instance=self,
-                                     innovation_tracker=self.innovation_tracker, config=self.config, backprop_mutation=backprop_mutation)
+                                     innovation_tracker=self.innovation_tracker, config=self.config,
+                                     backprop_mutation=backprop_mutation)
 
                         if not child.check_connection_enabled_amount() and not child.check_num_paths(
                                 only_add_enabled_connections=True):
@@ -346,6 +350,7 @@ class Reproduce:
         # Keeps track of the new population (key, object)
         new_population = self.get_new_population(adjusted_species_sizes=adjusted_species_sizes, species_set=species_set,
                                                  remaining_species=remaining_species,
-                                                 generation_tracker=generation_tracker, backprop_mutation=backprop_mutation)
+                                                 generation_tracker=generation_tracker,
+                                                 backprop_mutation=backprop_mutation)
 
         return new_population

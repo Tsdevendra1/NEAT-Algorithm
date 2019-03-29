@@ -150,6 +150,9 @@ class NEAT:
             test_genome.fitness = -99999999999
             self.population[32131231] = test_genome
 
+    def calculate_f_statistic(self):
+        pass
+
     def run(self, max_num_generations, use_backprop, print_generation_information):
         """
         Run the algorithm
@@ -223,13 +226,14 @@ class NEAT:
             end_specify_time = time.time()
             self.generation_tracker.species_execute_time = end_specify_time - start_specify_time
 
-
             self.generation_tracker.update_generation_information(generation=current_gen)
             if print_generation_information:
-                self.generation_tracker.print_generation_information(generation_interval_for_graph=150)
+                self.generation_tracker.print_generation_information(generation_interval_for_graph=1)
 
             # Gives distribution of the weights in the population connections
             self.reproduction.show_population_weight_distribution(population=self.population)
+
+        print(self.calculate_f_statistic())
 
         return self.best_all_time_genome
 
