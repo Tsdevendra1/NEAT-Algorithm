@@ -191,9 +191,6 @@ class NEAT:
 
             self.generation_tracker.best_all_time_genome_fitness = self.best_all_time_genome.fitness
 
-            # If the fitness threshold is met, stop the algorithm
-            if self.best_all_time_genome.fitness > self.fitness_threshold:
-                break
 
             start_reproduce_time = time.time()
 
@@ -240,6 +237,10 @@ class NEAT:
             self.generation_tracker.update_generation_information(generation=current_gen)
             if print_generation_information:
                 self.generation_tracker.print_generation_information(generation_interval_for_graph=1)
+
+            # If the fitness threshold is met, stop the algorithm
+            if self.best_all_time_genome.fitness > self.fitness_threshold:
+                break
 
             # Gives distribution of the weights in the population connections
             self.reproduction.show_population_weight_distribution(population=self.population)
