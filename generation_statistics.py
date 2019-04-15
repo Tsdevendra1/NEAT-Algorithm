@@ -72,6 +72,14 @@ class GenerationStatistics:
         current_gen = max(self.generation_information.keys())
         print('**************************** Generation {} *******************************'.format(current_gen))
 
+        important_information_keys = {
+            'num_species', 'num_generation_add_node', 'num_generation_delete_node', 'num_generation_add_connection',
+            'num_generation_delete_connection', 'num_generation_weight_mutations', 'average_population_fitness',
+            'best_all_time_genome_fitness', 'mean_number_connections_enabled', 'mean_number_nodes_enabled',
+            'mean_compatibility_distance', 'avg_num_disjoint', 'avg_num_excess', 'avg_weight_diff',
+            'mean_number_connections_overall'
+        }
+
         important_information = [
             ('Number of Species', self.generation_information[current_gen]['num_species']),
             ('Added Node Mutations', self.generation_information[current_gen]['num_generation_add_node']),
@@ -106,11 +114,12 @@ class GenerationStatistics:
         print('\n')
 
         # Plot information to graph every certain amount of generations
-        for information_type, information in self.generation_information[current_gen].items():
+        # for information_type, information in self.generation_information[current_gen].items():
+        for information_type in important_information_keys:
             # Don't need to print the dictionary
             if information_type != 'generation_information':
                 # print(information_type, ':', ' {}'.format(information))
-                if current_gen % generation_interval_for_graph == 0:
+                if current_gen % generation_interval_for_graph == 0 and current_gen != 1:
                     generations_to_go_through = list(range(1, current_gen + 1))
                     y_data = []
                     for generation in generations_to_go_through:
