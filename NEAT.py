@@ -244,7 +244,7 @@ class NEAT:
             # Gives distribution of the weights in the population connections
             self.reproduction.show_population_weight_distribution(population=self.population)
 
-        print(self.calculate_f_statistic())
+        print(self.calculate_f_statistic(self.best_all_time_genome, self.x_test, self.y_test))
 
         return self.best_all_time_genome
 
