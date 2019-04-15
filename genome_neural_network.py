@@ -130,13 +130,33 @@ class GenomeNeuralNetwork:
         return weights
 
     def create_weight_bias_matrix_from_genome(self):
-        connections_dict_by_nodes = {}
-        for connection in self.genome.connections.values():
-            connections_dict_by_nodes[(connection.input_node, connection.output_node)] = connection
+        # connections_dict_by_nodes = {}
+        # for connection in self.genome.connections.values():
+        #     connections_dict_by_nodes[(connection.input_node, connection.output_node)] = connection
+        #
+        # try:
+        #     for layer in range(1, self.num_layers + 1):
+        #         for layer_connection in self.layer_connections_dict[layer]:
+        #             connection = connections_dict_by_nodes[(layer_connection.input_node, layer_connection.output_node)]
+        #             # connection = connections_dict_by_nodes.get((layer_connection.input_node, layer_connection.output_node))
+        #             # if connection and connection.enabled:
+        #             if connection.enabled:
+        #                 # They both need to be set if we're going to create the weight matrix from them
+        #                 if connection.weight is None:
+        #                     raise ValueError('You have not set a weight for this connection')
+        #                 if self.updated_nodes[connection.output_node].bias is None:
+        #                     raise ValueError('The node doesnt have a bias value, please set one in the nodes list')
+        #
+        #                 # Get their relative position inside their respective layer. Minus one for python indexing
+        #                 input_node_position = self.node_map[connection.input_node] - 1
+        #                 output_node_position = self.node_map[connection.output_node] - 1
+        #                 self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
+        #                 self.bias_dict[layer][0, output_node_position] = self.genome.nodes[connection.output_node].bias
+        # except:
+        #     raise Exception('Error in initialising weight and bias matrices')
 
         for layer in range(1, self.num_layers + 1):
-            for layer_connection in self.layer_connections_dict[layer]:
-                connection = connections_dict_by_nodes[(layer_connection.input_node, layer_connection.output_node)]
+            for connection in self.layer_connections_dict[layer]:
                 if connection.enabled:
                     # They both need to be set if we're going to create the weight matrix from them
                     if connection.weight is None:
@@ -148,7 +168,7 @@ class GenomeNeuralNetwork:
                     input_node_position = self.node_map[connection.input_node] - 1
                     output_node_position = self.node_map[connection.output_node] - 1
                     self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
-                    self.bias_dict[layer][0, output_node_position] = self.genome.nodes[connection.output_node].bias
+                    self.bias_dict[layer][0, output_node_position] = self.updated_nodes[connection.output_node].bias
 
     def initialise_parameters(self, create_weight_bias_matrix_from_genome, have_bias=False):
         """
@@ -261,9 +281,20 @@ class GenomeNeuralNetwork:
                     input_node_position = self.node_map[connection.input_node] - 1
                     output_node_position = self.node_map[connection.output_node] - 1
 
-                    # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
-                    connection.weight = self.weights_dict[output_node_layer - 1][
+                    connection_weight = self.weights_dict[output_node_layer - 1][
                         input_node_position, output_node_position]
+
+                    # TODO: Improve implementation
+                    # I'm not sure why I have layer connections and the connections in a genome as seperate. They should be pointing to the same connection instance.
+                    # This is just a workaround for now.
+                    for layer_connection in self.genome.layer_connections_dict[input_node_layer]:
+                        if (layer_connection.input_node, layer_connection.output_node) == (
+                                connection.input_node, connection.output_node):
+                            layer_connection.weight = connection_weight
+                            break
+
+                    # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
+                    connection.weight = connection_weight
                 # If the connection spans multiple layers
                 else:
                     try:
@@ -276,21 +307,38 @@ class GenomeNeuralNetwork:
                         # This is the position within the layer
                         output_node_position = self.node_map[connection.output_node] - 1
 
-                        # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
-                        connection.weight = self.weights_dict[output_node_layer - 1][
-                            last_dummy_node_position, output_node_position]
-                    except KeyError as e:
-                        print(e)
+                        last_dummy_node_layer = self.node_layers[last_dummy_node]
 
-        for node in self.genome.nodes.values():
+                        connection_weight = self.weights_dict[output_node_layer - 1][
+                            last_dummy_node_position, output_node_position]
+
+                        # TODO: Improve implementation
+                        # I'm not sure why I have layer connections and the connections in a genome as seperate. They should be pointing to the same connection instance.
+                        # This is just a workaround for now.
+                        for layer_connection in self.genome.layer_connections_dict[last_dummy_node_layer]:
+                            if (layer_connection.input_node, layer_connection.output_node) == (
+                                    last_dummy_node, connection.output_node):
+                                layer_connection.weight = connection_weight
+                                break
+
+                        # Minus one because node_layers counts the first layer as a layer where as the weights dict doesn't
+                        connection.weight = connection_weight
+                    except KeyError as e:
+                        raise Exception(e)
+
+        for node, updated_node in zip(self.genome.nodes.values(), self.genome.updated_nodes.values()):
             node_layer = self.node_layers.get(node.node_id)
             # Can't modify the bias of a source node and if the node_layer is not found it means the connection it is
             #  related to is not enabled
             if node.node_type != 'source' and node_layer:
+                # These should be the same value since we're updating two instances of it due to poor implementation on my part
+                assert (node.node_id == updated_node.node_id)
                 # Minus one for indexing
                 node_position = self.node_map[node.node_id] - 1
                 # Minus one because node_layers counts the first layer as a layer where as the bias dict doesn't
-                node.bias = self.bias_dict[node_layer - 1][0, node_position]
+                bias_value = self.bias_dict[node_layer - 1][0, node_position]
+                updated_node.bias = bias_value
+                node.bias = bias_value
 
     def optimise(self, print_epoch, error_stop=None):
         """
