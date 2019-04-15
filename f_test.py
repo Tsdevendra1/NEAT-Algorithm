@@ -15,12 +15,15 @@ def calculate_f_score(real_data, prediction):
 
 
 def main():
-    real_data = np.array([1, 0, 1, 1, 1, 1, 1, 1, 1, 1])
-    prediction = np.array([0, 0, 0, 1, 0, 0, 0, 0, 0, 0])
+    real_data = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+    prediction = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0]
 
-    f1_score_2 = sklearn.metrics.f1_score(real_data, prediction, average='weighted')
+    f1_score_2 = sklearn.metrics.f1_score(real_data, prediction)
+    f1_score = calculate_f_score(real_data, prediction)
 
     print(f1_score_2)
+    print(f1_score)
+
 
 if __name__ == "__main__":
     main()

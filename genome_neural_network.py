@@ -130,8 +130,13 @@ class GenomeNeuralNetwork:
         return weights
 
     def create_weight_bias_matrix_from_genome(self):
+        connections_dict_by_nodes = {}
+        for connection in self.genome.connections.values():
+            connections_dict_by_nodes[(connection.input_node, connection.output_node)] = connection
+
         for layer in range(1, self.num_layers + 1):
-            for connection in self.layer_connections_dict[layer]:
+            for layer_connection in self.layer_connections_dict[layer]:
+                connection = connections_dict_by_nodes[(layer_connection.input_node, layer_connection.output_node)]
                 if connection.enabled:
                     # They both need to be set if we're going to create the weight matrix from them
                     if connection.weight is None:
@@ -143,7 +148,7 @@ class GenomeNeuralNetwork:
                     input_node_position = self.node_map[connection.input_node] - 1
                     output_node_position = self.node_map[connection.output_node] - 1
                     self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
-                    self.bias_dict[layer][0, output_node_position] = self.updated_nodes[connection.output_node].bias
+                    self.bias_dict[layer][0, output_node_position] = self.genome.nodes[connection.output_node].bias
 
     def initialise_parameters(self, create_weight_bias_matrix_from_genome, have_bias=False):
         """
@@ -173,10 +178,11 @@ class GenomeNeuralNetwork:
         # Zeroes out the bias values for each layer where there is a dummy node
         self.ensure_correct_bias()
 
-    def run_one_pass(self, input_data, labels, return_cost_only=False):
+    def run_one_pass(self, input_data, labels=None, return_cost_only=False, return_prediction_only=False):
         """
         One pass counts as one forward propagation and one backware propogation including the optimisation of the
         paramters
+        :param return_prediction_only: Boolean on whether just to return the predictions
         :param labels: The correct labels
         :param input_data: the input data used to train
         :type return_cost_only: True or false of it you just want the cost instead of optimising as well
@@ -193,6 +199,11 @@ class GenomeNeuralNetwork:
                                                                        keep_constant_connections=self.constant_weight_connections,
                                                                        node_map=self.node_map)
 
+        if return_prediction_only:
+            return prediction
+
+        # Because labels is optional, if the function hasn't already returned, labels should exist.
+        assert (labels is not None)
         # Asserting that the prediction gives the same number of outputs as expected
         assert (labels.shape[0] == prediction.shape[0])
 
@@ -200,6 +211,7 @@ class GenomeNeuralNetwork:
         loss = -((labels * np.log(prediction)) + ((1 - labels) * np.log(1 - prediction)))
         cost = (1 / n_examples) * np.sum(loss + 1e-8, axis=0)
 
+        # We optimise in the case where we're not just interested in the cost
         if not return_cost_only:
             # Excluded bias gradients here
             weight_gradients, bias_gradients = BackProp.back_prop(num_layers=self.num_layers,

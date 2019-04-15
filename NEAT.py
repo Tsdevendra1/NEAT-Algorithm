@@ -6,6 +6,7 @@ from gene import NodeGene, ConnectionGene
 from reproduce import Reproduce
 from genome import Genome
 from species import SpeciesSet
+import sklearn.metrics
 
 # Exception used to check if there are no more species
 from stagnation import Stagnation
@@ -17,7 +18,7 @@ class CompleteExtinctionException(Exception):
 
 class NEAT:
 
-    def __init__(self, x_training_data, y_training_data, config, fitness_threshold):
+    def __init__(self, x_training_data, y_training_data, x_test_data, y_test_data, config, fitness_threshold):
         # Where all the parameters are saved
         self.config = config
         # Takes care of reproduction of populations
@@ -31,6 +32,8 @@ class NEAT:
         self.species_set = SpeciesSet(config=config, generation_tracker=self.generation_tracker)
         self.x_train = x_training_data
         self.y_train = y_training_data
+        self.x_test = x_test_data
+        self.y_test = y_test_data
 
         # Initialise the starting population
         self.population = self.reproduction.create_new_population(population_size=self.config.population_size,
@@ -38,6 +41,13 @@ class NEAT:
 
         # Speciate the initial population
         self.species_set.speciate(population=self.population, compatibility_threshold=3, generation=0)
+
+    @staticmethod
+    def create_genome_nn(genome, x_data, y_data):
+        # TODO: The x_data, y_data isn't always used, particularly if we only create the network to get a prediction. This implementation should be improved for clarity
+        return GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data,
+                                   create_weights_bias_from_genome=True, activation_type='sigmoid',
+                                   learning_rate=0.1, num_epochs=500, batch_size=64)
 
     def evaluate_population(self, use_backprop, generation):
         """
@@ -52,9 +62,7 @@ class NEAT:
 
         for genome in self.population.values():
 
-            genome_nn = GenomeNeuralNetwork(genome=genome, x_train=self.x_train, y_train=self.y_train,
-                                            create_weights_bias_from_genome=True, activation_type='sigmoid',
-                                            learning_rate=0.1, num_epochs=500, batch_size=64)
+            genome_nn = self.create_genome_nn(genome=genome, x_data=self.x_train, y_data=self.y_train)
 
             # Optimise the neural_network_first. However, the generation should allow for one pass so that we are not
             #  just optimising all the same topologies
@@ -150,8 +158,11 @@ class NEAT:
             test_genome.fitness = -99999999999
             self.population[32131231] = test_genome
 
-    def calculate_f_statistic(self):
-        pass
+    @staticmethod
+    def calculate_f_statistic(genome, x_test_data, y_test_data):
+        genome_nn = NEAT.create_genome_nn(genome=genome, x_data=x_test_data, y_data=y_test_data)
+        prediction = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True).round()
+        return sklearn.metrics.f1_score(y_test_data, prediction)
 
     def run(self, max_num_generations, use_backprop, print_generation_information):
         """

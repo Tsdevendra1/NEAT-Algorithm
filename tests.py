@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-
+from NEAT import NEAT
 from config import Config
 from genome_neural_network import GenomeNeuralNetwork
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
@@ -502,26 +502,28 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
             NodeGene(node_id=6, node_type='hidden', bias=1),
         ]
 
-        connection_list = [ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
-                           ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
-                           ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
-                           ]
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
+            ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
+        ]
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
         x_data, y_data = create_data(n_generated=5000)
-        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid', learning_rate=0.1,
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                        learning_rate=0.1,
                                         x_train=x_data, y_train=y_data)
 
         epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
 
-        assert(cost_list[len(cost_list)-1] < 0.001)
+        assert (cost_list[len(cost_list) - 1] < 0.001)
 
         #
         # #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
@@ -534,6 +536,46 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         # self.neural_network = NeuralNetwork(x_train=self.data_train, y_train=self.labels_train,
         #                                     layer_sizes=nn_architecture,
         #                                     activation_function_dict=activations_dict, learning_rate=0.1)
+
+    def test_nn_f1_score(self):
+        node_list = [
+            NodeGene(node_id=0, node_type='source'),
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=2, node_type='output', bias=0.5),
+            NodeGene(node_id=3, node_type='hidden', bias=1),
+            NodeGene(node_id=4, node_type='hidden', bias=1),
+            NodeGene(node_id=5, node_type='hidden', bias=1),
+            NodeGene(node_id=6, node_type='hidden', bias=1),
+        ]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
+            ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
+            ]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data, y_data = create_data(n_generated=5000)
+        genome_nn = GenomeNeuralNetwork(num_epochs=80, genome=genome, create_weights_bias_from_genome=False,
+                                        activation_type='sigmoid', learning_rate=1.2,
+                                        x_train=x_data, y_train=y_data)
+        genome_nn.optimise(print_epoch=True)
+
+        genome_nn_new = NEAT.create_genome_nn(genome=genome, x_data=x_data, y_data=y_data)
+        prediction_2 = genome_nn_new.run_one_pass(input_data=x_data, return_prediction_only=True).round()
+
+        if not np.array_equal(prediction_2, y_data):
+            print('The behaviour here is unexpected as they should be equal')
+
+        f1_score = NEAT.calculate_f_statistic(genome, x_data, y_data)
+        self.assertEqual(1.0, f1_score)
 
     def test_creation_genome_nn(self):
         node_list = [NodeGene(node_id=0, node_type='source'),
@@ -549,7 +591,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
         x_data = np.array([[1, 0]])
         y_data = np.array([[1]])
-        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=True, activation_type='sigmoid',
                                         x_train=x_data, y_train=y_data)
         self.assertTrue(genome_nn)
 
@@ -623,6 +665,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         y_data = np.array([[1]])
         genome_nn = GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data, learning_rate=0.1,
                                         create_weights_bias_from_genome=True, activation_type='sigmoid')
+        assert genome_nn
 
 
 class TestGenomeMutatation(unittest.TestCase):
