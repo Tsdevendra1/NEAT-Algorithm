@@ -93,7 +93,7 @@ class GenerationStatistics:
 
                     plt.plot(generations_to_go_through, y_data)
                     plt.title(information_type)
-                    plt.savefig('graphs/{}_generation_{}.jpg'.format(information_type, current_gen))
+                    plt.savefig('graphs/{}_generation_{}.png'.format(information_type, current_gen))
                     plt.show()
 
     def print_generation_information(self, generation_interval_for_graph, plot_graphs):
