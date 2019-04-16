@@ -39,8 +39,8 @@ class NEAT:
         self.y_test = y_test_data
 
         if algorithm_running:
-            # xor_full = 5000 examples, no noise x_200_noise = 200 examples with noise
-            assert (algorithm_running in {'xor_full', 'xor_200_noise'})
+            # xor_full = 5000 examples, no noise x_small_noise = small number of examples (e.g. 300) with noise
+            assert (algorithm_running in {'xor_full', 'xor_small_noise'})
             # Defines which of the algorithms is being currently tested (e.g. xor with 5000 examples of xor with 200
             # examples and noise)
             self.algorithm_running = algorithm_running
@@ -60,7 +60,7 @@ class NEAT:
             num_epochs = 500
             batch_size = 64
             activation_type = 'sigmoid'
-        elif algorithm_running == 'xor_200_noise':
+        elif algorithm_running == 'xor_small_noise':
             learning_rate = 0.1
             num_epochs = 10000
             batch_size = 10
