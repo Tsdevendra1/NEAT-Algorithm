@@ -527,17 +527,78 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
 
         assert (cost_list[len(cost_list) - 1] < 0.001)
 
-        #
-        # #  This means it will be a two layer neural network with one layer being hidden with 2 nodes
-        # self.desired_architecture = [6]
-        # nn_architecture = create_architecture(self.num_features, self.desired_architecture)
-        #
-        # # Defines the activation functions used for each layer
-        # activations_dict = {1: ActivationFunctions.sigmoid, 2: ActivationFunctions.sigmoid}
-        #
-        # self.neural_network = NeuralNetwork(x_train=self.data_train, y_train=self.labels_train,
-        #                                     layer_sizes=nn_architecture,
-        #                                     activation_function_dict=activations_dict, learning_rate=0.1)
+    def test_genome_convergence_with_smaller_training_set(self):
+        node_list = [
+            NodeGene(node_id=0, node_type='source'),
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=2, node_type='output', bias=0.5),
+            NodeGene(node_id=3, node_type='hidden', bias=1),
+            NodeGene(node_id=4, node_type='hidden', bias=1),
+            NodeGene(node_id=5, node_type='hidden', bias=1),
+            NodeGene(node_id=6, node_type='hidden', bias=1),
+        ]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
+            ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
+        ]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data, y_data = create_data(n_generated=200)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=True, activation_type='sigmoid',
+                                        num_epochs=3000,
+                                        batch_size=10,
+                                        learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+
+        epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
+
+        assert (cost_list[len(cost_list) - 1] < 0.1)
+
+    def test_genome_convergence_with_smaller_training_set_and_noise(self):
+        np.random.seed(1)
+        node_list = [
+            NodeGene(node_id=0, node_type='source'),
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=2, node_type='output', bias=0.5),
+            NodeGene(node_id=3, node_type='hidden', bias=1),
+            NodeGene(node_id=4, node_type='hidden', bias=1),
+            NodeGene(node_id=5, node_type='hidden', bias=1),
+            NodeGene(node_id=6, node_type='hidden', bias=1),
+        ]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=5, innovation_number=5, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=5, innovation_number=6, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=6, innovation_number=7, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
+            ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
+        ]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data, y_data = create_data(n_generated=200, add_noise=True)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=True, activation_type='sigmoid',
+                                        num_epochs=10000,
+                                        batch_size=10,
+                                        learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+
+        epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
+
+        assert (cost_list[len(cost_list) - 1] < 0.1)
 
     def test_nn_f1_score(self):
         node_list = [
