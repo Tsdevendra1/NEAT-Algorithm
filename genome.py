@@ -842,6 +842,8 @@ class Genome:
         for connection in self.connections.values():
             # If reset_all_connections isn't triggered, it'll just pertbe or reset the values as usual
             if backprop_mutation and reset_all_connections_role < config.weight_mutation_reset_all_connections_chance_backprop:
+                # TODO: Delete this after debugging [16/04/19 @15:58]
+                print('RESETING ALL THE WEIGHTS')
                 connection.weight = np.random.randn()
             else:
                 # This determines the chance for it to be a positive or negative change to the weight

@@ -70,7 +70,7 @@ class GenomeNeuralNetwork:
         self.initialise_parameters(have_bias=True,
                                    create_weight_bias_matrix_from_genome=create_weights_bias_from_genome)
 
-        self.modify_x_data_for_sources()
+        self.x_train = self.modify_x_data_for_sources()
 
         # This is to check that there is an activation function specified for each layer
         assert (len(self.connection_matrices_per_layer) == len(self.activation_function_dict))
@@ -210,6 +210,12 @@ class GenomeNeuralNetwork:
         """
 
         n_examples = input_data.shape[0]
+
+        # We have to modify the input data incase one of the features isn't present in the genome connections (i.e. it got removed due to a mutation)
+        # This automatically gets done to the data which is passed to the GenomeNeuralNetwork initialisation, but since
+        # we allow custom input data for this function we must do the check again
+        if self.x_train.shape[1] != input_data.shape[1]:
+            input_data = self.modify_x_data_for_sources(x_data=input_data)
 
         prediction, layer_input_dict = ForwardProp.genome_forward_prop(num_layers=self.num_layers,
                                                                        initial_input=input_data,
@@ -380,11 +386,13 @@ class GenomeNeuralNetwork:
 
         return epoch_list, cost_list
 
-    def modify_x_data_for_sources(self):
+    def modify_x_data_for_sources(self, x_data=None):
         """
         Since not every genome will have a connection for all the source nodes, we must account for this in the
         training data by removing features if there isn't a connection to it.
         """
+
+        x_data = self.x_train
 
         source_nodes = {}
 
@@ -410,8 +418,8 @@ class GenomeNeuralNetwork:
                 has_connection_sources.add(node_id)
 
         # Account for the fact that a source node might be deleted
-        if len(source_nodes) != self.x_train.shape[1]:
-            possible_positions = set(range(self.x_train.shape[1]))
+        if len(source_nodes) != x_data.shape[1]:
+            possible_positions = set(range(x_data.shape[1]))
             included_position_by_node = set()
             for node_id in has_connection_sources:
                 included_position_by_node.add(self.node_map[node_id] - 1)
@@ -419,14 +427,16 @@ class GenomeNeuralNetwork:
             for node_position in possible_positions:
                 if node_position not in included_position_by_node:
                     # Delete the corresponding column
-                    self.x_train = np.delete(self.x_train, 0, node_position)
+                    x_data = np.delete(x_data, 0, node_position)
 
         # Delete the columns for the source nodes which don't have connections
         for node in not_connection_sources:
             # Get the position of the node inside it's own layer. Minus 1 for python indexing
             node_position = self.node_map[node] - 1
             # Delete the corresponding column
-            self.x_train = np.delete(self.x_train, 0, node_position)
+            x_data = np.delete(x_data, 0, node_position)
+
+        return x_data
 
 
 def main():

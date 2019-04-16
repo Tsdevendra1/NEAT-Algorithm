@@ -564,7 +564,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         assert (cost_list[len(cost_list) - 1] < 0.1)
 
     def test_genome_convergence_with_smaller_training_set_and_noise(self):
-        np.random.seed(1)
+        np.random.seed(7)
         node_list = [
             NodeGene(node_id=0, node_type='source'),
             NodeGene(node_id=1, node_type='source'),
@@ -639,6 +639,21 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
 
         f1_score = NEAT.calculate_f_statistic(genome, x_data, y_data)
         self.assertEqual(1.0, f1_score)
+
+    def test_f1_score_bug_fix(self):
+        # This test is for a bug which was occuring before
+        node_list = [
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=2, node_type='output', bias=0.5),
+            NodeGene(node_id=3, node_type='hidden', bias=1.2)]
+
+        connection_list = [ConnectionGene(input_node=1, output_node=2, innovation_number=2, enabled=False, weight=9),
+                           ConnectionGene(input_node=1, output_node=3, innovation_number=4, enabled=True, weight=5),
+                           ConnectionGene(input_node=3, output_node=2, innovation_number=5, enabled=True, weight=5)]
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        x_data, y_data = create_data(n_generated=200)
+        f1_score = NEAT.calculate_f_statistic(genome=genome, x_test_data=x_data, y_test_data=y_data)
+        self.assertTrue(f1_score)
 
     def test_creation_genome_nn(self):
         node_list = [NodeGene(node_id=0, node_type='source'),

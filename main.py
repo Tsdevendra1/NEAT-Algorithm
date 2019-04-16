@@ -6,14 +6,14 @@ import numpy as np
 
 def main():
     # Keep a consistent seed to make debugging easier TODO: Check if this work's across files
-    np.random.seed(1)
+    np.random.seed(8)
 
-    num_data_to_generate = 6250
+    num_data_to_generate = 300
     training_percentage = 0.8
     training_upper_limit_index = round(num_data_to_generate * training_percentage)
 
     # Create data
-    x_data, y_data = create_data(n_generated=num_data_to_generate)
+    x_data, y_data = create_data(n_generated=num_data_to_generate, add_noise=True)
 
     # Training data
     x_training = x_data[0:training_upper_limit_index]

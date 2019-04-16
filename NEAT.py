@@ -48,9 +48,12 @@ class NEAT:
     @staticmethod
     def create_genome_nn(genome, x_data, y_data):
         # TODO: The x_data, y_data isn't always used, particularly if we only create the network to get a prediction. This implementation should be improved for clarity
+        # return GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data,
+        #                            create_weights_bias_from_genome=True, activation_type='sigmoid',
+        #                            learning_rate=0.1, num_epochs=500, batch_size=64)
         return GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data,
                                    create_weights_bias_from_genome=True, activation_type='sigmoid',
-                                   learning_rate=0.1, num_epochs=500, batch_size=64)
+                                   learning_rate=0.1, num_epochs=10000, batch_size=10)
 
     def evaluate_population(self, use_backprop, generation):
         """
