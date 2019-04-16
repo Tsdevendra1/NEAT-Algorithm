@@ -20,7 +20,7 @@ class CompleteExtinctionException(Exception):
 class NEAT:
 
     def __init__(self, x_training_data, y_training_data, x_test_data, y_test_data, config, fitness_threshold,
-                 f1_score_threshold, algorithm_running):
+                 f1_score_threshold, algorithm_running=None):
         # Where all the parameters are saved
         self.config = config
         # Takes care of reproduction of populations
@@ -38,10 +38,12 @@ class NEAT:
         self.x_test = x_test_data
         self.y_test = y_test_data
 
-        # xor_full = 5000 examples, no noise x_200_noise = 200 examples with noise
-        assert (algorithm_running in {'xor_full', 'xor_200_noise'})
-        # Defines which of the algorithms is being currently tested (e.g. xor with 5000 examples of xor with 200 examples and noise)
-        self.algorithm_running = algorithm_running
+        if algorithm_running:
+            # xor_full = 5000 examples, no noise x_200_noise = 200 examples with noise
+            assert (algorithm_running in {'xor_full', 'xor_200_noise'})
+            # Defines which of the algorithms is being currently tested (e.g. xor with 5000 examples of xor with 200
+            # examples and noise)
+            self.algorithm_running = algorithm_running
 
         # Initialise the starting population
         self.population = self.reproduction.create_new_population(population_size=self.config.population_size,
