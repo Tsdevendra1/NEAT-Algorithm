@@ -380,6 +380,48 @@ class GenomeNeuralNetwork:
             if print_epoch:
                 print('EPOCH:', epoch, 'Cost:', round(epoch_cost, 3))
 
+            first_cost = cost_list[0]
+            # Check progress quarter of the way through
+            if epoch == (self.num_epochs // 4):
+                quarter_cost = cost_list[self.num_epochs // 4]
+                percentage_increase_quarter = (1 - quarter_cost / first_cost) * 100
+                print('Beginning cost: {}'.format(round(first_cost, 3)))
+                print('Quarter cost: {}'.format(round(quarter_cost, 3)))
+                print(
+                    'Percentage increase from beginning to quarter of the way: {}'.format(
+                        round(percentage_increase_quarter, 1)))
+                if percentage_increase_quarter < 1:
+                    print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE')
+                    break
+
+            # Check progress halfway through
+            if epoch == (self.num_epochs // 2):
+                midway_cost = cost_list[self.num_epochs // 2]
+                percentage_increase_midway = (1 - midway_cost / first_cost) * 100
+                percentage_increase_between_quarter_and_midway = (1 - midway_cost / quarter_cost) * 100
+                print('Midway cost: {}'.format(round(midway_cost, 3)))
+                print('Percentage increase from beginning to halfway: {}'.format(round(percentage_increase_midway, 1)))
+                print('Percentage increase from quarter to halfway: {}'.format(round(percentage_increase_between_quarter_and_midway, 1)))
+                if percentage_increase_quarter == percentage_increase_midway \
+                        or percentage_increase_quarter > percentage_increase_midway \
+                        or percentage_increase_between_quarter_and_midway < 1:
+                    print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE')
+                    break
+
+            # Check progress 3/4 of the way
+            if epoch == (self.num_epochs * 3 // 4):
+                three_quarters_cost = cost_list[self.num_epochs * 3 // 4]
+                percentage_increase_three_quarters = (1 - three_quarters_cost / first_cost) * 100
+                percentage_increase_between_midway_and_three_quarters = (1 - three_quarters_cost / midway_cost) * 100
+                print('Three quarters cost: {}'.format(round(three_quarters_cost, 3)))
+                print('Percentage increase from beginning to halfway: {}'.format(round(percentage_increase_three_quarters, 1)))
+                print('Percentage increase from midway to three quarters: {}'.format(round(percentage_increase_between_midway_and_three_quarters, 1)))
+                if percentage_increase_midway == percentage_increase_three_quarters \
+                        or percentage_increase_midway > percentage_increase_three_quarters \
+                        or percentage_increase_between_midway_and_three_quarters < 1:
+                    print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE')
+                    break
+
         print('Optimising 100% done...')
 
         self.update_genes()
@@ -427,14 +469,16 @@ class GenomeNeuralNetwork:
             for node_position in possible_positions:
                 if node_position not in included_position_by_node:
                     # Delete the corresponding column
-                    x_data = np.delete(x_data, 0, node_position)
+                    # x_data = np.delete(x_data, 0, node_position)
+                    x_data = np.delete(x_data, node_position, axis=1)
 
         # Delete the columns for the source nodes which don't have connections
         for node in not_connection_sources:
             # Get the position of the node inside it's own layer. Minus 1 for python indexing
             node_position = self.node_map[node] - 1
             # Delete the corresponding column
-            x_data = np.delete(x_data, 0, node_position)
+            # x_data = np.delete(x_data, 0, node_position)
+            x_data = np.delete(x_data, node_position, axis=1)
 
         return x_data
 

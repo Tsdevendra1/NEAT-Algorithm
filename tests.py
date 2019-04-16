@@ -1318,5 +1318,32 @@ class TestPickle(unittest.TestCase):
         os.remove(self.filename)
 
 
+class TestNumpyDelete(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_numpy_delete_bug(self):
+        random_array = np.random.rand(160, 7)
+        random_array = np.delete(random_array, 6, axis=1)
+        self.assertTrue(random_array.shape[1] == 6)
+
+    def test_modify_x_data_source(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=2, weight=-0.351, enabled=False)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=3)
+        x_data, y_data = create_data(n_generated=500)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                        learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+        self.assertTrue(genome_nn.x_train.shape[1] == 1)
+
+
 if __name__ == '__main__':
     unittest.main()

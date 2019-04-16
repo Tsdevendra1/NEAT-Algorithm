@@ -39,8 +39,6 @@ class NEAT:
         self.y_test = y_test_data
 
         if algorithm_running:
-            # xor_full = 5000 examples, no noise x_small_noise = small number of examples (e.g. 300) with noise
-            assert (algorithm_running in {'xor_full', 'xor_small_noise'})
             # Defines which of the algorithms is being currently tested (e.g. xor with 5000 examples of xor with 200
             # examples and noise)
             self.algorithm_running = algorithm_running
@@ -54,6 +52,7 @@ class NEAT:
 
     @staticmethod
     def create_genome_nn(genome, x_data, y_data, algorithm_running=None):
+        # TODO: I encountered a bug where I trained a genome on a relu activation function, but when I recreated using this function I had problems because I forgot that everything defined inside here uses sigmoid. Should improve implementation of this
         # TODO: The x_data, y_data isn't always used, particularly if we only create the network to get a prediction. This implementation should be improved for clarity
         if algorithm_running == 'xor_full':
             learning_rate = 0.1
@@ -62,8 +61,13 @@ class NEAT:
             activation_type = 'sigmoid'
         elif algorithm_running == 'xor_small_noise':
             learning_rate = 0.1
-            num_epochs = 10000
+            num_epochs = 5000
             batch_size = 10
+            activation_type = 'sigmoid'
+        elif algorithm_running == 'circle_data':
+            learning_rate = 0.1
+            num_epochs = 5000
+            batch_size = 50
             activation_type = 'sigmoid'
         # TODO: Choose more suitable default
         else:
