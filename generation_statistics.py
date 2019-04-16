@@ -34,6 +34,7 @@ class GenerationStatistics:
         self.avg_num_disjoint = None
         self.avg_num_excess = None
         self.avg_weight_diff = None
+        self.best_all_time_genome_f1_score = None
 
     def update_generation_information(self, generation):
 
@@ -68,17 +69,36 @@ class GenerationStatistics:
         self.num_disjoint_list = []
         self.weight_diff_list = []
 
-    def print_generation_information(self, generation_interval_for_graph):
-        current_gen = max(self.generation_information.keys())
-        print('**************************** Generation {} *******************************'.format(current_gen))
+    def plot_graphs(self, current_gen):
 
         important_information_keys = {
             'num_species', 'num_generation_add_node', 'num_generation_delete_node', 'num_generation_add_connection',
             'num_generation_delete_connection', 'num_generation_weight_mutations', 'average_population_fitness',
             'best_all_time_genome_fitness', 'mean_number_connections_enabled', 'mean_number_nodes_enabled',
             'mean_compatibility_distance', 'avg_num_disjoint', 'avg_num_excess', 'avg_weight_diff',
-            'mean_number_connections_overall'
+            'mean_number_connections_overall', 'best_all_time_genome_f1_score'
         }
+
+        # Plot information to graph every certain amount of generations
+        # for information_type, information in self.generation_information[current_gen].items():
+        for information_type in important_information_keys:
+            # Don't need to print the dictionary
+            if information_type != 'generation_information':
+                # print(information_type, ':', ' {}'.format(information))
+                # if current_gen % generation_interval_for_graph == 0 and current_gen != 1:
+                    generations_to_go_through = list(range(1, current_gen + 1))
+                    y_data = []
+                    for generation in generations_to_go_through:
+                        y_data.append(self.generation_information[generation][information_type])
+
+                    plt.plot(generations_to_go_through, y_data)
+                    plt.title(information_type)
+                    plt.savefig('graphs/{}_generation_{}.jpg'.format(information_type, current_gen))
+                    plt.show()
+
+    def print_generation_information(self, generation_interval_for_graph, plot_graphs):
+        current_gen = max(self.generation_information.keys())
+        print('**************************** Generation {} *******************************'.format(current_gen))
 
         important_information = [
             ('Number of Species', self.generation_information[current_gen]['num_species']),
@@ -89,7 +109,8 @@ class GenerationStatistics:
              self.generation_information[current_gen]['num_generation_delete_connection']),
             ('Weight Mutations', self.generation_information[current_gen]['num_generation_weight_mutations']),
             ('Average Fitness', self.generation_information[current_gen]['average_population_fitness']),
-            ('Best Genome Fitness', self.generation_information[current_gen]['best_all_time_genome_fitness']),
+            ('Best All Time Genome Fitness', self.generation_information[current_gen]['best_all_time_genome_fitness']),
+            ('Best All Time Genome f1 score', self.generation_information[current_gen]['best_all_time_genome_f1_score']),
             ('Average Number of Connections Per Genome',
              self.generation_information[current_gen]['mean_number_connections_enabled']),
             ('Average Number of Nodes Per Genome',
@@ -113,19 +134,6 @@ class GenerationStatistics:
             print('{}:{}'.format(info_type, info_value))
         print('\n')
 
-        # Plot information to graph every certain amount of generations
-        # for information_type, information in self.generation_information[current_gen].items():
-        for information_type in important_information_keys:
-            # Don't need to print the dictionary
-            if information_type != 'generation_information':
-                # print(information_type, ':', ' {}'.format(information))
-                if current_gen % generation_interval_for_graph == 0 and current_gen != 1:
-                    generations_to_go_through = list(range(1, current_gen + 1))
-                    y_data = []
-                    for generation in generations_to_go_through:
-                        y_data.append(self.generation_information[generation][information_type])
+        if current_gen % generation_interval_for_graph == 0 and current_gen != 1 and plot_graphs:
+            self.plot_graphs(current_gen=current_gen)
 
-                    plt.plot(generations_to_go_through, y_data)
-                    plt.title(information_type)
-                    plt.savefig('graphs/{}_generation_{}.jpg'.format(information_type, current_gen))
-                    plt.show()

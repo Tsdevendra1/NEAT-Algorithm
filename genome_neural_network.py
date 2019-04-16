@@ -326,13 +326,13 @@ class GenomeNeuralNetwork:
                     except KeyError as e:
                         raise Exception(e)
 
-        for node, updated_node in zip(self.genome.nodes.values(), self.genome.updated_nodes.values()):
+        for node in self.genome.nodes.values():
             node_layer = self.node_layers.get(node.node_id)
             # Can't modify the bias of a source node and if the node_layer is not found it means the connection it is
             #  related to is not enabled
             if node.node_type != 'source' and node_layer:
                 # These should be the same value since we're updating two instances of it due to poor implementation on my part
-                assert (node.node_id == updated_node.node_id)
+                updated_node = self.genome.updated_nodes[node.node_id]
                 # Minus one for indexing
                 node_position = self.node_map[node.node_id] - 1
                 # Minus one because node_layers counts the first layer as a layer where as the bias dict doesn't

@@ -7,6 +7,7 @@ from reproduce import Reproduce
 from genome import Genome
 from species import SpeciesSet
 import sklearn.metrics
+import pickle
 
 # Exception used to check if there are no more species
 from stagnation import Stagnation
@@ -18,7 +19,8 @@ class CompleteExtinctionException(Exception):
 
 class NEAT:
 
-    def __init__(self, x_training_data, y_training_data, x_test_data, y_test_data, config, fitness_threshold):
+    def __init__(self, x_training_data, y_training_data, x_test_data, y_test_data, config, fitness_threshold,
+                 f1_score_threshold):
         # Where all the parameters are saved
         self.config = config
         # Takes care of reproduction of populations
@@ -28,6 +30,7 @@ class NEAT:
         self.best_all_time_genome = None
         # If the fitness threshold is met it will stop the algorithm (if set)
         self.fitness_threshold = fitness_threshold
+        self.f1_score_threshold = f1_score_threshold
         # A class containing the different species within the population
         self.species_set = SpeciesSet(config=config, generation_tracker=self.generation_tracker)
         self.x_train = x_training_data
@@ -164,7 +167,7 @@ class NEAT:
         prediction = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True).round()
         return sklearn.metrics.f1_score(y_test_data, prediction)
 
-    def run(self, max_num_generations, use_backprop, print_generation_information):
+    def run(self, max_num_generations, use_backprop, print_generation_information, show_population_weight_distribution):
         """
         Run the algorithm
         """
@@ -190,7 +193,6 @@ class NEAT:
                 self.best_all_time_genome = best_current_genome
 
             self.generation_tracker.best_all_time_genome_fitness = self.best_all_time_genome.fitness
-
 
             start_reproduce_time = time.time()
 
@@ -234,18 +236,30 @@ class NEAT:
             end_specify_time = time.time()
             self.generation_tracker.species_execute_time = end_specify_time - start_specify_time
 
+            f1_score_of_best_all_time_genome = self.calculate_f_statistic(
+                self.best_all_time_genome, self.x_test, self.y_test)
+
+            self.generation_tracker.best_all_time_genome_f1_score = f1_score_of_best_all_time_genome
+
             self.generation_tracker.update_generation_information(generation=current_gen)
+
             if print_generation_information:
-                self.generation_tracker.print_generation_information(generation_interval_for_graph=1)
+                self.generation_tracker.print_generation_information(generation_interval_for_graph=1, plot_graphs=False)
 
             # If the fitness threshold is met, stop the algorithm
-            if self.best_all_time_genome.fitness > self.fitness_threshold:
+            if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold:
+                self.generation_tracker.plot_graphs(current_gen=current_gen)
                 break
 
             # Gives distribution of the weights in the population connections
-            self.reproduction.show_population_weight_distribution(population=self.population)
+            if show_population_weight_distribution:
+                self.reproduction.show_population_weight_distribution(population=self.population)
 
-        print(self.calculate_f_statistic(self.best_all_time_genome, self.x_test, self.y_test))
+        # Save best genome in pickle
+        outfile = open('pickles/best_genome_pickle', 'wb')
+        pickle.dump(self.best_all_time_genome, outfile)
+        outfile.close()
+        print('f1 score for best genome after optimising is: {}'.format(f1_score_of_best_all_time_genome))
 
         return self.best_all_time_genome
 

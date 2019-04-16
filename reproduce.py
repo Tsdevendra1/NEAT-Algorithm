@@ -79,6 +79,8 @@ class Reproduce:
                 list_of_weights.append(connection.weight)
 
         sns.distplot(list_of_weights)
+        plt.title('Weight distribution of connections in each population member')
+        plt.xlabel('Connection weight values')
         plt.show()
 
     @staticmethod

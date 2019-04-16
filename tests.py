@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from NEAT import NEAT
+import os
 from config import Config
 from genome_neural_network import GenomeNeuralNetwork
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
@@ -9,6 +10,7 @@ from genome import Genome
 from gene import ConnectionGene, NodeGene
 from reproduce import Reproduce
 from stagnation import Stagnation
+import pickle
 
 
 class TestForwardProp(unittest.TestCase):
@@ -559,7 +561,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
             ConnectionGene(input_node=4, output_node=6, innovation_number=8, enabled=True, weight=np.random.randn()),
             ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
             ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
-            ]
+        ]
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
         x_data, y_data = create_data(n_generated=5000)
@@ -1108,6 +1110,46 @@ class TestGenomeCompatibility(unittest.TestCase):
 
         compat_dist = genome_1.compute_compatibility_distance(other_genome=genome_2, config=Config)
         self.assertAlmostEqual(compat_dist, 3.19731)
+
+
+# This class is used in a test below DON'T DELETE
+class Random:
+    value = 1
+    testing_attribute = 'this is a test'
+
+
+class TestPickle(unittest.TestCase):
+
+    def setUp(self):
+        self.filename = 'dogs'
+        self.dogs_dict = {'Ozzy': 3, 'Filou': 8, 'Luna': 5, 'Skippy': 10, 'Barco': 12, 'Balou': 9, 'Laika': 16}
+
+    def test_pickle_dump(self):
+        outfile = open(self.filename, 'wb')
+        pickle.dump(self.dogs_dict, outfile)
+        outfile.close()
+
+    def test_pickle_dump_2(self):
+        filename = 'test_class_pickle'
+        outfile = open(filename, 'wb')
+        pickle.dump(Random, outfile)
+        outfile.close()
+
+        infile = open(filename, 'rb')
+        file_reload = pickle.load(infile)
+        self.assertEqual(file_reload.value, 1)
+        self.assertEqual(file_reload.testing_attribute, 'this is a test')
+        infile.close()
+        # Remove file so we're not generating files every test
+        os.remove(filename)
+
+    def test_pickle_open(self):
+        infile = open(self.filename, 'rb')
+        new_dict = pickle.load(infile)
+        self.assertEqual(self.dogs_dict, new_dict)
+        infile.close()
+        # Remove file so we're not generating files every test
+        os.remove(self.filename)
 
 
 if __name__ == '__main__':

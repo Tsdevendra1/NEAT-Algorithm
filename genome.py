@@ -838,8 +838,6 @@ class Genome:
         weight_mutation_mean = config.weight_mutation_mean_backprop if backprop_mutation else config.weight_mutation_mean
         weight_mutation_sigma = config.weight_mutation_sigma_backprop if backprop_mutation else config.weight_mutation_sigma
 
-        print('WEIGHT SIGMA {}'.format(weight_mutation_sigma))
-
         # Mutate all connection weights
         for connection in self.connections.values():
             # If reset_all_connections isn't triggered, it'll just pertbe or reset the values as usual

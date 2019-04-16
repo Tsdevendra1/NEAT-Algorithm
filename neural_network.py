@@ -137,14 +137,24 @@ def create_architecture(num_features_training, hidden_nodes_per_layer):
     return [num_features_training] + hidden_nodes_per_layer + [1]
 
 
-def create_data(n_generated):
-    x_data = np.random.randint(2, size=(n_generated, 2))
-    y_data = np.empty((n_generated, 1))
+def create_data(n_generated, add_noise=False):
 
-    # Sets y data to 1 or 0 according to XOR rules
-    for column in range(x_data.shape[0]):
-        y_data[column] = ((x_data[column, 0] == 1 and x_data[column, 1] == 1) or (
-                x_data[column, 0] == 0 and x_data[column, 1] == 0))
+    if add_noise:
+        x_data = np.random.uniform(low=0.0, high=1.0, size=(n_generated, 2))
+        y_data = np.empty((n_generated, 1))
+        # Sets y data to 1 or 0 according to XOR rules
+        for column in range(x_data.shape[0]):
+            x_feature_1 = round(x_data[column, 0])
+            x_feature_2 = round(x_data[column, 1])
+            y_data[column] = (x_feature_1 == 1 and x_feature_2 == 1) or (
+                    x_feature_1 == 0 and x_feature_2 == 0)
+    else:
+        x_data = np.random.randint(2, size=(n_generated, 2))
+        y_data = np.empty((n_generated, 1))
+        # Sets y data to 1 or 0 according to XOR rules
+        for column in range(x_data.shape[0]):
+            y_data[column] = ((x_data[column, 0] == 1 and x_data[column, 1] == 1) or (
+                    x_data[column, 0] == 0 and x_data[column, 1] == 0))
 
     return x_data, y_data
 
@@ -160,7 +170,7 @@ def main():
     nn_architecture = create_architecture(num_features, desired_architecture)
 
     # Defines the activation functions used for each layer
-    activations_dict = {1: ActivationFunctions.relu, 2:ActivationFunctions.relu, 3: ActivationFunctions.sigmoid}
+    activations_dict = {1: ActivationFunctions.relu, 2: ActivationFunctions.relu, 3: ActivationFunctions.sigmoid}
 
     neural_network = NeuralNetwork(x_train=data_train, y_train=labels_train, layer_sizes=nn_architecture,
                                    activation_function_dict=activations_dict, learning_rate=0.1, num_epochs=1000)
