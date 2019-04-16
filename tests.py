@@ -3,6 +3,7 @@ import numpy as np
 from NEAT import NEAT
 import os
 from config import Config
+from data_storage import get_circle_data
 from genome_neural_network import GenomeNeuralNetwork
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
 from deconstruct_genome import DeconstructGenome
@@ -11,6 +12,7 @@ from gene import ConnectionGene, NodeGene
 from reproduce import Reproduce
 from stagnation import Stagnation
 import pickle
+import sklearn.metrics
 
 
 class TestForwardProp(unittest.TestCase):
@@ -590,6 +592,8 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
 
         genome = Genome(connections=connection_list, nodes=node_list, key=1)
         x_data, y_data = create_data(n_generated=200, add_noise=True)
+        print(x_data.shape)
+        print(y_data.shape)
         genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=True, activation_type='sigmoid',
                                         num_epochs=10000,
                                         batch_size=10,
@@ -599,6 +603,92 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
 
         assert (cost_list[len(cost_list) - 1] < 0.1)
+
+    def test_genome_convergence_with_circle_data(self):
+        np.random.seed(1)
+        node_list = [
+            NodeGene(node_id=0, node_type='source'),
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=7, node_type='source'),
+            NodeGene(node_id=8, node_type='source'),
+            NodeGene(node_id=9, node_type='source'),
+            NodeGene(node_id=10, node_type='source'),
+            NodeGene(node_id=11, node_type='source'),
+
+            NodeGene(node_id=2, node_type='output', bias=0.5),
+            NodeGene(node_id=3, node_type='hidden', bias=1),
+            NodeGene(node_id=4, node_type='hidden', bias=1),
+            NodeGene(node_id=5, node_type='hidden', bias=1),
+            NodeGene(node_id=6, node_type='hidden', bias=1),
+
+            NodeGene(node_id=12, node_type='hidden', bias=1),
+            NodeGene(node_id=13, node_type='hidden', bias=1),
+            NodeGene(node_id=14, node_type='hidden', bias=1),
+            NodeGene(node_id=15, node_type='hidden', bias=1),
+
+            NodeGene(node_id=16, node_type='hidden', bias=1),
+            NodeGene(node_id=17, node_type='hidden', bias=1),
+            NodeGene(node_id=18, node_type='hidden', bias=1),
+            NodeGene(node_id=19, node_type='hidden', bias=1),
+        ]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=3, innovation_number=1, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=2, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=4, enabled=True, weight=np.random.randn()),
+
+            ConnectionGene(input_node=7, output_node=3, innovation_number=11, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=8, output_node=3, innovation_number=12, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=9, output_node=3, innovation_number=13, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=10, output_node=3, innovation_number=14, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=11, output_node=3, innovation_number=15, enabled=True, weight=np.random.randn()),
+
+            ConnectionGene(input_node=7, output_node=4, innovation_number=21, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=8, output_node=4, innovation_number=22, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=9, output_node=4, innovation_number=23, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=10, output_node=4, innovation_number=24, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=11, output_node=4, innovation_number=25, enabled=True, weight=np.random.randn()),
+
+            ConnectionGene(input_node=3, output_node=12, innovation_number=31, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=13, innovation_number=32, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=14, innovation_number=33, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=15, innovation_number=34, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=5, innovation_number=35, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=6, innovation_number=36, enabled=True, weight=np.random.randn()),
+
+            ConnectionGene(input_node=4, output_node=12, innovation_number=41, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=13, innovation_number=42, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=14, innovation_number=43, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=15, innovation_number=44, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=5, innovation_number=45, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=6, innovation_number=46, enabled=True, weight=np.random.randn()),
+
+            ConnectionGene(input_node=12, output_node=2, innovation_number=51, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=13, output_node=2, innovation_number=52, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=14, output_node=2, innovation_number=53, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=15, output_node=2, innovation_number=54, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=5, output_node=2, innovation_number=9, enabled=True, weight=np.random.rand()),
+            ConnectionGene(input_node=6, output_node=2, innovation_number=10, enabled=True, weight=np.random.randn())
+        ]
+
+        x_data, y_data = get_circle_data()
+        y_data.shape = (200, 1)
+        for row in range(y_data.shape[0]):
+            if y_data[row, 0] == -1:
+                y_data[row, 0] = 0
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=True, activation_type='sigmoid',
+                                        num_epochs=10000,
+                                        batch_size=50,
+                                        learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+
+        epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
+
+        f1_score = NEAT.calculate_f_statistic(genome=genome, x_test_data=x_data, y_test_data=y_data)
+        assert (cost_list[len(cost_list) - 1] < 0.1)
+        assert (f1_score > 0.94)
 
     def test_nn_f1_score(self):
         node_list = [
