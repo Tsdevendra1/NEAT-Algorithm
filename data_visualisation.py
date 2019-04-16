@@ -47,5 +47,6 @@ def main():
     plt.scatter(feature_1_spiral, feature_2_spiral, color=create_label_colours(labels=y_spiral))
     plt.show()
 
+
 if __name__ == "__main__":
     main()
