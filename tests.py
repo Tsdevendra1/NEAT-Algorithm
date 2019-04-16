@@ -564,7 +564,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         assert (cost_list[len(cost_list) - 1] < 0.1)
 
     def test_genome_convergence_with_smaller_training_set_and_noise(self):
-        np.random.seed(7)
+        np.random.seed(1)
         node_list = [
             NodeGene(node_id=0, node_type='source'),
             NodeGene(node_id=1, node_type='source'),

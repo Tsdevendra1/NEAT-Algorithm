@@ -20,7 +20,7 @@ class CompleteExtinctionException(Exception):
 class NEAT:
 
     def __init__(self, x_training_data, y_training_data, x_test_data, y_test_data, config, fitness_threshold,
-                 f1_score_threshold):
+                 f1_score_threshold, algorithm_running):
         # Where all the parameters are saved
         self.config = config
         # Takes care of reproduction of populations
@@ -38,6 +38,11 @@ class NEAT:
         self.x_test = x_test_data
         self.y_test = y_test_data
 
+        # xor_full = 5000 examples, no noise x_200_noise = 200 examples with noise
+        assert (algorithm_running in {'xor_full', 'xor_200_noise'})
+        # Defines which of the algorithms is being currently tested (e.g. xor with 5000 examples of xor with 200 examples and noise)
+        self.algorithm_running = algorithm_running
+
         # Initialise the starting population
         self.population = self.reproduction.create_new_population(population_size=self.config.population_size,
                                                                   num_features=x_training_data.shape[1])
@@ -46,14 +51,28 @@ class NEAT:
         self.species_set.speciate(population=self.population, compatibility_threshold=3, generation=0)
 
     @staticmethod
-    def create_genome_nn(genome, x_data, y_data):
+    def create_genome_nn(genome, x_data, y_data, algorithm_running=None):
         # TODO: The x_data, y_data isn't always used, particularly if we only create the network to get a prediction. This implementation should be improved for clarity
-        # return GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data,
-        #                            create_weights_bias_from_genome=True, activation_type='sigmoid',
-        #                            learning_rate=0.1, num_epochs=500, batch_size=64)
+        if algorithm_running == 'xor_full':
+            learning_rate = 0.1
+            num_epochs = 500
+            batch_size = 64
+            activation_type = 'sigmoid'
+        elif algorithm_running == 'xor_200_noise':
+            learning_rate = 0.1
+            num_epochs = 10000
+            batch_size = 10
+            activation_type = 'sigmoid'
+        # TODO: Choose more suitable default
+        else:
+            learning_rate = 0.1
+            num_epochs = 500
+            batch_size = 64
+            activation_type = 'sigmoid'
+
         return GenomeNeuralNetwork(genome=genome, x_train=x_data, y_train=y_data,
-                                   create_weights_bias_from_genome=True, activation_type='sigmoid',
-                                   learning_rate=0.1, num_epochs=10000, batch_size=10)
+                                   create_weights_bias_from_genome=True, activation_type=activation_type,
+                                   learning_rate=learning_rate, num_epochs=num_epochs, batch_size=batch_size)
 
     def evaluate_population(self, use_backprop, generation):
         """
@@ -69,7 +88,8 @@ class NEAT:
 
         for genome in self.population.values():
 
-            genome_nn = self.create_genome_nn(genome=genome, x_data=self.x_train, y_data=self.y_train)
+            genome_nn = self.create_genome_nn(genome=genome, x_data=self.x_train, y_data=self.y_train,
+                                              algorithm_running=self.algorithm_running)
 
             # Optimise the neural_network_first. However, the generation should allow for one pass so that we are not
             #  just optimising all the same topologies
@@ -189,7 +209,8 @@ class NEAT:
 
             start_evaluate_time = time.time()
             # Evaluate the current generation and get the best genome in the current generation
-            best_current_genome, worst_current_genome = self.evaluate_population(use_backprop=use_backprop, generation=current_gen)
+            best_current_genome, worst_current_genome = self.evaluate_population(use_backprop=use_backprop,
+                                                                                 generation=current_gen)
             print('WORST CURRENT GENOME FITNESS: {}'.format(worst_current_genome.fitness))
             end_evaluate_time = time.time()
             self.update_population_toplogy_info()
