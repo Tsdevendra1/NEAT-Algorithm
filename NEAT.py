@@ -62,6 +62,7 @@ class NEAT:
 
         # Should return the best genome
         current_best_genome = None
+        current_worst_genome = None
 
         for genome in self.population.values():
 
@@ -91,8 +92,10 @@ class NEAT:
 
             if current_best_genome is None or genome.fitness > current_best_genome.fitness:
                 current_best_genome = genome
+            if current_worst_genome is None or genome.fitness < current_worst_genome.fitness:
+                current_worst_genome = genome
 
-        return current_best_genome
+        return current_best_genome, current_worst_genome
 
     def update_population_toplogy_info(self):
         num_nodes_overall = []
@@ -183,7 +186,8 @@ class NEAT:
 
             start_evaluate_time = time.time()
             # Evaluate the current generation and get the best genome in the current generation
-            best_current_genome = self.evaluate_population(use_backprop=use_backprop, generation=current_gen)
+            best_current_genome, worst_current_genome = self.evaluate_population(use_backprop=use_backprop, generation=current_gen)
+            print('WORST CURRENT GENOME FITNESS: {}'.format(worst_current_genome.fitness))
             end_evaluate_time = time.time()
             self.update_population_toplogy_info()
             self.generation_tracker.evaluate_execute_time = end_evaluate_time - start_evaluate_time
@@ -212,7 +216,7 @@ class NEAT:
             end_reproduce_time = time.time()
             self.generation_tracker.reproduce_execute_time = end_reproduce_time - start_reproduce_time
 
-            # TODO: Uncomment this if it causes an issue
+            # TODO: Uncomment this if population sizes causes an issue
             # # Allow for some leaway in population size (+- 5)
             # range_value = 5
             # range_of_population_sizes = set(range(self.config.population_size - range_value,
@@ -256,7 +260,7 @@ class NEAT:
                 self.reproduction.show_population_weight_distribution(population=self.population)
 
         # Save best genome in pickle
-        outfile = open('pickles/best_genome_pickle', 'wb')
+        outfile = open('pickles/best_genome_pickle_{}'.format(np.random.randn()), 'wb')
         pickle.dump(self.best_all_time_genome, outfile)
         outfile.close()
         print('f1 score for best genome after optimising is: {}'.format(f1_score_of_best_all_time_genome))
