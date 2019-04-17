@@ -2,7 +2,7 @@ import scipy.io as sio
 import numpy as np
 
 
-def get_shm_two_class_data():
+def get_shm_two_class_data(normalise_x=True):
     mat_contents = sio.loadmat('C:/Users/tsdev/Desktop/SHM DATA/4dof_features.mat')
     y_data = mat_contents['labels'][:, 1]
     y_data.shape = (y_data.shape[0])
@@ -24,10 +24,11 @@ def get_shm_two_class_data():
     class_1_percentage = counts[0] / shuffle_check_length * 100
     class_2_percentage = counts[1] / shuffle_check_length * 100
 
-    # We perform these operations because for this data, the values are too high are negative causing issues during
-    # optimisation otherwise
-    x_data = x_data * -1
-    x_data = x_data / 100
+    if normalise_x:
+        # We perform these operations because for this data, the values are too high are negative causing issues during
+        # optimisation otherwise
+        x_data = x_data * -1
+        x_data = x_data / 100
 
     if class_1_percentage < 40 or class_2_percentage < 40:
         raise ValueError('Imbalanced classes due to shuffle, please re-initialise')
