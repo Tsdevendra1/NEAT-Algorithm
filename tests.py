@@ -4,6 +4,7 @@ from NEAT import NEAT
 import os
 from config import Config
 from data_storage import get_circle_data
+from genome_multiclass import GenomeMultiClass
 from genome_neural_network import GenomeNeuralNetwork
 from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNetwork, create_architecture, create_data
 from deconstruct_genome import DeconstructGenome
@@ -1399,29 +1400,104 @@ class TestNumpyDelete(unittest.TestCase):
         self.assertTrue(genome_nn)
 
 
-# class TestMultiClassClassification(unittest.TestCase):
-#
-#     def setUp(self):
-#         pass
-#
-#     def test_multiple_output_genome(self):
-#         #TODO: Finish this testcase
-#         node_list = [NodeGene(node_id=0, node_type='source'),
-#                      NodeGene(node_id=1, node_type='source'),
-#                      NodeGene(node_id=2, node_type='output', bias=1),
-#                      NodeGene(node_id=3, node_type='output', bias=1),
-#                      NodeGene(node_id=4, node_type='output', bias=1)]
-#
-#         connection_list = [
-#             ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
-#             ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
-#             ConnectionGene(input_node=0, output_node=4, innovation_number=3, weight=-0.351, enabled=True),
-#             ConnectionGene(input_node=1, output_node=2, innovation_number=4, weight=-0.351, enabled=True),
-#             ConnectionGene(input_node=1, output_node=3, innovation_number=5, weight=-0.351, enabled=True),
-#             ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
-#
-#         genome = Genome(connections=connection_list, nodes=node_list, key=3)
-#         self.assertTrue(genome)
+class TestMultiClassClassification(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_multiple_output_genome(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='output', bias=1),
+                     NodeGene(node_id=4, node_type='output', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=4, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=5, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
+
+        genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=3)
+        x_data, y_data = create_data(n_generated=500)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                        learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+
+        # Should have 3 outputs in weight dict
+        self.assertTrue(genome_nn.weights_dict[1].shape[1] == 3)
+
+    def test_genome_multiclass_remove_node(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='output', bias=1),
+                     NodeGene(node_id=4, node_type='output', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=5, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
+
+        genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=3)
+        for i in range(100):
+            genome.remove_node()
+
+        # Only one node is able to be deleted due to the rules we have set
+        self.assertTrue(len(genome.nodes) == 4)
+        self.assertTrue(genome)
+
+    def test_genome_multiclass_remove_connection(self):
+        # TODO: Check you can't remove too many connections to inputs
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='output', bias=1),
+                     NodeGene(node_id=4, node_type='output', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=3, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=5, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
+
+        genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=3)
+        for i in range(100):
+            genome.remove_connection()
+
+        # Only one node is able to be deleted due to the rules we have set
+        self.assertTrue(len(genome.connections) == 3)
+        self.assertTrue(genome)
+
+    def test_genome_multiclass_add_connection(self):
+        # TODO: Check you can't remove too many connections to inputs
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='output', bias=1),
+                     NodeGene(node_id=4, node_type='output', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=5, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
+
+        genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=3)
+        innovation_tracker = {}
+        reproduce = Reproduce(config=Config, stagnation=Stagnation)
+        reproduce.global_innovation_number = 7
+        for i in range(100):
+            genome.add_connection(innovation_tracker=innovation_tracker, reproduction_instance=reproduce)
+
+        # Only one node is able to be deleted due to the rules we have set
+        self.assertTrue(len(genome.connections) == 6)
+        self.assertTrue(genome)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import copy
 
 
-class Graph:
+class GraphMultiClass:
     """
     Class used to find the number of paths between two nodes in a grsph
     """
@@ -56,14 +56,15 @@ class Graph:
         visited[current_node] = False
 
     def add_edge(self, start_node, end_node):
-        # TODO: Check if the multiclass version of this is the better way of adding an edge
         connection_dict = self.connections.get(start_node)
         if connection_dict:
             connection_dict.append(end_node)
         else:
             self.connections[start_node] = [end_node]
-            self.vertex_list.append(start_node)
-            self.vertex_list.append(end_node)
+        self.vertex_list.append(start_node)
+        self.vertex_list.append(end_node)
+        # Remove duplicates
+        self.vertex_list = list(set(self.vertex_list))
 
     def count_paths(self, start_node, end_node, return_paths=False):
         """
