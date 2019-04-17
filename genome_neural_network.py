@@ -401,7 +401,8 @@ class GenomeNeuralNetwork:
                 percentage_increase_between_quarter_and_midway = (1 - midway_cost / quarter_cost) * 100
                 print('Midway cost: {}'.format(round(midway_cost, 3)))
                 print('Percentage increase from beginning to halfway: {}'.format(round(percentage_increase_midway, 1)))
-                print('Percentage increase from quarter to halfway: {}'.format(round(percentage_increase_between_quarter_and_midway, 1)))
+                print('Percentage increase from quarter to halfway: {}'.format(
+                    round(percentage_increase_between_quarter_and_midway, 1)))
                 if percentage_increase_quarter == percentage_increase_midway \
                         or percentage_increase_quarter > percentage_increase_midway \
                         or percentage_increase_between_quarter_and_midway < 1:
@@ -414,8 +415,10 @@ class GenomeNeuralNetwork:
                 percentage_increase_three_quarters = (1 - three_quarters_cost / first_cost) * 100
                 percentage_increase_between_midway_and_three_quarters = (1 - three_quarters_cost / midway_cost) * 100
                 print('Three quarters cost: {}'.format(round(three_quarters_cost, 3)))
-                print('Percentage increase from beginning to halfway: {}'.format(round(percentage_increase_three_quarters, 1)))
-                print('Percentage increase from midway to three quarters: {}'.format(round(percentage_increase_between_midway_and_three_quarters, 1)))
+                print('Percentage increase from beginning to halfway: {}'.format(
+                    round(percentage_increase_three_quarters, 1)))
+                print('Percentage increase from midway to three quarters: {}'.format(
+                    round(percentage_increase_between_midway_and_three_quarters, 1)))
                 if percentage_increase_midway == percentage_increase_three_quarters \
                         or percentage_increase_midway > percentage_increase_three_quarters \
                         or percentage_increase_between_midway_and_three_quarters < 1:
@@ -437,7 +440,6 @@ class GenomeNeuralNetwork:
         # x_data = self.x_train
         if x_data is None:
             x_data = self.x_train
-
 
         source_nodes = {}
 
@@ -462,6 +464,9 @@ class GenomeNeuralNetwork:
             else:
                 has_connection_sources.add(node_id)
 
+        # Keeps track of which positions (i.e. columns) will be deleted from x_data
+        node_positions_to_delete = []
+
         # Account for the fact that a source node might be deleted
         if len(source_nodes) != x_data.shape[1]:
             possible_positions = set(range(x_data.shape[1]))
@@ -471,17 +476,23 @@ class GenomeNeuralNetwork:
 
             for node_position in possible_positions:
                 if node_position not in included_position_by_node:
-                    # Delete the corresponding column
-                    if node_position < x_data.shape[1]:
-                        x_data = np.delete(x_data, node_position, axis=1)
+                    node_positions_to_delete.append(node_position)
 
         # Delete the columns for the source nodes which don't have connections
         for node in not_connection_sources:
             # Get the position of the node inside it's own layer. Minus 1 for python indexing
             node_position = self.node_map[node] - 1
-            # Delete the corresponding column
+            node_positions_to_delete.append(node_position)
+
+        # Remove duplicated
+        node_positions_to_delete = list(set(node_positions_to_delete))
+        # Put the highest position first, and delete it first so that if there is more than one needed to be deleted,
+        #  the index is not now messed up due to previous deletion
+        node_positions_to_delete.sort(reverse=True)
+        for node_position in node_positions_to_delete:
             if node_position < x_data.shape[1]:
                 x_data = np.delete(x_data, node_position, axis=1)
+
 
         return x_data
 

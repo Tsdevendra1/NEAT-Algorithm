@@ -9,6 +9,7 @@ from neural_network import ForwardProp, ActivationFunctions, BackProp, NeuralNet
 from deconstruct_genome import DeconstructGenome
 from genome import Genome
 from gene import ConnectionGene, NodeGene
+from read_mat_files import get_shm_two_class_data
 from reproduce import Reproduce
 from stagnation import Stagnation
 import pickle
@@ -1380,6 +1381,47 @@ class TestNumpyDelete(unittest.TestCase):
                                         learning_rate=0.1,
                                         x_train=x_data, y_train=y_data)
         self.assertTrue(genome_nn.x_train.shape[1] == 1)
+
+    def test_modify_x_data_source_2(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=2, node_type='source'),
+                     NodeGene(node_id=3, node_type='output', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=3, innovation_number=1, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=2, output_node=3, innovation_number=2, weight=-0.351, enabled=True)]
+
+        genome = Genome(connections=connection_list, nodes=node_list, key=3)
+        x_data_shm, y_data_shm = get_shm_two_class_data()
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=False, activation_type='sigmoid',
+                                        learning_rate=0.1,
+                                        x_train=x_data_shm, y_train=y_data_shm)
+        self.assertTrue(genome_nn)
+
+
+# class TestMultiClassClassification(unittest.TestCase):
+#
+#     def setUp(self):
+#         pass
+#
+#     def test_multiple_output_genome(self):
+#         #TODO: Finish this testcase
+#         node_list = [NodeGene(node_id=0, node_type='source'),
+#                      NodeGene(node_id=1, node_type='source'),
+#                      NodeGene(node_id=2, node_type='output', bias=1),
+#                      NodeGene(node_id=3, node_type='output', bias=1),
+#                      NodeGene(node_id=4, node_type='output', bias=1)]
+#
+#         connection_list = [
+#             ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+#             ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+#             ConnectionGene(input_node=0, output_node=4, innovation_number=3, weight=-0.351, enabled=True),
+#             ConnectionGene(input_node=1, output_node=2, innovation_number=4, weight=-0.351, enabled=True),
+#             ConnectionGene(input_node=1, output_node=3, innovation_number=5, weight=-0.351, enabled=True),
+#             ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
+#
+#         genome = Genome(connections=connection_list, nodes=node_list, key=3)
+#         self.assertTrue(genome)
 
 
 if __name__ == '__main__':
