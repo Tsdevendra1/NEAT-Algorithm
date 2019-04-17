@@ -20,6 +20,7 @@ def main():
         x_data, y_data = create_data(n_generated=num_data_to_generate, add_noise=True)
     elif algorithm_running == algorithm_options[2]:
         x_data, y_data = get_circle_data()
+        x_data = x_data[:, 0:2]
         y_data.shape = (len(x_data), 1)
         for row in range(y_data.shape[0]):
             if y_data[row, 0] == -1:

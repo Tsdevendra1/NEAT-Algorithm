@@ -283,7 +283,9 @@ class NEAT:
             # If the fitness threshold is met, stop the algorithm
             if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold:
                 # Save best genome in pickle
-                outfile = open('pickles/best_genome_pickle_{}'.format(np.random.randn()), 'wb')
+                outfile = open('pickles/best_genome_pickle_{}_{}'.format(self.algorithm_running,
+                                                                         np.random.random_integers(low=0, high=10)),
+                               'wb')
                 pickle.dump(self.best_all_time_genome, outfile)
                 outfile.close()
                 self.generation_tracker.plot_graphs(current_gen=current_gen)

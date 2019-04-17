@@ -50,16 +50,16 @@ def plot_decision_boundary(genome, x_data):
 
     for x in x_values:
         for y in random:
-            x_data = np.array([[x, y, x ** 2, y ** 2, x * y, np.sin(x), np.sin(y)]])
-            # x_data = np.array([[x,y]])
+            # x_data = np.array([[x, y, x ** 2, y ** 2, x * y, np.sin(x), np.sin(y)]])
+            x_data = np.array([[x, y]])
             x1.append(x)
             x2.append(y)
             predictions = get_genome_predictions(genome=genome, x_data=x_data, y_data=y_data)
             y_values += predictions[0].tolist()
     for x in x_values:
         for y in random:
-            x_data = np.array([[y, x, y ** 2, x ** 2, y * x, np.sin(y), np.sin(x)]])
-            # x_data = np.array([[x,y]])
+            # x_data = np.array([[y, x, y ** 2, x ** 2, y * x, np.sin(y), np.sin(x)]])
+            x_data = np.array([[y, x]])
             x1.append(y)
             x2.append(x)
             predictions = get_genome_predictions(genome=genome, x_data=x_data, y_data=y_data)
@@ -110,7 +110,7 @@ def main():
     feature_1_spiral = x_spiral[:, 0]
     feature_2_spiral = x_spiral[:, 1]
 
-    plot_data = True
+    plot_data = False
     show_decision_boundary = True
 
     # PLOT DATA
@@ -134,7 +134,7 @@ def main():
 
     if show_decision_boundary:
         # Test genome accuracy
-        genome = initialise_genome(genome_pickle_filepath='pickles/genome_circle_data')
+        genome = initialise_genome(genome_pickle_filepath='pickles/best_genome_pickle_circle_data_8')
         plot_decision_boundary(genome=genome, x_data=x_circle)
 
 

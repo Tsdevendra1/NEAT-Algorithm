@@ -604,6 +604,7 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
 
         assert (cost_list[len(cost_list) - 1] < 0.1)
 
+
     def test_genome_convergence_with_circle_data(self):
         np.random.seed(1)
         node_list = [
@@ -689,6 +690,43 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
         f1_score = NEAT.calculate_f_statistic(genome=genome, x_test_data=x_data, y_test_data=y_data)
         assert (cost_list[len(cost_list) - 1] < 0.1)
         assert (f1_score > 0.94)
+
+    def test_genome_convergence_with_circle_data_2(self):
+        np.random.seed(1)
+        node_list = [
+            NodeGene(node_id=0, node_type='source'),
+            NodeGene(node_id=1, node_type='source'),
+            NodeGene(node_id=2, node_type='source'),
+            NodeGene(node_id=3, node_type='source'),
+            NodeGene(node_id=4, node_type='source'),
+            NodeGene(node_id=5, node_type='source'),
+            NodeGene(node_id=6, node_type='source'),
+
+            NodeGene(node_id=7, node_type='output', bias=0.5)]
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=7, innovation_number=11, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=1, output_node=7, innovation_number=12, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=2, output_node=7, innovation_number=13, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=3, output_node=7, innovation_number=14, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=4, output_node=7, innovation_number=15, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=5, output_node=7, innovation_number=17, enabled=True, weight=np.random.randn()),
+            ConnectionGene(input_node=6, output_node=7, innovation_number=16, enabled=True, weight=np.random.randn())]
+        x_data, y_data = get_circle_data()
+        y_data.shape = (200, 1)
+        for row in range(y_data.shape[0]):
+            if y_data[row, 0] == -1:
+                y_data[row, 0] = 0
+        genome = Genome(connections=connection_list, nodes=node_list, key=1)
+        genome_nn = GenomeNeuralNetwork(genome=genome, create_weights_bias_from_genome=True, activation_type='sigmoid',
+                                        num_epochs=10000,
+                                        batch_size=50,
+                                        learning_rate=0.1,
+                                        x_train=x_data, y_train=y_data)
+
+        epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
+
+        f1_score = NEAT.calculate_f_statistic(genome=genome, x_test_data=x_data, y_test_data=y_data)
+        assert (cost_list[len(cost_list) - 1] < 0.15)
 
     def test_nn_f1_score(self):
         node_list = [
