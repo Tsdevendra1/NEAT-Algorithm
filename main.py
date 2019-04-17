@@ -4,14 +4,16 @@ from data_storage import get_circle_data
 from neural_network import create_data
 import numpy as np
 
+from read_mat_files import get_shm_two_class_data
+
 
 def main():
     # Keep a consistent seed to make debugging easier TODO: Check if this work's across files
     np.random.seed(1)
 
     # Choose which algorithm is running using keys
-    algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data'}
-    algorithm_running = algorithm_options[2]
+    algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3:'shm_two_class'}
+    algorithm_running = algorithm_options[3]
 
     if algorithm_running == algorithm_options[1]:
         num_data_to_generate = 300
@@ -26,6 +28,10 @@ def main():
             if y_data[row, 0] == -1:
                 y_data[row, 0] = 0
         num_data_to_generate = len(x_data)
+    elif algorithm_running == algorithm_options[3]:
+        x_data, y_data = get_shm_two_class_data()
+        num_data_to_generate = len(x_data)
+
 
     # Training data
     training_percentage = 0.8

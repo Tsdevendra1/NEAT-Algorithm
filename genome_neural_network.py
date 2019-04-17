@@ -434,7 +434,10 @@ class GenomeNeuralNetwork:
         training data by removing features if there isn't a connection to it.
         """
 
-        x_data = self.x_train
+        # x_data = self.x_train
+        if x_data is None:
+            x_data = self.x_train
+
 
         source_nodes = {}
 
@@ -469,16 +472,16 @@ class GenomeNeuralNetwork:
             for node_position in possible_positions:
                 if node_position not in included_position_by_node:
                     # Delete the corresponding column
-                    # x_data = np.delete(x_data, 0, node_position)
-                    x_data = np.delete(x_data, node_position, axis=1)
+                    if node_position < x_data.shape[1]:
+                        x_data = np.delete(x_data, node_position, axis=1)
 
         # Delete the columns for the source nodes which don't have connections
         for node in not_connection_sources:
             # Get the position of the node inside it's own layer. Minus 1 for python indexing
             node_position = self.node_map[node] - 1
             # Delete the corresponding column
-            # x_data = np.delete(x_data, 0, node_position)
-            x_data = np.delete(x_data, node_position, axis=1)
+            if node_position < x_data.shape[1]:
+                x_data = np.delete(x_data, node_position, axis=1)
 
         return x_data
 

@@ -604,7 +604,6 @@ class TestGenomeNeuralNetwork(unittest.TestCase):
 
         assert (cost_list[len(cost_list) - 1] < 0.1)
 
-
     def test_genome_convergence_with_circle_data(self):
         np.random.seed(1)
         node_list = [
