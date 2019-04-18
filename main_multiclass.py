@@ -1,5 +1,5 @@
 from NEAT_multiclass import NEATMultiClass
-from config import Config
+from config_multiclass import ConfigMultiClass
 from data_storage import get_circle_data
 from neural_network import create_data
 import numpy as np
@@ -31,7 +31,7 @@ def main():
     y_test = y_data[training_upper_limit_index:]
 
     neat = NEATMultiClass(x_training_data=x_training, y_training_data=y_training, x_test_data=x_test, y_test_data=y_test,
-                config=Config, fitness_threshold=-0.1, f1_score_threshold=0.90, algorithm_running=algorithm_running)
+                config=ConfigMultiClass, fitness_threshold=-0.1, f1_score_threshold=0.90, algorithm_running=algorithm_running)
 
     neat.run(max_num_generations=10000, use_backprop=True, print_generation_information=True,
              show_population_weight_distribution=False)

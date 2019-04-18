@@ -56,7 +56,7 @@ class NEATMultiClass:
         # TODO: The x_data, y_data isn't always used, particularly if we only create the network to get a prediction. This implementation should be improved for clarity
         if algorithm_running == 'xor_full':
             learning_rate = 0.1
-            num_epochs = 500
+            num_epochs = 1000
             batch_size = 64
             activation_type = 'sigmoid'
         elif algorithm_running == 'xor_small_noise':

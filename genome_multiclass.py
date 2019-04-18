@@ -102,7 +102,7 @@ class GenomeMultiClass:
                 if boolean:
                     num_true += 1
                     break
-            if num_true == 0:
+            if num_true == 0 and connection.enabled:
                 connection.enabled = False
         return all_paths
 
@@ -136,7 +136,20 @@ class GenomeMultiClass:
         self.layer_nodes = return_dict['layer_nodes']
         self.num_layers_including_input = max(self.layer_nodes)
         self.last_dummy_related_to_connection = return_dict['last_dummy_related_to_connection']
+
+        self.check_output_nodes_on_last_layer()
+
         return True
+
+    def check_output_nodes_on_last_layer(self):
+        output_nodes = []
+        for node in self.nodes.values():
+            if node.node_type == 'output':
+                output_nodes.append(node)
+
+        for node in output_nodes:
+            if self.node_layers[node.node_id] != max(self.layer_nodes):
+                raise Exception('Output node was found to not be in the very last layer')
 
     def configure_genes(self, connections, nodes):
         """
@@ -185,8 +198,6 @@ class GenomeMultiClass:
         else:
             fittest_parent, second_parent = genome_2, genome_1
 
-        # self.parents = (fittest_parent, second_parent)
-
         # Inherit connection genes
         for fittest_connection_gene in fittest_parent.connections.values():
             second_connection_gene = second_parent.connections.get(fittest_connection_gene.innovation_number)
@@ -224,6 +235,14 @@ class GenomeMultiClass:
         for genome in [genome_1, genome_2]:
             if not genome.check_connection_enabled_amount():
                 raise Exception('One or both of the parents in crossover doesnt have valid connections')
+
+        _, outputs_with_zero_paths = self.get_viable_nodes_to_delete(return_outputs_with_zero_path=True)
+        # If no enabled paths for a certain output, enable them all
+        if outputs_with_zero_paths:
+            for connection in self.connections.values():
+                for output_node in outputs_with_zero_paths:
+                    if connection.output_node == output_node and not connection.enabled:
+                        connection.enabled = True
 
         # TODO: What to do if you inherit genes and they are all disabled?
         num_enabled = 0
@@ -490,7 +509,7 @@ class GenomeMultiClass:
             connections_by_tuple[(connection.input_node, connection.output_node)] = connection
 
         viable_nodes_to_delete, outputs_with_one_path = self.get_viable_nodes_to_delete(
-            return_outputs_with_one_path=True)
+            return_outputs_with_one_path=True, return_outputs_with_zero_path=True)
 
         choice_list = []
         for connection, connection_amount in connection_count.items():
@@ -600,6 +619,7 @@ class GenomeMultiClass:
                     for connection in output_connections:
                         del self.connections[connection.innovation_number]
 
+                print('CONNECTION BEING DELETED: ', connection_to_remove)
                 return connection_to_remove
 
     def add_node(self, reproduction_instance, innovation_tracker):
@@ -661,7 +681,7 @@ class GenomeMultiClass:
 
         return first_new_connection, second_new_connection
 
-    def get_viable_nodes_to_delete(self, return_outputs_with_one_path=False):
+    def get_viable_nodes_to_delete(self, return_outputs_with_one_path=False, return_outputs_with_zero_path=False):
         """
         :return: A list of nodes which are available to be deleted
         """
@@ -692,7 +712,25 @@ class GenomeMultiClass:
                     output_node_count[node.node_id] = node_count[node.node_id]
                     del node_count[node.node_id]
 
-        output_nodes_with_one_path = [node for node, node_amount in output_node_count.items() if node_amount == 1]
+        if return_outputs_with_zero_path and return_outputs_with_one_path:
+            output_nodes_with_one_path = [node for node, node_amount in output_node_count.items() if
+                                          node_amount == 0 or node_amount == 1]
+        elif return_outputs_with_one_path:
+            output_nodes_with_one_path = [node for node, node_amount in output_node_count.items() if
+                                          node_amount == 1]
+        elif return_outputs_with_zero_path:
+            output_nodes_with_one_path = [node for node, node_amount in output_node_count.items() if
+                                          node_amount == 0]
+        else:
+            output_nodes_with_one_path = [node for node, node_amount in output_node_count.items() if
+                                          node_amount == 0 or node_amount == 1]
+
+        # Need to catch output_nodes which don't have ANY connections
+        for node_id in output_node_ids:
+            if node_id not in output_node_count and node_id not in output_nodes_with_one_path:
+                output_nodes_with_one_path.append(node_id)
+
+        # Delete node from node_count if it doesn't have a path
         for output_node in output_nodes_with_one_path:
             for connection in self.connections.values():
                 # If it is the only connection to the output_node we have to remove it from the pool of available
@@ -700,11 +738,12 @@ class GenomeMultiClass:
                 if connection.output_node == output_node and node_count.get(connection.input_node):
                     del node_count[connection.input_node]
 
+        # Add viable nodes that can be deleted
         for node, node_amount in node_count.items():
             if node_amount != num_source_to_output_paths and node not in output_node_ids:
                 viable_nodes_to_be_delete.append(node)
 
-        if return_outputs_with_one_path:
+        if return_outputs_with_one_path or return_outputs_with_zero_path:
             return viable_nodes_to_be_delete, output_nodes_with_one_path
         return viable_nodes_to_be_delete
 
@@ -748,6 +787,7 @@ class GenomeMultiClass:
                 num_enabled_after = self.check_connection_enabled_amount()
                 if num_enabled_after == 0:
                     raise Exception('You have removed all the connections due to a node removal')
+                print('NODE BEING DELETED: ', node_to_delete)
                 return node_to_delete
 
     def compute_compatibility_distance(self, other_genome, config, generation_tracker=None):

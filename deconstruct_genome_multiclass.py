@@ -19,14 +19,17 @@ class DeconstructGenomeMultiClass:
         connections = cls.sort_connections(connections, nodes=nodes, all_paths=all_paths)
 
         # Get the output node
-        output_nodes = []
+        output_nodes_list = []
+        source_node_list = []
         for node in nodes.values():
             if node.node_type == 'output':
-                output_nodes.append(node)
+                output_nodes_list.append(node)
+            elif node.node_type == 'source':
+                source_node_list.append(node)
 
         # Get's which node is on which layer
         node_layers, layer_nodes = cls.get_node_layers(connections=connections, genome=genome,
-                                                       output_nodes=output_nodes)
+                                                       output_nodes=output_nodes_list, source_nodes=source_node_list)
 
         num_layers = max(node_layers.values())
 
@@ -51,7 +54,7 @@ class DeconstructGenomeMultiClass:
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
 
-        cls.confirm_correct_configuration(output_nodes=output_nodes, source_nodes=source_nodes,
+        cls.confirm_correct_configuration(output_nodes=output_nodes_list, source_nodes=source_nodes,
                                           layer_nodes=layer_nodes)
 
         # Saves all the variables being returned from the function
@@ -150,7 +153,7 @@ class DeconstructGenomeMultiClass:
         return sorted_list
 
     @classmethod
-    def get_node_layers(cls, connections, genome, output_nodes):
+    def get_node_layers(cls, connections, genome, output_nodes, source_nodes):
         """
         :param nodes : dict containing (node_id, node_gene)
         :param connections: list of connections from the genome
@@ -203,12 +206,30 @@ class DeconstructGenomeMultiClass:
                 if output_node_layer < max_output_node_layer:
                     node_layer_from_graph_algorithm[output_node.node_id] = max_output_node_layer
 
+
         layer_nodes = {key: [] for key in node_layer_from_graph_algorithm.values()}
         for node_id, layer in node_layer_from_graph_algorithm.items():
             layer_nodes[layer].append(node_id)
 
+        check_source_node_has_connection = {node.node_id: 0 for node in source_nodes}
+        for connection in connections:
+            if connection.input_node in check_source_node_has_connection:
+                check_source_node_has_connection[connection.input_node] += 1
+
+
+        # Remove source nodes which don't have any connections
+        for node, connection_amount in check_source_node_has_connection.items():
+            if connection_amount == 0:
+                if node in node_layer_from_graph_algorithm:
+                    del node_layer_from_graph_algorithm[node]
+                if node in layer_nodes[1]:
+                    layer_nodes[1].remove(node)
+
+
+
         # if node_layer_from_graph_algorithm != node_layers:
         #     raise Exception('One of the node_layers is wrong')
+
 
         return node_layer_from_graph_algorithm, layer_nodes
 

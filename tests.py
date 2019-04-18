@@ -1447,7 +1447,7 @@ class TestMultiClassClassification(unittest.TestCase):
             ConnectionGene(input_node=1, output_node=4, innovation_number=6, weight=-0.351, enabled=True)]
 
         genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=3)
-        for i in range(100):
+        for i in range(1000):
             genome.remove_node()
             genome.unpack_genome()
 
@@ -1704,6 +1704,56 @@ class TestMultiClassClassification(unittest.TestCase):
         f1_score = NEATMultiClass.calculate_f_statistic(genome=genome, x_test_data=x_data, y_test_data=y_data)
         self.assertTrue(f1_score > 0.92)
         assert (cost_list[len(cost_list) - 1] < 0.001)
+
+    def test_genome_mutliclass_crossover_2(self):
+        node_list_1 = [NodeGene(node_id=0, node_type='source'),
+                       NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='output', bias=1),
+                       NodeGene(node_id=3, node_type='output', bias=1)]
+
+        connection_list_1 = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=3, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=4, weight=-0.351, enabled=False)]
+
+        node_list_2 = [NodeGene(node_id=0, node_type='source'),
+                       NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=4, node_type='hidden'),
+                       NodeGene(node_id=2, node_type='output', bias=1),
+                       NodeGene(node_id=3, node_type='output', bias=1)]
+
+        connection_list_2 = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=3, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=4, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=7, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=4, output_node=3, innovation_number=8, weight=-0.351, enabled=True)]
+
+        genome_1 = GenomeMultiClass(connections=connection_list_1, nodes=node_list_1, key=4)
+        genome_1.fitness = -0.6918080
+        genome_2 = GenomeMultiClass(connections=connection_list_2, nodes=node_list_2, key=3)
+        genome_2.fitness = -0.69420129
+
+        for i in range(100):
+            child = GenomeMultiClass(key=5)
+            num_connections_enabled = child.crossover(genome_1=genome_1, genome_2=genome_2, config=Config)
+
+    def test_genome_multiclass_configuration_3(self):
+        node_list_1 = [NodeGene(node_id=0, node_type='source'),
+                       NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='output', bias=1),
+                       NodeGene(node_id=3, node_type='output', bias=1)]
+
+        connection_list_1 = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=4, weight=-0.351, enabled=False)]
+
+        genome_1 = GenomeMultiClass(connections=connection_list_1, nodes=node_list_1, key=4)
+        # Input 1 should not be in node_layers because it has no valid connections
+        self.assertTrue(1 not in genome_1.node_layers)
 
 
 if __name__ == '__main__':
