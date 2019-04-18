@@ -502,11 +502,25 @@ class GenomeMultiClass:
     def check_num_paths(self, only_add_enabled_connections, return_paths=False, return_graph_layer_nodes=False):
         source_nodes = []
         output_nodes = []
-        for node in self.nodes.values():
-            if node.node_type == 'source':
-                source_nodes.append(node)
-            elif node.node_type == 'output':
-                output_nodes.append(node)
+
+        # for node in self.nodes.values():
+        #     if node.node_type == 'source':
+        #         source_nodes.append(node)
+        #     elif node.node_type == 'output':
+        #         output_nodes.append(node)
+
+        # Getting input and output nodes this way is better because then it only includes input nodes which have a connection
+        for connection in self.connections.values():
+            input_node = self.nodes[connection.input_node]
+            output_node = self.nodes[connection.output_node]
+            if input_node.node_type == 'source':
+                source_nodes.append(input_node)
+            if output_node.node_type == 'output':
+                output_nodes.append(output_node)
+
+        # Remove duplicates
+        source_nodes = list(set(source_nodes))
+        output_nodes = list(set(output_nodes))
 
         graph = GraphMultiClass()
         # Add the connections to the graph

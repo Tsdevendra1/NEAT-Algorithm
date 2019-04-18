@@ -18,8 +18,15 @@ class DeconstructGenomeMultiClass:
         connections = copy.deepcopy(list(genome.connections.values()))
         connections = cls.sort_connections(connections, nodes=nodes, all_paths=all_paths)
 
+        # Get the output node
+        output_nodes = []
+        for node in nodes.values():
+            if node.node_type == 'output':
+                output_nodes.append(node)
+
         # Get's which node is on which layer
-        node_layers, layer_nodes = cls.get_node_layers(connections=connections, genome=genome)
+        node_layers, layer_nodes = cls.get_node_layers(connections=connections, genome=genome,
+                                                       output_nodes=output_nodes)
 
         num_layers = max(node_layers.values())
 
@@ -44,13 +51,7 @@ class DeconstructGenomeMultiClass:
             node_layers=node_layers, num_layers=num_layers,
             node_map=node_map)
 
-        # Get the output node
-        output_node = None
-        for node in nodes.values():
-            if node.node_type == 'output':
-                output_node = node
-                break
-        cls.confirm_correct_configuration(output_node=output_node.node_id, source_nodes=source_nodes,
+        cls.confirm_correct_configuration(output_nodes=output_nodes, source_nodes=source_nodes,
                                           layer_nodes=layer_nodes)
 
         # Saves all the variables being returned from the function
@@ -68,7 +69,7 @@ class DeconstructGenomeMultiClass:
         return return_dict
 
     @classmethod
-    def confirm_correct_configuration(cls, output_node, source_nodes, layer_nodes):
+    def confirm_correct_configuration(cls, output_nodes, source_nodes, layer_nodes):
         """
         The source nodes should always be in the first layer and the output node should always be in the last layer
         :param output_node: The output node
@@ -78,7 +79,10 @@ class DeconstructGenomeMultiClass:
         for node in source_nodes:
             assert (node in layer_nodes[1])
 
-        assert (output_node in layer_nodes[max(layer_nodes)])
+        for output_node in output_nodes:
+            last_layer_nodes = layer_nodes[max(layer_nodes)]
+            if output_node.node_id not in last_layer_nodes:
+                raise Exception('output_node should be in last layer')
 
     @classmethod
     def sort_connections(cls, connections, nodes, all_paths):
@@ -146,10 +150,11 @@ class DeconstructGenomeMultiClass:
         return sorted_list
 
     @classmethod
-    def get_node_layers(cls, connections, genome):
+    def get_node_layers(cls, connections, genome, output_nodes):
         """
         :param nodes : dict containing (node_id, node_gene)
         :param connections: list of connections from the genome
+        :param connections: list of the output_nodes
         :return: node_layers: A dictionary containing which layer each node is on, layer_nodes: A dictionary containing
                 a list for each layer of what nodes are in that layer
         """
@@ -182,6 +187,21 @@ class DeconstructGenomeMultiClass:
 
         _, node_layer_from_graph_algorithm = genome.check_num_paths(only_add_enabled_connections=True,
                                                                     return_graph_layer_nodes=True)
+
+        # Find the output node with the highest layer number
+        max_output_node_layer = None
+        for output_node in output_nodes:
+            if output_node.node_id in node_layer_from_graph_algorithm:
+                output_node_layer = node_layer_from_graph_algorithm[output_node.node_id]
+                if max_output_node_layer is None or max_output_node_layer < output_node_layer:
+                    max_output_node_layer = output_node_layer
+
+        # Ensure that all the output nodes are on the highest layer
+        for output_node in output_nodes:
+            if output_node.node_id in node_layer_from_graph_algorithm:
+                output_node_layer = node_layer_from_graph_algorithm[output_node.node_id]
+                if output_node_layer < max_output_node_layer:
+                    node_layer_from_graph_algorithm[output_node.node_id] = max_output_node_layer
 
         layer_nodes = {key: [] for key in node_layer_from_graph_algorithm.values()}
         for node_id, layer in node_layer_from_graph_algorithm.items():

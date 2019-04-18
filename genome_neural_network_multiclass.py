@@ -137,31 +137,6 @@ class GenomeNeuralNetworkMultiClass:
         return weights
 
     def create_weight_bias_matrix_from_genome(self):
-        # connections_dict_by_nodes = {}
-        # for connection in self.genome.connections.values():
-        #     connections_dict_by_nodes[(connection.input_node, connection.output_node)] = connection
-        #
-        # try:
-        #     for layer in range(1, self.num_layers + 1):
-        #         for layer_connection in self.layer_connections_dict[layer]:
-        #             connection = connections_dict_by_nodes[(layer_connection.input_node, layer_connection.output_node)]
-        #             # connection = connections_dict_by_nodes.get((layer_connection.input_node, layer_connection.output_node))
-        #             # if connection and connection.enabled:
-        #             if connection.enabled:
-        #                 # They both need to be set if we're going to create the weight matrix from them
-        #                 if connection.weight is None:
-        #                     raise ValueError('You have not set a weight for this connection')
-        #                 if self.updated_nodes[connection.output_node].bias is None:
-        #                     raise ValueError('The node doesnt have a bias value, please set one in the nodes list')
-        #
-        #                 # Get their relative position inside their respective layer. Minus one for python indexing
-        #                 input_node_position = self.node_map[connection.input_node] - 1
-        #                 output_node_position = self.node_map[connection.output_node] - 1
-        #                 self.weights_dict[layer][input_node_position, output_node_position] = connection.weight
-        #                 self.bias_dict[layer][0, output_node_position] = self.genome.nodes[connection.output_node].bias
-        # except:
-        #     raise Exception('Error in initialising weight and bias matrices')
-
         for layer in range(1, self.num_layers + 1):
             for connection in self.layer_connections_dict[layer]:
                 if connection.enabled:
@@ -232,6 +207,7 @@ class GenomeNeuralNetworkMultiClass:
                                                                        keep_constant_connections=self.constant_weight_connections,
                                                                        node_map=self.node_map)
 
+
         if return_prediction_only:
             return prediction
 
@@ -240,9 +216,12 @@ class GenomeNeuralNetworkMultiClass:
         # Asserting that the prediction gives the same number of outputs as expected
         assert (labels.shape[0] == prediction.shape[0])
 
-        # Define cost function
-        loss = -((labels * np.log(prediction)) + ((1 - labels) * np.log(1 - prediction)))
-        cost = (1 / n_examples) * np.sum(loss + 1e-8, axis=0)
+        # # Define cost function
+        # loss = -((labels * np.log(prediction)) + ((1 - labels) * np.log(1 - prediction)))
+        # cost = (1 / n_examples) * np.sum(loss + 1e-8, axis=0)
+
+        loss = -(np.sum((labels * np.log(prediction))))
+        cost = np.sum(loss) * (1 / n_examples)
 
         # We optimise in the case where we're not just interested in the cost
         if not return_cost_only:
@@ -255,7 +234,7 @@ class GenomeNeuralNetworkMultiClass:
 
             self.optimise_parameters(weight_gradients=weight_gradients, bias_gradients=bias_gradients)
 
-        return cost[0]
+        return cost
 
     def optimise_parameters(self, weight_gradients, bias_gradients=None):
         """
@@ -499,7 +478,6 @@ class GenomeNeuralNetworkMultiClass:
         for node_position in node_positions_to_delete:
             if node_position < x_data.shape[1]:
                 x_data = np.delete(x_data, node_position, axis=1)
-
 
         return x_data
 

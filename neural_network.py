@@ -137,8 +137,7 @@ def create_architecture(num_features_training, hidden_nodes_per_layer):
     return [num_features_training] + hidden_nodes_per_layer + [1]
 
 
-def create_data(n_generated, add_noise=False):
-
+def create_data(n_generated, add_noise=False, use_one_hot=False):
     if add_noise:
         x_data = np.random.uniform(low=0.0, high=1.0, size=(n_generated, 2))
         y_data = np.empty((n_generated, 1))
@@ -156,6 +155,17 @@ def create_data(n_generated, add_noise=False):
             y_data[column] = ((x_data[column, 0] == 1 and x_data[column, 1] == 1) or (
                     x_data[column, 0] == 0 and x_data[column, 1] == 0))
 
+    if use_one_hot:
+        y_data_new = np.empty((y_data.shape[0], 2))
+        for row in range(y_data.shape[0]):
+            if y_data[row, 0] == 0:
+                y_data_new[row, 0] = 1
+                y_data_new[row, 1] = 0
+            else:
+                y_data_new[row, 0] = 0
+                y_data_new[row, 1] = 1
+
+        return x_data, y_data_new
     return x_data, y_data
 
 
