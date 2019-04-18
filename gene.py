@@ -20,7 +20,7 @@ class ConnectionGene:
         self._output_node = value
 
     def __str__(self):
-        return 'Input: {}, Output: {}'.format(self.input_node, self._output_node)
+        return 'Input: {}, Output: {}, Enabled: {}'.format(self.input_node, self._output_node, self.enabled)
 
     def __repr__(self):
         return '{}-->{}'.format(self.input_node, self._output_node)

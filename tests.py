@@ -1755,6 +1755,38 @@ class TestMultiClassClassification(unittest.TestCase):
         # Input 1 should not be in node_layers because it has no valid connections
         self.assertTrue(1 not in genome_1.node_layers)
 
+    def test_genome_multiclass_configuration_4(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                       NodeGene(node_id=1, node_type='source'),
+                       NodeGene(node_id=2, node_type='output', bias=1),
+                       NodeGene(node_id=3, node_type='output', bias=1),
+                       NodeGene(node_id=4, node_type='hidden', bias=1),
+                       NodeGene(node_id=5, node_type='hidden', bias=1),
+                       NodeGene(node_id=6, node_type='hidden', bias=1)
+
+                    ]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=4, output_node=5, innovation_number=11, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=5, output_node=2, innovation_number=12, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=6, output_node=5, innovation_number=14, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=0, output_node=3, innovation_number=2, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=10, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=4, output_node=6, innovation_number=23, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=3, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=4, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=5, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=4, output_node=2, innovation_number=8, weight=-0.351, enabled=False),
+
+
+        ]
+
+        # Input 1 should not be in node_layers because it has no valid connections
+        for i in range(100):
+            genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=4)
+            print(genome.remove_connection())
+
 
 if __name__ == '__main__':
     unittest.main()

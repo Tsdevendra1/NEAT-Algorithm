@@ -788,6 +788,7 @@ class GenomeMultiClass:
                 if num_enabled_after == 0:
                     raise Exception('You have removed all the connections due to a node removal')
                 print('NODE BEING DELETED: ', node_to_delete)
+                print('VIABLE NODES TO DELETE: ', viable_nodes_to_be_delete)
                 return node_to_delete
 
     def compute_compatibility_distance(self, other_genome, config, generation_tracker=None):

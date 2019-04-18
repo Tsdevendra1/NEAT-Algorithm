@@ -316,6 +316,7 @@ class ReproduceMultiClass:
                 # If there are no connections enabled we forget about this child and don't add it to the existing
                 # population
                 if num_connections_enabled:
+                    child.unpack_genome()
                     child.mutate(reproduction_instance=self,
                                  innovation_tracker=self.innovation_tracker, config=self.config,
                                  generation_tracker=generation_tracker, backprop_mutation=backprop_mutation)
