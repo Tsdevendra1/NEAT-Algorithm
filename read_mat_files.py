@@ -2,7 +2,7 @@ import scipy.io as sio
 import numpy as np
 
 
-def get_shm_multi_class_data(normalise_x=True):
+def get_shm_multi_class_data():
     mat_contents = sio.loadmat('C:/Users/tsdev/Desktop/SHM DATA/4dof_features.mat')
     y_data = mat_contents['labels'][:, 0]
     y_data.shape = (y_data.shape[0])
@@ -24,11 +24,11 @@ def get_shm_multi_class_data(normalise_x=True):
         # label - 1 for indexing reasons, for example label = 1 means that the first column (index = 0) is the one with the value one
         y_data_one_hot[row, label - 1] = 1
 
-    if normalise_x:
-        # We perform these operations because for this data, the values are too high are negative causing issues during
-        # optimisation otherwise
-        x_data = x_data * -1
-        x_data = x_data / 100
+    # if normalise_x:
+    #     # We perform these operations because for this data, the values are too high are negative causing issues during
+    #     # optimisation otherwise
+    #     x_data = x_data * -1
+    #     x_data = x_data / 100
 
     return x_data, y_data_one_hot
 

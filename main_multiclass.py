@@ -3,21 +3,26 @@ from config_multiclass import ConfigMultiClass
 from data_storage import get_circle_data
 from neural_network import create_data
 import numpy as np
-from read_mat_files import get_shm_two_class_data
+from read_mat_files import get_shm_two_class_data, get_shm_multi_class_data
 
 
 def main():
     np.random.seed(1)
 
     # Choose which algorithm is running using keys
-    algorithm_options = {0: 'xor_full'}
-    algorithm_running = algorithm_options[0]
+    algorithm_options = {0: 'xor_full', 1: 'shm_multi_class'}
+    algorithm_running = algorithm_options[1]
 
     if algorithm_running == algorithm_options[0]:
         num_data_to_generate = 5000
 
         # Create data
         x_data, y_data = create_data(n_generated=num_data_to_generate, add_noise=False, use_one_hot=True)
+    elif algorithm_running == algorithm_options[1]:
+        # Create data
+        x_data, y_data = get_shm_multi_class_data()
+        num_data_to_generate = len(x_data)
+
 
 
     # Training data
