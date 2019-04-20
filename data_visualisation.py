@@ -239,29 +239,6 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
         plt.title(title)
         plt.show()
 
-
-
-
-
-
-        # assert (same_axis is not None)
-        # y_data_list = []
-        # for information in args:
-        #     information_type = information[0]
-        #     information_plot_type = information[1]
-        #     y_data = []
-        #     for generation in generations_to_go_through:
-        #         y_data.append(generation_information[generation][information_type])
-        #     if information_plot_type == 'line':
-        #         plt.plot(generations_to_go_through, y_data)
-        #     elif information_plot_type == 'bar':
-        #         plt.bar(generations_to_go_through, y_data)
-        #     y_data_list.append(y_data)
-        # plt.xticks(generations_to_go_through)
-        # plt.xlabel('Generation')
-        # plt.ylabel(y_label)
-        # plt.title(title)
-        # plt.show()
     else:
         y_data = []
         information = args[0]
@@ -284,11 +261,14 @@ def visualise_generation_tracker(filepath_to_genome):
     infile = open(filepath_to_genome, 'rb')
     generation_tracker_instance = pickle.load(infile)
     generation_information_dict = generation_tracker_instance.generation_information
+
     # If more than one information type is specified, MUST define the same_axis variable
-    # plot_generation_graph(('best_all_time_genome_accuracy', 'line', 'Best Genome Accuracy (%)'), ('best_all_time_genome_f1_score', 'line', 'Best Genome F1 score'),
-    #                       same_axis=True,
-    #                       generation_information=generation_information_dict, y_label='Best Genome Accuracy (%)',
-    #                       title='Best All Time Genome Accuracy through generations')
+    plot_generation_graph(('best_all_time_genome_accuracy', 'line', 'Best Genome Accuracy (%)'),
+                          ('best_all_time_genome_f1_score', 'line', 'Best Genome F1 score'),
+                          same_axis=False,
+                          generation_information=generation_information_dict,
+                          title='Best All Time Genome Accuracy through generations')
+
     plot_generation_graph(('best_all_time_genome_accuracy', 'line'),
                           generation_information=generation_information_dict, y_label='Best Genome Accuracy (%)',
                           title='Best All Time Genome Accuracy through generations')
