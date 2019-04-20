@@ -1359,6 +1359,18 @@ class TestPickle(unittest.TestCase):
         # Remove file so we're not generating files every test
         os.remove(self.filename)
 
+    def test_pickle_dump_3(self):
+        # Folders + 1 because it will be the next folder in the sub directory
+        file_path_for_run = 'algorithm_runs/{}/run_{}'.format('xor_full', 9999999999999)
+        # Save best genome in pickle
+        file_name = '{}/pickle_test'.format(file_path_for_run)
+        os.makedirs(file_path_for_run)
+        # Save genome pickle
+        outfile = open(file_name, 'wb')
+        pickle.dump(self.dogs_dict, outfile)
+        outfile.close()
+        os.remove(file_name)
+
 
 class TestNumpyDelete(unittest.TestCase):
 
@@ -1693,13 +1705,13 @@ class TestMultiClassClassification(unittest.TestCase):
         epoch_list, cost_list = genome_nn.optimise(print_epoch=True)
 
         genome_nn_new = GenomeNeuralNetworkMultiClass(genome=genome, create_weights_bias_from_genome=True,
-                                                  activation_type='sigmoid',
-                                                  learning_rate=0.1,
-                                                  x_train=x_data, y_train=y_data)
+                                                      activation_type='sigmoid',
+                                                      learning_rate=0.1,
+                                                      x_train=x_data, y_train=y_data)
 
         # TODO: These should be equal
-        prediction_1 = genome_nn.run_one_pass(return_prediction_only=True, input_data=np.array([[0,1], [1,1]]))
-        prediction_2 = genome_nn_new.run_one_pass(return_prediction_only=True, input_data=np.array([[0,1], [1,1]]))
+        prediction_1 = genome_nn.run_one_pass(return_prediction_only=True, input_data=np.array([[0, 1], [1, 1]]))
+        prediction_2 = genome_nn_new.run_one_pass(return_prediction_only=True, input_data=np.array([[0, 1], [1, 1]]))
 
         f1_score = NEATMultiClass.calculate_f_statistic(genome=genome, x_test_data=x_data, y_test_data=y_data)
         self.assertTrue(f1_score > 0.92)
@@ -1757,14 +1769,14 @@ class TestMultiClassClassification(unittest.TestCase):
 
     def test_genome_multiclass_configuration_4(self):
         node_list = [NodeGene(node_id=0, node_type='source'),
-                       NodeGene(node_id=1, node_type='source'),
-                       NodeGene(node_id=2, node_type='output', bias=1),
-                       NodeGene(node_id=3, node_type='output', bias=1),
-                       NodeGene(node_id=4, node_type='hidden', bias=1),
-                       NodeGene(node_id=5, node_type='hidden', bias=1),
-                       NodeGene(node_id=6, node_type='hidden', bias=1)
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='output', bias=1),
+                     NodeGene(node_id=4, node_type='hidden', bias=1),
+                     NodeGene(node_id=5, node_type='hidden', bias=1),
+                     NodeGene(node_id=6, node_type='hidden', bias=1)
 
-                    ]
+                     ]
 
         connection_list = [
             ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=False),
@@ -1778,7 +1790,6 @@ class TestMultiClassClassification(unittest.TestCase):
             ConnectionGene(input_node=1, output_node=3, innovation_number=4, weight=-0.351, enabled=True),
             ConnectionGene(input_node=1, output_node=4, innovation_number=5, weight=-0.351, enabled=False),
             ConnectionGene(input_node=4, output_node=2, innovation_number=8, weight=-0.351, enabled=False),
-
 
         ]
 

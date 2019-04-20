@@ -229,12 +229,24 @@ class NEAT:
 
             # Folders + 1 because it will be the next folder in the sub directory
             file_path_for_run = 'algorithm_runs/{}/run_{}'.format(self.algorithm_running, (folders + 1))
+
+            # Make the directory before saving all other files
+            os.makedirs(file_path_for_run)
+
             # Save best genome in pickle
-            outfile = open('{}/'.format(file_path_for_run), 'wb')
+            outfile = open('{}/best_genome_pickle'.format(file_path_for_run), 'wb')
             pickle.dump(self.best_all_time_genome, outfile)
             outfile.close()
+
+            # Save graph information
             self.generation_tracker.plot_graphs(current_gen=current_gen, save_plots=True,
                                                 file_path=file_path_for_run)
+
+            # Save generation tracker in pickle
+            outfile = open('{}/generation_tracker'.format(file_path_for_run), 'wb')
+            pickle.dump(self.generation_tracker, outfile)
+            outfile.close()
+
             return True
         else:
             return False
