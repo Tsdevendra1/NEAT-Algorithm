@@ -247,6 +247,11 @@ class NEAT:
             pickle.dump(self.generation_tracker, outfile)
             outfile.close()
 
+            # Save NEAT class instance so we can access the population again later
+            outfile = open('{}/NEAT_instance'.format(file_path_for_run), 'wb')
+            pickle.dump(self, outfile)
+            outfile.close()
+
             return True
         else:
             return False

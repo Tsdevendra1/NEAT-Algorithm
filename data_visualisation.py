@@ -189,6 +189,112 @@ def plot_shm_data(rotation_angle):
     plt.show()
 
 
+def plot_generation_graph(*args, same_axis=None, generation_information, y_label=None, title):
+    """"
+    Generic function to plot data
+    :param title: String for the title
+    :param y_label: String for the y label
+    :param same_axis: Defines whether two or more datasets should be plotted on the same y axis
+    """
+    # Plus one because of how the range function works
+    generations_to_go_through = list(range(1, max(generation_information) + 1))
+
+    if len(args) > 1:
+
+        # Can't plot more than two items on a 2d plot
+        assert (len(args) == 2)
+        assert (same_axis is not None)
+        if same_axis:
+            # Need a common y_label
+            assert (y_label is not None)
+
+        y_data_list = []
+        y_labels = []
+        for information in args:
+            information_type = information[0]
+            information_plot_type = information[1]
+            if not same_axis:
+                y_label = information[2]
+                y_labels.append(y_label)
+
+            y_data = []
+            for generation in generations_to_go_through:
+                y_data.append(generation_information[generation][information_type])
+            if information_plot_type == 'line' and same_axis:
+                plt.plot(generations_to_go_through, y_data)
+            elif information_plot_type == 'bar' and same_axis:
+                plt.bar(generations_to_go_through, y_data)
+            y_data_list.append(y_data)
+
+        if not same_axis:
+            plt.plot(generations_to_go_through, y_data_list[0], color='r')
+            plt.ylabel(y_labels[0])
+            axes2 = plt.twinx()
+            axes2.plot(generations_to_go_through, y_data_list[1], color='g')
+            axes2.set_ylabel(y_labels[1])
+        else:
+            plt.ylabel(y_label)
+        plt.xticks(generations_to_go_through)
+        plt.xlabel('Generation')
+        plt.title(title)
+        plt.show()
+
+
+
+
+
+
+        # assert (same_axis is not None)
+        # y_data_list = []
+        # for information in args:
+        #     information_type = information[0]
+        #     information_plot_type = information[1]
+        #     y_data = []
+        #     for generation in generations_to_go_through:
+        #         y_data.append(generation_information[generation][information_type])
+        #     if information_plot_type == 'line':
+        #         plt.plot(generations_to_go_through, y_data)
+        #     elif information_plot_type == 'bar':
+        #         plt.bar(generations_to_go_through, y_data)
+        #     y_data_list.append(y_data)
+        # plt.xticks(generations_to_go_through)
+        # plt.xlabel('Generation')
+        # plt.ylabel(y_label)
+        # plt.title(title)
+        # plt.show()
+    else:
+        y_data = []
+        information = args[0]
+        information_type = information[0]
+        information_plot_type = information[1]
+        for generation in generations_to_go_through:
+            y_data.append(generation_information[generation][information_type])
+        if information_plot_type == 'line':
+            plt.plot(generations_to_go_through, y_data)
+        elif information_plot_type == 'bar':
+            plt.plot(generations_to_go_through, y_data)
+        plt.xticks(generations_to_go_through)
+        plt.xlabel('Generation')
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.show()
+
+
+def visualise_generation_tracker(filepath_to_genome):
+    infile = open(filepath_to_genome, 'rb')
+    generation_tracker_instance = pickle.load(infile)
+    generation_information_dict = generation_tracker_instance.generation_information
+    # If more than one information type is specified, MUST define the same_axis variable
+    # plot_generation_graph(('best_all_time_genome_accuracy', 'line', 'Best Genome Accuracy (%)'), ('best_all_time_genome_f1_score', 'line', 'Best Genome F1 score'),
+    #                       same_axis=True,
+    #                       generation_information=generation_information_dict, y_label='Best Genome Accuracy (%)',
+    #                       title='Best All Time Genome Accuracy through generations')
+    plot_generation_graph(('best_all_time_genome_accuracy', 'line'),
+                          generation_information=generation_information_dict, y_label='Best Genome Accuracy (%)',
+                          title='Best All Time Genome Accuracy through generations')
+    infile.close()
+
+
 def main():
     # plot_shm_data(rotation_angle=50)
 
@@ -205,7 +311,7 @@ def main():
     feature_1_spiral = x_spiral[:, 0]
     feature_2_spiral = x_spiral[:, 1]
 
-    plot_data = True
+    plot_data = False
     show_decision_boundary = False
 
     # PLOT DATA
@@ -231,6 +337,32 @@ def main():
         # Test genome accuracy
         genome = initialise_genome(genome_pickle_filepath='pickles/best_genome_pickle_shm_two_class_618056')
         plot_decision_boundary(genome=genome, data_being_used='shm_two_class')
+
+    visualise_generation_tracker(filepath_to_genome='algorithm_runs/xor_full/run_1/generation_tracker')
+    #
+    # plt.figure()
+    # N = 5
+    # menMeans = (20, 35, 30, 35, 27)
+    # menStd = (2, 3, 4, 1, 2)
+    # width = 0.35  # the width of the bars
+    # womenMeans = (25, 32, 34, 20, 25)
+    # womenStd = (3, 5, 2, 3, 3)
+    # ind = np.arange(N)
+    # plt.ylim(0.0, 65.0)
+    # plt.bar(ind, menMeans, width, color='r', yerr=menStd, label='Men means')
+    # plt.bar(ind + width, womenMeans, width, color='y', yerr=womenStd, label='Women means')
+    # # plt.plot(ind + width, womenMeans, color='k', label='Sine')
+    # plt.ylabel('Bar plot')
+    #
+    # x = np.linspace(0, N)
+    # y = np.sin(x)
+    # axes2 = plt.twinx()
+    # # axes2.plot(ind+width, womenMeans, color='k', label='Sine')
+    # axes2.plot(x, y, color='k', label='Sine')
+    # # axes2.set_ylim(-1, 1)
+    # # axes2.set_ylabel('Line plot')
+    #
+    # plt.show()
 
 
 if __name__ == "__main__":
