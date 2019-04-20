@@ -35,6 +35,7 @@ class GenerationStatistics:
         self.avg_num_excess = None
         self.avg_weight_diff = None
         self.best_all_time_genome_f1_score = None
+        self.best_all_time_genome_accuracy = None
 
     def update_generation_information(self, generation):
 
@@ -69,14 +70,17 @@ class GenerationStatistics:
         self.num_disjoint_list = []
         self.weight_diff_list = []
 
-    def plot_graphs(self, current_gen):
+    def plot_graphs(self, current_gen, save_plots=False, file_path=None):
+
+        if (save_plots and not file_path) or (file_path and not save_plots):
+            raise Exception('Save_plots and file_paths must be specified at the same time')
 
         important_information_keys = {
             'num_species', 'num_generation_add_node', 'num_generation_delete_node', 'num_generation_add_connection',
             'num_generation_delete_connection', 'num_generation_weight_mutations', 'average_population_fitness',
             'best_all_time_genome_fitness', 'mean_number_connections_enabled', 'mean_number_nodes_enabled',
             'mean_compatibility_distance', 'avg_num_disjoint', 'avg_num_excess', 'avg_weight_diff',
-            'mean_number_connections_overall', 'best_all_time_genome_f1_score'
+            'mean_number_connections_overall', 'best_all_time_genome_f1_score', 'best_all_time_genome_accuracy'
         }
 
         # Plot information to graph every certain amount of generations
@@ -86,17 +90,18 @@ class GenerationStatistics:
             if information_type != 'generation_information':
                 # print(information_type, ':', ' {}'.format(information))
                 # if current_gen % generation_interval_for_graph == 0 and current_gen != 1:
-                    generations_to_go_through = list(range(1, current_gen + 1))
-                    y_data = []
-                    for generation in generations_to_go_through:
-                        y_data.append(self.generation_information[generation][information_type])
+                generations_to_go_through = list(range(1, current_gen + 1))
+                y_data = []
+                for generation in generations_to_go_through:
+                    y_data.append(self.generation_information[generation][information_type])
 
-                    plt.plot(generations_to_go_through, y_data)
-                    plt.title(information_type)
-                    plt.savefig('graphs/{}_generation_{}.png'.format(information_type, current_gen))
-                    plt.show()
+                plt.plot(generations_to_go_through, y_data)
+                plt.title(information_type)
+                if save_plots:
+                    plt.savefig('{}/{}_generation_{}.png'.format(file_path, information_type, current_gen))
+                plt.show()
 
-    def print_generation_information(self, generation_interval_for_graph, plot_graphs):
+    def print_generation_information(self, generation_interval_for_graph, plot_graphs_every_gen):
         current_gen = max(self.generation_information.keys())
         print('**************************** Generation {} *******************************'.format(current_gen))
 
@@ -110,7 +115,13 @@ class GenerationStatistics:
             ('Weight Mutations', self.generation_information[current_gen]['num_generation_weight_mutations']),
             ('Average Fitness', self.generation_information[current_gen]['average_population_fitness']),
             ('Best All Time Genome Fitness', self.generation_information[current_gen]['best_all_time_genome_fitness']),
-            ('Best All Time Genome f1 score', self.generation_information[current_gen]['best_all_time_genome_f1_score']),
+            (
+                'Best All Time Genome f1 score',
+                self.generation_information[current_gen]['best_all_time_genome_f1_score']),
+            (
+                'Best All Time Genome Accuracy Percent',
+                self.generation_information[current_gen]['best_all_time_genome_accuracy']),
+
             ('Average Number of Connections Per Genome',
              self.generation_information[current_gen]['mean_number_connections_enabled']),
             ('Average Number of Nodes Per Genome',
@@ -134,6 +145,5 @@ class GenerationStatistics:
             print('{}:{}'.format(info_type, info_value))
         print('\n')
 
-        if current_gen % generation_interval_for_graph == 0 and current_gen != 1 and plot_graphs:
+        if current_gen % generation_interval_for_graph == 0 and current_gen != 1 and plot_graphs_every_gen:
             self.plot_graphs(current_gen=current_gen)
-

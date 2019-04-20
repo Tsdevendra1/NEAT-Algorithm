@@ -13,9 +13,14 @@ def main():
 
     # Choose which algorithm is running using keys
     algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3:'shm_two_class'}
-    algorithm_running = algorithm_options[3]
+    algorithm_running = algorithm_options[0]
 
-    if algorithm_running == algorithm_options[1]:
+    if algorithm_running == algorithm_options[0]:
+        num_data_to_generate = 6250
+
+        # Create data
+        x_data, y_data = create_data(n_generated=num_data_to_generate, add_noise=False)
+    elif algorithm_running == algorithm_options[1]:
         num_data_to_generate = 300
 
         # Create data

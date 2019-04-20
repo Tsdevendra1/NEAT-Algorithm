@@ -45,7 +45,8 @@ class NEATMultiClass:
 
         # Initialise the starting population
         self.population = self.reproduction.create_new_population(population_size=self.config.population_size,
-                                                                  num_features=x_training_data.shape[1], num_classes=y_training_data.shape[1])
+                                                                  num_features=x_training_data.shape[1],
+                                                                  num_classes=y_training_data.shape[1])
 
         # Speciate the initial population
         self.species_set.speciate(population=self.population, compatibility_threshold=3, generation=0)
@@ -87,8 +88,8 @@ class NEATMultiClass:
             activation_type = 'sigmoid'
 
         return GenomeNeuralNetworkMultiClass(genome=genome, x_train=x_data, y_train=y_data,
-                                   create_weights_bias_from_genome=True, activation_type=activation_type,
-                                   learning_rate=learning_rate, num_epochs=num_epochs, batch_size=batch_size)
+                                             create_weights_bias_from_genome=True, activation_type=activation_type,
+                                             learning_rate=learning_rate, num_epochs=num_epochs, batch_size=batch_size)
 
     def evaluate_population(self, use_backprop, generation):
         """
@@ -292,14 +293,14 @@ class NEATMultiClass:
 
             # If the fitness threshold is met, stop the algorithm
             if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold:
+                file_path_for_run = '{}/run_{}/'.format(self.algorithm_running,
+                                                        np.random.random_integers(low=0, high=100000))
                 # Save best genome in pickle
-                outfile = open('pickles/best_genome_pickle_{}_{}'.format(self.algorithm_running,
-                                                                         np.random.random_integers(low=0,
-                                                                                                   high=1000000)),
-                               'wb')
+                outfile = open('{}_genome_pickle'.format(file_path_for_run), 'wb')
                 pickle.dump(self.best_all_time_genome, outfile)
                 outfile.close()
-                self.generation_tracker.plot_graphs(current_gen=current_gen)
+                self.generation_tracker.plot_graphs(current_gen=current_gen, save_plots=True,
+                                                    file_path=file_path_for_run)
                 break
 
             # Gives distribution of the weights in the population connections

@@ -205,8 +205,8 @@ def main():
     feature_1_spiral = x_spiral[:, 0]
     feature_2_spiral = x_spiral[:, 1]
 
-    plot_data = False
-    show_decision_boundary = True
+    plot_data = True
+    show_decision_boundary = False
 
     # PLOT DATA
     if plot_data:
