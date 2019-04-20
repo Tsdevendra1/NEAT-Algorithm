@@ -11,6 +11,7 @@ import pickle
 
 # Exception used to check if there are no more species
 from stagnation import Stagnation
+import os
 
 
 class CompleteExtinctionException(Exception):
@@ -210,6 +211,57 @@ class NEATMultiClass:
         prediction = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True).round()
         return sklearn.metrics.f1_score(y_test_data, prediction, average='samples')
 
+    @staticmethod
+    def calculate_accuracy(genome, x_test_data, y_test_data):
+        genome_nn = NEATMultiClass.create_genome_nn(genome=genome, x_data=x_test_data, y_data=y_test_data)
+        prediction = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True).round()
+        num_correct = 0
+        for row in range(y_test_data.shape[0]):
+            if np.array_equal(prediction[row, :], y_test_data[row, :]):
+                num_correct += 1
+
+        percentage_correct = (num_correct / y_test_data.shape[0]) * 100
+        return percentage_correct
+
+    def check_algorithm_break_point(self, current_gen, f1_score_of_best_all_time_genome):
+        # If the fitness threshold is met, stop the algorithm
+        if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold:
+
+            files = folders = 0
+
+            for _, dirnames, filenames in os.walk('algorithm_runs_multi/{}'.format(self.algorithm_running)):
+                files += len(filenames)
+                folders += len(dirnames)
+
+            # Folders + 1 because it will be the next folder in the sub directory
+            file_path_for_run = 'algorithm_runs_multi/{}/run_{}'.format(self.algorithm_running, (folders + 1))
+
+            # Make the directory before saving all other files
+            os.makedirs(file_path_for_run)
+
+            # Save best genome in pickle
+            outfile = open('{}/best_genome_pickle'.format(file_path_for_run), 'wb')
+            pickle.dump(self.best_all_time_genome, outfile)
+            outfile.close()
+
+            # Save graph information
+            self.generation_tracker.plot_graphs(current_gen=current_gen, save_plots=True,
+                                                file_path=file_path_for_run)
+
+            # Save generation tracker in pickle
+            outfile = open('{}/generation_tracker'.format(file_path_for_run), 'wb')
+            pickle.dump(self.generation_tracker, outfile)
+            outfile.close()
+
+            # Save NEAT class instance so we can access the population again later
+            outfile = open('{}/NEAT_instance'.format(file_path_for_run), 'wb')
+            pickle.dump(self, outfile)
+            outfile.close()
+
+            return True
+        else:
+            return False
+
     def run(self, max_num_generations, use_backprop, print_generation_information, show_population_weight_distribution):
         """
         Run the algorithm
@@ -284,23 +336,19 @@ class NEATMultiClass:
             f1_score_of_best_all_time_genome = self.calculate_f_statistic(
                 self.best_all_time_genome, self.x_test, self.y_test)
 
-            self.generation_tracker.best_all_time_genome_f1_score = f1_score_of_best_all_time_genome
+            best_all_time_genome_accuracy = self.calculate_accuracy(genome=self.best_all_time_genome,
+                                                                    x_test_data=self.x_test, y_test_data=self.y_test)
 
+            self.generation_tracker.best_all_time_genome_f1_score = f1_score_of_best_all_time_genome
+            self.generation_tracker.best_all_time_genome_accuracy = best_all_time_genome_accuracy
             self.generation_tracker.update_generation_information(generation=current_gen)
 
             if print_generation_information:
-                self.generation_tracker.print_generation_information(generation_interval_for_graph=1, plot_graphs=False)
+                self.generation_tracker.print_generation_information(generation_interval_for_graph=1,
+                                                                     plot_graphs_every_gen=False)
 
-            # If the fitness threshold is met, stop the algorithm
-            if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold:
-                file_path_for_run = '{}/run_{}/'.format(self.algorithm_running,
-                                                        np.random.random_integers(low=0, high=100000))
-                # Save best genome in pickle
-                outfile = open('{}_genome_pickle'.format(file_path_for_run), 'wb')
-                pickle.dump(self.best_all_time_genome, outfile)
-                outfile.close()
-                self.generation_tracker.plot_graphs(current_gen=current_gen, save_plots=True,
-                                                    file_path=file_path_for_run)
+            if self.check_algorithm_break_point(f1_score_of_best_all_time_genome=f1_score_of_best_all_time_genome,
+                                                current_gen=current_gen):
                 break
 
             # Gives distribution of the weights in the population connections
