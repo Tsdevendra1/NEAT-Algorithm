@@ -99,9 +99,11 @@ class GenerationStatistics:
                 plt.plot(generations_to_go_through, y_data)
                 plt.title(information_type)
                 if save_plots:
-                    # Make the directory before saving graphs
-                    os.makedirs('{}/graphs'.format(file_path))
-                    plt.savefig('{}/graphs/{}_generation_{}.png'.format(file_path, information_type, current_gen))
+                    graphs_filepath = '{}/graphs'.format(file_path)
+                    if not os.path.exists(graphs_filepath):
+                        # Make the directory before saving graphs
+                        os.makedirs(graphs_filepath)
+                    plt.savefig('{}/{}_generation_{}.png'.format(graphs_filepath, information_type, current_gen))
                 plt.show()
 
     def print_generation_information(self, generation_interval_for_graph, plot_graphs_every_gen):

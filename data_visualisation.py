@@ -165,10 +165,6 @@ def create_label_colours(labels):
     return coloured_labels
 
 
-def overlay_results():
-    pass
-
-
 def plot_shm_data(rotation_angle):
     x_data, y_data = get_shm_two_class_data(normalise_x=False)
 
@@ -263,6 +259,13 @@ def visualise_generation_tracker(filepath_to_genome):
     generation_information_dict = generation_tracker_instance.generation_information
 
     # If more than one information type is specified, MUST define the same_axis variable
+    plot_generation_graph(('best_all_time_genome_fitness', 'line'),
+                          ('average_population_fitness', 'line'),
+                          same_axis=True,
+                          y_label='Fitness value',
+                          generation_information=generation_information_dict,
+                          title='Best All Time Genome Accuracy through generations')
+
     plot_generation_graph(('best_all_time_genome_accuracy', 'line', 'Best Genome Accuracy (%)'),
                           ('best_all_time_genome_f1_score', 'line', 'Best Genome F1 score'),
                           same_axis=False,
@@ -273,6 +276,78 @@ def visualise_generation_tracker(filepath_to_genome):
                           generation_information=generation_information_dict, y_label='Best Genome Accuracy (%)',
                           title='Best All Time Genome Accuracy through generations')
     infile.close()
+
+
+def plot_population_complexity(filepath_to_neat_instance):
+    infile = open(filepath_to_neat_instance, 'rb')
+    neat_instance = pickle.load(infile)
+    x_data = []
+    connection_count = []
+    node_count = []
+    counter = 0
+    for population_member in neat_instance.population.values():
+        counter += 1
+        x_data.append(counter)
+        node_count.append(len(population_member.nodes))
+        connection_count.append(len(population_member.connections))
+
+    test = [11 for i in range(len(x_data))]
+
+    connection_count.sort()
+
+    plt.bar(x_data, connection_count)
+    plt.xticks(x_data)
+    plt.xlabel('Individual')
+    plt.ylabel('Test label')
+    plt.title('Test title')
+    axes2 = plt.twinx()
+    axes2.plot(x_data, test, color='r')
+    # axes2.plot(x_data, node_count, color='r')
+
+    plt.xlabel('Individual')
+    plt.ylabel('Test label')
+    plt.title('Test title')
+    plt.show()
+
+    test = [7 for i in range(len(x_data))]
+
+    plt.bar(x_data, node_count)
+    plt.xticks(x_data)
+    plt.xlabel('Individual')
+    plt.ylabel('Test label')
+    plt.title('Test title')
+    plt.plot(x_data, test, color='r')
+
+    plt.xlabel('Individual')
+    plt.ylabel('Test label')
+    plt.title('Test title')
+    plt.show()
+
+    best_genome = neat_instance.best_all_time_genome
+
+    print(len(best_genome.connections))
+    print(len(best_genome.nodes))
+
+    infile.close()
+
+
+def create_confusion_matrix():
+    import pandas as pd
+    import seaborn as sn
+    y_predicted = np.random.random_integers(low=0, high=1, size=(300, 1))
+    y_actual = np.random.random_integers(low=0, high=1, size=(300, 1))
+
+    y_predicted = y_predicted[:, 0]
+    y_actual = y_actual[:, 0]
+    data = {'y_Predicted': y_predicted,
+            'y_Actual': y_actual,
+            }
+
+    df = pd.DataFrame(data, columns=['y_Actual', 'y_Predicted'])
+    confusion_matrix = pd.crosstab(df['y_Actual'], df['y_Predicted'], rownames=['Actual'], colnames=['Predicted'])
+
+    sn.heatmap(confusion_matrix, annot=True)
+    plt.show()
 
 
 def main():
@@ -293,6 +368,8 @@ def main():
 
     plot_data = False
     show_decision_boundary = False
+    visualise_generation = False
+    visualise_population_complexity = False
 
     # PLOT DATA
     if plot_data:
@@ -318,7 +395,12 @@ def main():
         genome = initialise_genome(genome_pickle_filepath='pickles/best_genome_pickle_shm_two_class_618056')
         plot_decision_boundary(genome=genome, data_being_used='shm_two_class')
 
-    visualise_generation_tracker(filepath_to_genome='algorithm_runs/xor_full/run_1/generation_tracker')
+    if visualise_generation:
+        visualise_generation_tracker(filepath_to_genome='algorithm_runs/xor_full/run_1/generation_tracker')
+    if visualise_population_complexity:
+        plot_population_complexity(filepath_to_neat_instance='algorithm_runs/xor_full/run_2/NEAT_instance')
+
+    create_confusion_matrix()
     #
     # plt.figure()
     # N = 5

@@ -39,6 +39,12 @@ class NEAT:
         self.x_test = x_test_data
         self.y_test = y_test_data
 
+        # Keep track of best genome through generations
+        self.best_genome_history = {}
+
+        # Keeps information of population complexity for each generation
+        self.population_complexity_tracker = {}
+
         if algorithm_running:
             # Defines which of the algorithms is being currently tested (e.g. xor with 5000 examples of xor with 200
             # examples and noise)
@@ -132,7 +138,7 @@ class NEAT:
 
         return current_best_genome, current_worst_genome
 
-    def update_population_toplogy_info(self):
+    def update_population_toplogy_info(self, current_gen):
         num_nodes_overall = []
         num_nodes_enabled = []
         num_connections_overall = []
@@ -146,12 +152,20 @@ class NEAT:
             if genome.fitness:
                 all_fitnesses.append(genome.fitness)
 
-        self.generation_tracker.mean_number_connections_enabled = np.mean(num_connections_enabled)
-        self.generation_tracker.mean_number_connections_overall = np.mean(num_connections_overall)
+        avg_num_connections_enabled = np.mean(num_connections_enabled)
+        avg_num_connections_overall = np.mean(num_connections_overall)
+        avg_num_nodes_enabled = np.mean(num_nodes_enabled)
+        avg_num_nodes_overall = np.mean(num_nodes_overall)
 
-        self.generation_tracker.mean_number_nodes_enabled = np.mean(num_nodes_enabled)
-        self.generation_tracker.mean_number_nodes_overall = np.mean(num_nodes_overall)
+        complexity_tracker = {'num_connections_enabled': avg_num_connections_enabled,
+                              'num_connections_overall': avg_num_connections_overall,
+                              'num_nodes_enabled': avg_num_nodes_enabled, 'num_nodes_overall': avg_num_nodes_overall}
+        self.population_complexity_tracker[current_gen] = complexity_tracker
 
+        self.generation_tracker.mean_number_connections_enabled = avg_num_connections_enabled
+        self.generation_tracker.mean_number_connections_overall = avg_num_connections_overall
+        self.generation_tracker.mean_number_nodes_enabled = avg_num_nodes_enabled
+        self.generation_tracker.mean_number_nodes_overall = avg_num_nodes_overall
         self.generation_tracker.average_population_fitness = np.mean(all_fitnesses)
 
     def add_successful_genome_for_test(self, current_gen, use_this_genome):
@@ -227,8 +241,13 @@ class NEAT:
                 files += len(filenames)
                 folders += len(dirnames)
 
+            base_filepath = 'algorithm_runs'
+            if not os.path.exists(base_filepath):
+                # Make the directory before saving graphs
+                os.makedirs(base_filepath)
+
             # Folders + 1 because it will be the next folder in the sub directory
-            file_path_for_run = 'algorithm_runs/{}/run_{}'.format(self.algorithm_running, (folders + 1))
+            file_path_for_run = '{}/{}/run_{}'.format(base_filepath, self.algorithm_running, (folders + 1))
 
             # Make the directory before saving all other files
             os.makedirs(file_path_for_run)
@@ -276,11 +295,14 @@ class NEAT:
                                                                                  generation=current_gen)
             print('WORST CURRENT GENOME FITNESS: {}'.format(worst_current_genome.fitness))
             end_evaluate_time = time.time()
-            self.update_population_toplogy_info()
+            self.update_population_toplogy_info(current_gen=current_gen)
             self.generation_tracker.evaluate_execute_time = end_evaluate_time - start_evaluate_time
 
             # Keep track of the best genome across generations
             if self.best_all_time_genome is None or best_current_genome.fitness > self.best_all_time_genome.fitness:
+                # Keep track of the best genome through generations
+                self.best_genome_history[current_gen] = best_current_genome
+
                 self.best_all_time_genome = best_current_genome
 
             self.generation_tracker.best_all_time_genome_fitness = self.best_all_time_genome.fitness

@@ -1,4 +1,5 @@
 import scipy.io as sio
+from sklearn.decomposition import PCA
 import numpy as np
 
 
@@ -71,7 +72,7 @@ def main():
     x_data, y_data = get_shm_two_class_data()
     assert (y_data.shape[1] == 1)
 
-    x_data_multi, y_data_multi = get_shm_multi_class_data(normalise_x=False)
+    x_data_multi, y_data_multi = get_shm_multi_class_data()
     print(x_data_multi.shape)
 
 
