@@ -55,7 +55,7 @@ class ReproduceMultiClass:
                 connection_list.append(ConnectionGene(input_node=source_node.node_id, output_node=output_node.node_id,
                                                       innovation_number=self.innovation_tracker[connection],
                                                       enabled=True))
-        all_nodes_list = source_node_list  + output_node_list
+        all_nodes_list = source_node_list + output_node_list
         # Create a population of size population_size
         for index in range(population_size):
             # Deep copies otherwise changing the connection weight change's it for every genome that has the same
@@ -70,7 +70,7 @@ class ReproduceMultiClass:
 
             # Create the genome
             population[index] = GenomeMultiClass(connections=deep_copy_connections, nodes=deep_copy_nodes,
-                                       key=self.genome_indexer)
+                                                 key=self.genome_indexer)
 
         self.show_population_weight_distribution(population=population)
 
@@ -115,34 +115,25 @@ class ReproduceMultiClass:
             else:
                 species_size = min_species_size
 
-            # TODO: I'm not sure what this is mean't to do?
-            # difference = (species_size - previous_size) * 0.5
-            # rounded_difference = int(round(difference))
-            #
-            # adjusted_size = previous_size
-            #
-            # if abs(rounded_difference) > 0:
-            #     adjusted_size += rounded_difference
-            # elif difference > 0:
-            #     adjusted_size += 1
-            # elif difference < 0:
-            #     adjusted_size -= 1
+            difference = (species_size - previous_size) * 0.5
+            rounded_difference = int(round(difference))
+            adjusted_size = previous_size
+            if abs(rounded_difference) > 0:
+                adjusted_size += rounded_difference
+            elif difference > 0:
+                adjusted_size += 1
+            elif difference < 0:
+                adjusted_size -= 1
 
-            adjusted_species_sizes.append(round(species_size))
+            adjusted_species_sizes.append(adjusted_size)
+            # TODO: This allows for the fitter species to more aggressively have more population to create. If you want this behaviour comment out everything above until the end of the if else statement and uncomment this
+            # adjusted_species_sizes.append(round(species_size))
 
-        # There may not be the exact number of population size due to floating point precision. So instead we give this
-        # extra to the best species
-        if sum(adjusted_species_sizes) < population_size:
-            max_fitness_index = adjusted_species_fitnesses.index(max(adjusted_species_fitnesses))
-            adjusted_species_sizes[max_fitness_index] += 1
-
-        # Allow for some leaway in population size (+- 5)
-        # range_value = 5
-        # range_of_population_sizes = set(range(population_size - range_value,
-        #                                       population_size + range_value + 1))
-        # TODO: Re-enabled this is problem occurs
-        # if sum(adjusted_species_sizes) not in range_of_population_sizes:
-        #     raise Exception('There is an incorrect number of genomes in the population')
+        # Normalize the spawn amounts so that the next generation is roughly
+        # the population size requested by the user.
+        total_adjusted_size = sum(adjusted_species_sizes)
+        norm = population_size / total_adjusted_size
+        adjusted_species_sizes = [max(min_species_size, int(round(n * norm))) for n in adjusted_species_sizes]
 
         print('NEW POPULATION SIZE: {}'.format(sum(adjusted_species_sizes)))
 
@@ -197,16 +188,14 @@ class ReproduceMultiClass:
         min_genome_fitness = min(all_fitnesses)
         max_genome_fitness = max(all_fitnesses)
 
+        # TODO: The value 1.0 is arbtrirary from the neat python package from previous. Should let it be configurable?
         fitness_range = max(1.0, max_genome_fitness - min_genome_fitness)
 
         # TODO: Not sure if this is the right method to do adjusted fitness
         for species in remaining_species:
             # The adjusted fitness is the mean of the species members fitnesses TODO: Is this correct?
-            species.adjusted_fitness = np.mean([member.fitness for member in species.members.values()])
-
-            # TODO: comment back in if correct
-            # mean_species_fitness = np.mean([member.fitness for member in species.members.values()])
-            # adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
+            mean_species_fitness = np.mean([member.fitness for member in species.members.values()])
+            species.adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
 
         adjusted_species_fitnesses = [species.adjusted_fitness for species in remaining_species]
 

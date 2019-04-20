@@ -1372,7 +1372,6 @@ class TestPickle(unittest.TestCase):
         os.remove(file_name)
 
 
-
 class TestNumpyDelete(unittest.TestCase):
 
     def setUp(self):
@@ -1797,6 +1796,24 @@ class TestMultiClassClassification(unittest.TestCase):
         for i in range(100):
             genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=4)
             print(genome.remove_connection())
+
+
+class TestGeneticOperations(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_species_function(self):
+        adjusted_species_fitnesses = [-0.685092013733423, -0.6836606938047463, -0.683214162345792, -0.6830397019483312,
+                                      -0.6830096503850378, -0.6829584592213601, -0.47225069112447027,
+                                      -0.4710947285767421, -0.3728081463139721]
+        previous_species_size = [2, 2, 3, 1, 1, 1, 1, 1, 2]
+        population_size = 15
+        min_species_size = 1
+        adjusted_species_size = Reproduce.compute_adjusted_species_sizes(adjusted_species_fitnesses,
+                                                                         previous_species_size, population_size,
+                                                                         min_species_size)
+        self.assertTrue(sum(adjusted_species_size) == 15)
 
 
 if __name__ == '__main__':

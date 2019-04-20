@@ -82,7 +82,8 @@ class Config:
     Reproduction
     """
     # Minimum species size
-    min_species_size = 2
+    # TODO: Change back to 2 if issues.
+    min_species_size = 1
 
     """
     Survival
