@@ -1372,6 +1372,7 @@ class TestPickle(unittest.TestCase):
         os.remove(file_name)
 
 
+
 class TestNumpyDelete(unittest.TestCase):
 
     def setUp(self):

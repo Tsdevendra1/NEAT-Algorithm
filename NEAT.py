@@ -334,7 +334,7 @@ class NEAT:
 
             if print_generation_information:
                 self.generation_tracker.print_generation_information(generation_interval_for_graph=1,
-                                                                     plot_graphs_every_gen=True)
+                                                                     plot_graphs_every_gen=False)
 
             if self.check_algorithm_break_point(f1_score_of_best_all_time_genome=f1_score_of_best_all_time_genome,
                                                 current_gen=current_gen):
