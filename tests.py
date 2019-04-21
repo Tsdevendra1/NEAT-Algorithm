@@ -1515,6 +1515,37 @@ class TestMultiClassClassification(unittest.TestCase):
         self.assertTrue(len(genome.connections) == 3)
         self.assertTrue(genome)
 
+    def test_genome_multiclass_remove_connection_3(self):
+        node_list = [NodeGene(node_id=0, node_type='source'),
+                     NodeGene(node_id=1, node_type='source'),
+                     NodeGene(node_id=2, node_type='output', bias=1),
+                     NodeGene(node_id=3, node_type='output', bias=1),
+                     NodeGene(node_id=4, node_type='hidden', bias=1),
+                     NodeGene(node_id=5, node_type='hidden', bias=1),
+                     NodeGene(node_id=6, node_type='hidden', bias=1)]
+
+        connection_list = [
+            ConnectionGene(input_node=0, output_node=2, innovation_number=1, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=5, output_node=3, innovation_number=10, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=5, innovation_number=13, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=1, output_node=6, innovation_number=15, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=6, output_node=5, innovation_number=18, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=2, innovation_number=3, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=1, output_node=3, innovation_number=4, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=1, output_node=4, innovation_number=5, weight=-0.351, enabled=False),
+            ConnectionGene(input_node=0, output_node=4, innovation_number=7, weight=-0.351, enabled=True),
+            ConnectionGene(input_node=4, output_node=2, innovation_number=8, weight=-0.351, enabled=True)]
+
+        genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=3)
+        for i in range(100):
+            print('ATTMEPT NUMBER: ', i)
+            print(genome.remove_connection())
+            genome.unpack_genome()
+
+        # Should unpack without error if configured correctly.
+        genome.unpack_genome()
+
+
     def test_genome_multiclass_add_connection(self):
         node_list = [NodeGene(node_id=0, node_type='source'),
                      NodeGene(node_id=1, node_type='source'),
@@ -1796,6 +1827,8 @@ class TestMultiClassClassification(unittest.TestCase):
         for i in range(100):
             genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=4)
             print(genome.remove_connection())
+
+
 
 
 class TestGeneticOperations(unittest.TestCase):

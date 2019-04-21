@@ -264,6 +264,8 @@ class GenomeMultiClass:
         :return:
         """
 
+        self_copy_for_debugging = copy.deepcopy(self)
+
         if config.single_mutation_only and not backprop_mutation:
             # The boundaries set for different mutation types don't work if the mutation chances add up to more than 1
             assert (
@@ -341,6 +343,8 @@ class GenomeMultiClass:
 
         # Remove node
         if remove_node_condition:
+            # I use this to see what the genome was like before I deleted the node
+            self_copy_for_debugging_node = copy.deepcopy(self)
             self.remove_node()
             self.mutations_occured.append('Remove Node')
             # Unpack the genome after whatever mutation has occured
@@ -349,6 +353,8 @@ class GenomeMultiClass:
 
         # Remove connection
         if remove_connection_condition:
+            # I use this to see what the genome was like before I deleted the connection
+            self_copy_for_debugging_connection = copy.deepcopy(self)
             self.remove_connection()
             self.mutations_occured.append('Remove Connection')
             # Unpack the genome after whatever mutation has occured
@@ -513,7 +519,27 @@ class GenomeMultiClass:
 
         choice_list = []
         for connection, connection_amount in connection_count.items():
-            if connection_amount != num_source_to_output_paths and connection[1] not in outputs_with_one_path:
+            output_with_one_path_paths_list = []
+            for output in outputs_with_one_path:
+                for node_paths in all_paths:
+                    for path in node_paths:
+                        if output in path:
+                            output_with_one_path_paths_list.append(path)
+
+            node_in_critical_path = False
+            for path in output_with_one_path_paths_list:
+                # Minus one because we use +1 in index referencing below to get the next one along
+                for index in range(len(path) - 1):
+                    tuple_connnection_input = path[index]
+                    tuple_connnection_output = path[index + 1]
+                    connection_tuple_in_path = (tuple_connnection_input, tuple_connnection_output)
+                    if connection == connection_tuple_in_path:
+                        node_in_critical_path = True
+                        break
+                if node_in_critical_path:
+                    break
+
+            if connection_amount != num_source_to_output_paths and not node_in_critical_path:
                 choice_list.append(connections_by_tuple[connection])
 
         return choice_list

@@ -56,11 +56,16 @@ class Config:
     remove_connection_mutation_chance = 0.2
 
     ## These chances are used when we're performing mutation whilst using backprop optimisation
-    add_node_mutation_chance_backprop = 0.7
-    add_connection_mutation_chance_backprop = 0.5
+    add_node_mutation_chance_backprop = 0.4
+    add_connection_mutation_chance_backprop = 0.7
     remove_node_mutation_chance_backprop = 0.05
     remove_connection_mutation_chance_backprop = 0.05
     reset_all_weights_mutation_chance_backprop = 0.05
+    # add_node_mutation_chance_backprop = 0.7
+    # add_connection_mutation_chance_backprop = 0.5
+    # remove_node_mutation_chance_backprop = 0.05
+    # remove_connection_mutation_chance_backprop = 0.05
+    # reset_all_weights_mutation_chance_backprop = 0.05
 
     ## OLD VALUES FOR WHEN WE WERE JUST USING GENETIC ALGORITHM
     # add_node_mutation_chance = 0.03

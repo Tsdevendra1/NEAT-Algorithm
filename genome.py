@@ -246,6 +246,7 @@ class Genome:
         :return:
         """
 
+        self_copy_for_debugging = copy.deepcopy(self)
         if config.single_mutation_only and not backprop_mutation:
             # The boundaries set for different mutation types don't work if the mutation chances add up to more than 1
             assert (
@@ -323,6 +324,8 @@ class Genome:
 
         # Remove node
         if remove_node_condition:
+            # I use this to see what the genome was like before I deleted the node
+            self_copy_for_debugging_node = copy.deepcopy(self)
             self.remove_node()
             self.mutations_occured.append('Remove Node')
             # Unpack the genome after whatever mutation has occured
@@ -331,6 +334,8 @@ class Genome:
 
         # Remove connection
         if remove_connection_condition:
+            # I use this to see what the genome was like before I deleted the connection
+            self_copy_for_debugging_connection = copy.deepcopy(self)
             self.remove_connection()
             self.mutations_occured.append('Remove Connection')
             # Unpack the genome after whatever mutation has occured

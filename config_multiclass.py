@@ -52,8 +52,8 @@ class ConfigMultiClass:
 
     add_node_mutation_chance = 0.4
     add_connection_mutation_chance = 0.5
-    remove_node_mutation_chance = 0.05
-    remove_connection_mutation_chance = 0.05
+    remove_node_mutation_chance = 0.15
+    remove_connection_mutation_chance = 0.15
 
     ## These chances are used when we're performing mutation whilst using backprop optimisation
     add_node_mutation_chance_backprop = 0.7
@@ -82,7 +82,7 @@ class ConfigMultiClass:
     Reproduction
     """
     # Minimum species size
-    min_species_size = 2
+    min_species_size = 0
 
     """
     Survival
