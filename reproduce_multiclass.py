@@ -115,19 +115,19 @@ class ReproduceMultiClass:
             else:
                 species_size = min_species_size
 
-            difference = (species_size - previous_size) * 0.5
-            rounded_difference = int(round(difference))
-            adjusted_size = previous_size
-            if abs(rounded_difference) > 0:
-                adjusted_size += rounded_difference
-            elif difference > 0:
-                adjusted_size += 1
-            elif difference < 0:
-                adjusted_size -= 1
-
-            adjusted_species_sizes.append(adjusted_size)
+            # difference = (species_size - previous_size) * 0.5
+            # rounded_difference = int(round(difference))
+            # adjusted_size = previous_size
+            # if abs(rounded_difference) > 0:
+            #     adjusted_size += rounded_difference
+            # elif difference > 0:
+            #     adjusted_size += 1
+            # elif difference < 0:
+            #     adjusted_size -= 1
+            #
+            # adjusted_species_sizes.append(adjusted_size)
             # TODO: This allows for the fitter species to more aggressively have more population to create. If you want this behaviour comment out everything above until the end of the if else statement and uncomment this
-            # adjusted_species_sizes.append(round(species_size))
+            adjusted_species_sizes.append(round(species_size))
 
         # Normalize the spawn amounts so that the next generation is roughly
         # the population size requested by the user.
@@ -202,8 +202,17 @@ class ReproduceMultiClass:
         # Get a list of the amount of members in each of the remaining species
         previous_species_sizes = [len(species.members) for species in remaining_species]
 
+        # If the sum of the adjusted species fitnesses is less than 0.1, it suggests there isn't much fitness variation
+        # in the population. Thus we put an artificial barrier to the min species size because there is no species that
+        # entirely beats all other species
+        # TODO: 0.1 is an random number and should be configurable
+        if sum(adjusted_species_fitnesses) < 0.1:
+            min_species_size = 2
+        else:
+            min_species_size = self.config.min_species_size
+
         adjusted_species_sizes = self.compute_adjusted_species_sizes(
-            adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=self.config.min_species_size,
+            adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=min_species_size,
             previous_species_sizes=previous_species_sizes, population_size=population_size)
 
         return adjusted_species_sizes

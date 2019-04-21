@@ -189,8 +189,17 @@ class Reproduce:
         # Get a list of the amount of members in each of the remaining species
         previous_species_sizes = [len(species.members) for species in remaining_species]
 
+        # If the sum of the adjusted species fitnesses is less than 0.1, it suggests there isn't much fitness variation
+        # in the population. Thus we put an artificial barrier to the min species size because there is no species that
+        # entirely beats all other species
+        # TODO: 0.1 is an random number and should be configurable
+        if sum(adjusted_species_fitnesses) < 0.1:
+            min_species_size = 2
+        else:
+            min_species_size = self.config.min_species_size
+
         adjusted_species_sizes = self.compute_adjusted_species_sizes(
-            adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=self.config.min_species_size,
+            adjusted_species_fitnesses=adjusted_species_fitnesses, min_species_size=min_species_size,
             previous_species_sizes=previous_species_sizes, population_size=population_size)
 
         return adjusted_species_sizes
@@ -229,7 +238,8 @@ class Reproduce:
                     assert (old_species_members[0].fitness >= old_species_members[1].fitness)
 
                 # If we have specified a number of genomes to carry over, carry them over to the new population
-                num_genomes_without_crossover = int(round(species_size * self.config.chance_for_mutation_without_crossover))
+                num_genomes_without_crossover = int(
+                    round(species_size * self.config.chance_for_mutation_without_crossover))
                 if num_genomes_without_crossover > 0:
 
                     for member in old_species_members[:num_genomes_without_crossover]:
