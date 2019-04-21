@@ -35,11 +35,11 @@ class SpeciesSet:
     def species_fitness_function(species_members, function_type):
         """
         Finds the fitness for a species. For now all it doesn is find the mean fitness of the species.
-        # TODO: Allow max, min, median fitness function types
         :param species_members: The members of the species
         :param function_type: What type of function you want to apply, e.g. mean, max, min, median
         :return: The fitness value for the species
         """
+        # TODO: Allow max, min, median fitness function types
         if function_type not in {'mean', 'max', 'median', 'min'}:
             raise Exception('Invalid function type specified for species fitness function')
 

@@ -110,28 +110,25 @@ class Reproduce:
             else:
                 species_size = min_species_size
 
-            difference = (species_size - previous_size) * 0.5
-            rounded_difference = int(round(difference))
-            adjusted_size = previous_size
-            if abs(rounded_difference) > 0:
-                adjusted_size += rounded_difference
-            elif difference > 0:
-                adjusted_size += 1
-            elif difference < 0:
-                adjusted_size -= 1
+            # difference = (species_size - previous_size) * 0.5
+            # rounded_difference = int(round(difference))
+            # adjusted_size = previous_size
+            # if abs(rounded_difference) > 0:
+            #     adjusted_size += rounded_difference
+            # elif difference > 0:
+            #     adjusted_size += 1
+            # elif difference < 0:
+            #     adjusted_size -= 1
+            # adjusted_species_sizes.append(adjusted_size)
 
-            adjusted_species_sizes.append(adjusted_size)
             # TODO: This allows for the fitter species to more aggressively have more population to create. If you want this behaviour comment out everything above until the end of the if else statement and uncomment this
-            # adjusted_species_sizes.append(round(species_size))
-
-
+            adjusted_species_sizes.append(round(species_size))
 
         # Normalize the spawn amounts so that the next generation is roughly
         # the population size requested by the user.
         total_adjusted_size = sum(adjusted_species_sizes)
         norm = population_size / total_adjusted_size
         adjusted_species_sizes = [max(min_species_size, int(round(n * norm))) for n in adjusted_species_sizes]
-
 
         print('NEW POPULATION SIZE: {}'.format(sum(adjusted_species_sizes)))
 
@@ -198,7 +195,6 @@ class Reproduce:
 
         return adjusted_species_sizes
 
-
     def get_new_population(self, adjusted_species_sizes, remaining_species, species_set, generation_tracker,
                            backprop_mutation):
         """
@@ -214,103 +210,105 @@ class Reproduce:
 
         for species_size, species in zip(adjusted_species_sizes, remaining_species):
 
-            assert (species_size > 0)
+            # TODO: Uncomment if you removed min_species_size
+            # assert (species_size > 0)
+            if species_size > 0:
 
-            # List of old species members
-            old_species_members = list(species.members.values())
-            # Reset the members for the current species
-            species.members = {}
-            # Save the species in the species set object
-            species_set.species[species.key] = species
+                # List of old species members
+                old_species_members = list(species.members.values())
+                # Reset the members for the current species
+                species.members = {}
+                # Save the species in the species set object
+                species_set.species[species.key] = species
 
-            # Sort the members into the descending fitness
-            old_species_members.sort(reverse=True, key=lambda x: x.fitness)
+                # Sort the members into the descending fitness
+                old_species_members.sort(reverse=True, key=lambda x: x.fitness)
 
-            # Double check that it is descending
-            if len(old_species_members) > 1:
-                assert (old_species_members[0].fitness >= old_species_members[1].fitness)
+                # Double check that it is descending
+                if len(old_species_members) > 1:
+                    assert (old_species_members[0].fitness >= old_species_members[1].fitness)
 
-            # If we have specified a number of genomes to carry over, carry them over to the new population
-            num_genomes_without_crossover = int(round(species_size * self.config.chance_for_mutation_without_crossover))
-            if num_genomes_without_crossover > 0:
+                # If we have specified a number of genomes to carry over, carry them over to the new population
+                num_genomes_without_crossover = int(round(species_size * self.config.chance_for_mutation_without_crossover))
+                if num_genomes_without_crossover > 0:
 
-                for member in old_species_members[:num_genomes_without_crossover]:
+                    for member in old_species_members[:num_genomes_without_crossover]:
 
-                    # Check if we should carry over a member un-mutated or not
-                    if not self.config.keep_unmutated_top_percentage:
-                        child = copy.deepcopy(member)
+                        # Check if we should carry over a member un-mutated or not
+                        if not self.config.keep_unmutated_top_percentage:
+                            child = copy.deepcopy(member)
 
+                            child.mutate(reproduction_instance=self,
+                                         innovation_tracker=self.innovation_tracker, config=self.config,
+                                         backprop_mutation=backprop_mutation)
+
+                            if not child.check_connection_enabled_amount() and not child.check_num_paths(
+                                    only_add_enabled_connections=True):
+                                raise Exception('This child has no enabled connections')
+
+                            new_population[child.key] = child
+                            self.ancestors[child.key] = ()
+                            # new_population[member.key] = member
+                            species_size -= 1
+                            assert (species_size >= 0)
+                        else:
+                            # Else we just add the current member to the new population
+                            new_population[member.key] = member
+                            species_size -= 1
+                            assert (species_size >= 0)
+
+                # If there are no more genomes for the current species, then restart the loop for the next species
+                if species_size <= 0:
+                    continue
+
+                # Only use the survival threshold fraction to use as parents for the next generation.
+                reproduction_cutoff = int(math.ceil((1 - self.config.chance_for_mutation_without_crossover) *
+                                                    len(old_species_members)))
+
+                # Need at least two parents no matter what the previous result
+                reproduction_cutoff = max(reproduction_cutoff, 2)
+                old_species_members = old_species_members[:reproduction_cutoff]
+
+                # Randomly choose parents and choose whilst there can still be additional genomes for the given species
+                while species_size > 0:
+                    species_size -= 1
+
+                    # TODO: If you don't allow them to mate with themselves then it's a problem because if the species previous
+                    # TODO: size is 1, then how can you do with or without crossover?
+                    parent_1 = copy.deepcopy(random.choice(old_species_members))
+                    parent_2 = copy.deepcopy(random.choice(old_species_members))
+
+                    # Has to be a deep copy otherwise the connections which are crossed over are also modified if mutation
+                    # occurs on the child.
+                    parent_1 = copy.deepcopy(parent_1)
+                    parent_2 = copy.deepcopy(parent_2)
+
+                    self.genome_indexer += 1
+                    genome_id = self.genome_indexer
+
+                    child = Genome(key=genome_id)
+                    # TODO: Save the parent_1 and parent_2 mutation history as well as what connections they had
+                    # Create the genome from the parents
+                    num_connections_enabled = child.crossover(genome_1=parent_1, genome_2=parent_2, config=self.config)
+
+                    # If there are no connections enabled we forget about this child and don't add it to the existing
+                    # population
+                    if num_connections_enabled:
                         child.mutate(reproduction_instance=self,
                                      innovation_tracker=self.innovation_tracker, config=self.config,
-                                     backprop_mutation=backprop_mutation)
+                                     generation_tracker=generation_tracker, backprop_mutation=backprop_mutation)
 
                         if not child.check_connection_enabled_amount() and not child.check_num_paths(
                                 only_add_enabled_connections=True):
                             raise Exception('This child has no enabled connections')
 
                         new_population[child.key] = child
-                        self.ancestors[child.key] = ()
-                        # new_population[member.key] = member
-                        species_size -= 1
-                        assert (species_size >= 0)
+                        self.ancestors[child.key] = (parent_1.key, parent_2.key)
                     else:
-                        # Else we just add the current member to the new population
-                        new_population[member.key] = member
-                        species_size -= 1
-                        assert (species_size >= 0)
-
-            # If there are no more genomes for the current species, then restart the loop for the next species
-            if species_size <= 0:
-                continue
-
-            # Only use the survival threshold fraction to use as parents for the next generation.
-            reproduction_cutoff = int(math.ceil((1 - self.config.chance_for_mutation_without_crossover) *
-                                                len(old_species_members)))
-
-            # Need at least two parents no matter what the previous result
-            reproduction_cutoff = max(reproduction_cutoff, 2)
-            old_species_members = old_species_members[:reproduction_cutoff]
-
-            # Randomly choose parents and choose whilst there can still be additional genomes for the given species
-            while species_size > 0:
-                species_size -= 1
-
-                # TODO: If you don't allow them to mate with themselves then it's a problem because if the species previous
-                # TODO: size is 1, then how can you do with or without crossover?
-                parent_1 = copy.deepcopy(random.choice(old_species_members))
-                parent_2 = copy.deepcopy(random.choice(old_species_members))
-
-                # Has to be a deep copy otherwise the connections which are crossed over are also modified if mutation
-                # occurs on the child.
-                parent_1 = copy.deepcopy(parent_1)
-                parent_2 = copy.deepcopy(parent_2)
-
-                self.genome_indexer += 1
-                genome_id = self.genome_indexer
-
-                child = Genome(key=genome_id)
-                # TODO: Save the parent_1 and parent_2 mutation history as well as what connections they had
-                # Create the genome from the parents
-                num_connections_enabled = child.crossover(genome_1=parent_1, genome_2=parent_2, config=self.config)
-
-                # If there are no connections enabled we forget about this child and don't add it to the existing
-                # population
-                if num_connections_enabled:
-                    child.mutate(reproduction_instance=self,
-                                 innovation_tracker=self.innovation_tracker, config=self.config,
-                                 generation_tracker=generation_tracker, backprop_mutation=backprop_mutation)
-
-                    if not child.check_connection_enabled_amount() and not child.check_num_paths(
-                            only_add_enabled_connections=True):
-                        raise Exception('This child has no enabled connections')
-
-                    new_population[child.key] = child
-                    self.ancestors[child.key] = (parent_1.key, parent_2.key)
-                else:
-                    # Else if the crossover resulted in an invalid genome.
-                    assert num_connections_enabled == 0
-                    species_size += 1
-                    self.genome_indexer -= 1
+                        # Else if the crossover resulted in an invalid genome.
+                        assert num_connections_enabled == 0
+                        species_size += 1
+                        self.genome_indexer -= 1
 
         return new_population
 
