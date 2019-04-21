@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 
 
 class Stagnation:
@@ -26,6 +27,32 @@ class Stagnation:
             # Calculate the fitness for the species
             species.fitness = species_set.species_fitness_function(species_members=species.members,
                                                                    function_type='mean')
+
+            num_nodes_overall = []
+            num_nodes_enabled = []
+            num_connections_overall = []
+            num_connections_enabled = []
+            all_fitnesses = []
+            species_member_fitnesses = [member.fitness for member in species.members.values()]
+            for genome in species.members.values():
+                num_nodes_overall.append(len(genome.nodes))
+                num_nodes_enabled.append(len(genome.get_active_nodes()))
+                num_connections_overall.append(len(genome.connections))
+                num_connections_enabled.append(genome.check_connection_enabled_amount())
+                if genome.fitness:
+                    all_fitnesses.append(genome.fitness)
+
+            avg_num_connections_enabled = np.mean(num_connections_enabled)
+            avg_num_connections_overall = np.mean(num_connections_overall)
+            avg_num_nodes_enabled = np.mean(num_nodes_enabled)
+            avg_num_nodes_overall = np.mean(num_nodes_overall)
+
+            complexity_tracker = {'num_connections_enabled': avg_num_connections_enabled,
+                                  'num_connections_overall': avg_num_connections_overall,
+                                  'num_nodes_enabled': avg_num_nodes_enabled,
+                                  'num_nodes_overall': avg_num_nodes_overall,
+                                  'mean_weight': np.mean(species_member_fitnesses)}
+            species.species_info = complexity_tracker
 
             # Keep track of historical fitness
             species.fitness_history.append(species.fitness)

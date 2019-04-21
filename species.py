@@ -16,6 +16,9 @@ class Species:
         # History of the fitness for the species
         self.fitness_history = []
 
+        # Keeps track of the unique characteristics of its members
+        self.species_info = None
+
     def update(self, representative, members):
         self.representative = representative
         self.members = members
@@ -50,7 +53,8 @@ class SpeciesSet:
 
     def calculate_compatibility_distance(self, species_representative, genome, generation_tracker=None):
         compatibility_distance_1 = species_representative.compute_compatibility_distance(other_genome=genome,
-                                                                                         config=self.config, generation_tracker=generation_tracker)
+                                                                                         config=self.config,
+                                                                                         generation_tracker=generation_tracker)
         compatibility_distance_2 = genome.compute_compatibility_distance(other_genome=species_representative,
                                                                          config=self.config)
 
@@ -183,7 +187,8 @@ class SpeciesSet:
         self.find_species_members(unspeciated=unspeciated,
                                   dict_of_compatibility_distances=dict_of_compatibility_distances,
                                   new_members=new_members, new_representatives=new_representatives,
-                                  compatibility_threshold=compatibility_threshold, population=population, generation_tracker=generation_tracker)
+                                  compatibility_threshold=compatibility_threshold, population=population,
+                                  generation_tracker=generation_tracker)
 
         self.save_species_info(new_representatives=new_representatives, new_members=new_members, population=population,
                                generation=generation)

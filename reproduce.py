@@ -182,7 +182,8 @@ class Reproduce:
         for species in remaining_species:
             # The adjusted fitness is the mean of the species members fitnesses TODO: Is this correct?
             mean_species_fitness = np.mean([member.fitness for member in species.members.values()])
-            species.adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
+            adjusted_fitness = (mean_species_fitness - min_genome_fitness) / fitness_range
+            species.adjusted_fitness = adjusted_fitness
 
         adjusted_species_fitnesses = [species.adjusted_fitness for species in remaining_species]
 
