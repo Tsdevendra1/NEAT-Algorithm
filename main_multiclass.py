@@ -11,7 +11,7 @@ def main():
 
     # Choose which algorithm is running using keys
     algorithm_options = {0: 'xor_full', 1: 'shm_multi_class'}
-    algorithm_running = algorithm_options[0]
+    algorithm_running = algorithm_options[1]
 
     if algorithm_running == algorithm_options[0]:
         num_data_to_generate = 6250
@@ -33,12 +33,14 @@ def main():
     x_test = x_data[training_upper_limit_index:]
     y_test = y_data[training_upper_limit_index:]
 
+    fitness_threshold = 0.95 if algorithm_running != algorithm_options[1] else 0.88
+
     neat = NEATMultiClass(x_training_data=x_training, y_training_data=y_training, x_test_data=x_test,
                           y_test_data=y_test,
-                          config=ConfigMultiClass, fitness_threshold=-0.1, f1_score_threshold=0.90,
+                          config=ConfigMultiClass, fitness_threshold=-0.1, f1_score_threshold=fitness_threshold,
                           algorithm_running=algorithm_running)
 
-    neat.run(max_num_generations=10000, use_backprop=True, print_generation_information=True,
+    neat.run(max_num_generations=250, use_backprop=True, print_generation_information=True,
              show_population_weight_distribution=False)
 
 

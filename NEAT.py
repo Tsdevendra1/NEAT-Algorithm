@@ -231,9 +231,9 @@ class NEAT:
         percentage_correct = (num_correct / y_test_data.shape[0]) * 100
         return percentage_correct
 
-    def check_algorithm_break_point(self, current_gen, f1_score_of_best_all_time_genome):
+    def check_algorithm_break_point(self, current_gen, f1_score_of_best_all_time_genome, max_num_generations):
         # If the fitness threshold is met, stop the algorithm
-        if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold:
+        if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold or current_gen > max_num_generations:
 
             files = folders = 0
 
@@ -281,7 +281,8 @@ class NEAT:
         """
 
         current_gen = 0
-        while current_gen < max_num_generations:
+        # Break condition now in function
+        while True:
             # Every generation increment
             current_gen += 1
 
@@ -325,13 +326,6 @@ class NEAT:
             end_reproduce_time = time.time()
             self.generation_tracker.reproduce_execute_time = end_reproduce_time - start_reproduce_time
 
-            # TODO: Uncomment this if population sizes causes an issue
-            # # Allow for some leaway in population size (+- 5)
-            # range_value = 5
-            # range_of_population_sizes = set(range(self.config.population_size - range_value,
-            #                                       self.config.population_size + range_value + 1))
-            # if len(self.population) not in range_of_population_sizes:
-            #     raise Exception('There is an incorrect number of genomes in the population')
 
             # Check to ensure no genes share the same connection gene addresses. (This problem has been fixed but is
             # here just incase now).
@@ -364,7 +358,7 @@ class NEAT:
                                                                      plot_graphs_every_gen=False)
 
             if self.check_algorithm_break_point(f1_score_of_best_all_time_genome=f1_score_of_best_all_time_genome,
-                                                current_gen=current_gen):
+                                                current_gen=current_gen, max_num_generations=max_num_generations):
                 break
 
             # Gives distribution of the weights in the population connections

@@ -1545,7 +1545,6 @@ class TestMultiClassClassification(unittest.TestCase):
         # Should unpack without error if configured correctly.
         genome.unpack_genome()
 
-
     def test_genome_multiclass_add_connection(self):
         node_list = [NodeGene(node_id=0, node_type='source'),
                      NodeGene(node_id=1, node_type='source'),
@@ -1827,8 +1826,6 @@ class TestMultiClassClassification(unittest.TestCase):
         for i in range(100):
             genome = GenomeMultiClass(connections=connection_list, nodes=node_list, key=4)
             print(genome.remove_connection())
-
-
 
 
 class TestGeneticOperations(unittest.TestCase):
