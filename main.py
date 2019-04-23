@@ -1,6 +1,6 @@
 from NEAT import NEAT
 from config import Config
-from data_storage import get_circle_data
+from data_storage import get_circle_data, get_spiral_data
 from neural_network import create_data
 import numpy as np
 
@@ -11,8 +11,8 @@ def main():
     # Keep a consistent seed to make debugging easier TODO: Check if this work's across files
     np.random.seed(1)
 
+    algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3:'shm_two_class', 4:'spiral_data'}
     # Choose which algorithm is running using keys
-    algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3:'shm_two_class'}
     algorithm_running = algorithm_options[3]
 
     if algorithm_running == algorithm_options[0]:
@@ -35,6 +35,14 @@ def main():
         num_data_to_generate = len(x_data)
     elif algorithm_running == algorithm_options[3]:
         x_data, y_data = get_shm_two_class_data()
+        num_data_to_generate = len(x_data)
+    elif algorithm_running == algorithm_options[4]:
+        x_data, y_data = get_spiral_data()
+        x_data = x_data[:, 0:2]
+        y_data.shape = (len(x_data), 1)
+        for row in range(y_data.shape[0]):
+            if y_data[row, 0] == -1:
+                y_data[row, 0] = 0
         num_data_to_generate = len(x_data)
 
 

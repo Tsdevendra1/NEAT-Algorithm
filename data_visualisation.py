@@ -165,7 +165,7 @@ def create_label_colours(labels):
     return coloured_labels
 
 
-def plot_shm_data(rotation_angle):
+def plot_shm_data(elevation, rotation_angle):
     x_data, y_data = get_shm_two_class_data(normalise_x=False)
 
     x_vals = x_data[:, 0].tolist()
@@ -181,7 +181,7 @@ def plot_shm_data(rotation_angle):
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(x_vals, y_vals, z_vals, color=labels)
-    ax.view_init(-140, rotation_angle)
+    ax.view_init(elevation, rotation_angle)
     plt.show()
 
 
@@ -278,7 +278,7 @@ def visualise_generation_tracker(filepath_to_genome):
     infile.close()
 
 
-def plot_population_complexity(filepath_to_neat_instance):
+def plot_population_complexity(filepath_to_neat_instance, font_size):
     infile = open(filepath_to_neat_instance, 'rb')
     neat_instance = pickle.load(infile)
     x_data = []
@@ -297,16 +297,31 @@ def plot_population_complexity(filepath_to_neat_instance):
 
     plt.bar(x_data, connection_count)
     plt.xticks(x_data)
-    plt.xlabel('Individual')
-    plt.ylabel('Test label')
-    plt.title('Test title')
+    if font_size:
+        plt.xlabel('Individual', fontsize=font_size)
+        plt.ylabel('Test label', fontsize=font_size)
+        plt.title('Test title', fontsize=font_size)
+        plt.xticks(fontsize=font_size)
+        plt.yticks(fontsize=font_size)
+    else:
+        plt.xlabel('Individual')
+        plt.ylabel('Test label')
+        plt.title('Test title')
     axes2 = plt.twinx()
     axes2.plot(x_data, test, color='r')
     # axes2.plot(x_data, node_count, color='r')
 
-    plt.xlabel('Individual')
-    plt.ylabel('Test label')
-    plt.title('Test title')
+
+    if font_size:
+        plt.xlabel('Individual', fontsize=font_size)
+        plt.ylabel('Test label', fontsize=font_size)
+        plt.title('Test title', fontsize=font_size)
+        plt.xticks(fontsize=font_size)
+        plt.yticks(fontsize=font_size)
+    else:
+        plt.xlabel('Individual')
+        plt.ylabel('Test label')
+        plt.title('Test title')
     plt.show()
 
     test = [7 for i in range(len(x_data))]
@@ -351,10 +366,9 @@ def create_confusion_matrix():
 
 
 def main():
-    # plot_shm_data(rotation_angle=50)
 
     # DATA
-    x_data, y_data = create_data(n_generated=200, add_noise=False)
+    x_data, y_data = create_data(n_generated=200, add_noise=True)
     x_circle, y_circle = get_circle_data()
     x_spiral, y_spiral = get_spiral_data()
 
@@ -369,15 +383,24 @@ def main():
     plot_data = False
     show_decision_boundary = False
     visualise_generation = False
-    visualise_population_complexity = False
+    plot_confusion_matrix = False
+    visualise_population_complexity = True
+    plot_shm_data_figure = True
 
+
+    font_size = 20
     # PLOT DATA
     if plot_data:
+
+
         # TODO: Add legends
         plt.scatter(feature_1_xor, feature_2_xor, color=create_label_colours(labels=y_data))
-        plt.title('XOR Data')
-        plt.xlabel('X1')
-        plt.ylabel('X2')
+        plt.title('XOR Data', fontsize=font_size)
+        plt.xlabel('X1', fontsize=font_size)
+        plt.ylabel('X2', fontsize=font_size)
+        plt.tick_params(axis='both', which='major', labelsize=10)
+        plt.xticks(fontsize=font_size)
+        plt.yticks(fontsize=font_size)
         plt.show()
         plt.scatter(feature_1_circle, feature_2_circle, color=create_label_colours(labels=y_circle))
         plt.title('Circle Data')
@@ -396,11 +419,14 @@ def main():
         plot_decision_boundary(genome=genome, data_being_used='shm_two_class')
 
     if visualise_generation:
-        visualise_generation_tracker(filepath_to_genome='algorithm_runs/xor_full/run_1/generation_tracker')
+        visualise_generation_tracker(filepath_to_genome='algorithm_runs/xor_small_noise/run_1/generation_tracker')
     if visualise_population_complexity:
-        plot_population_complexity(filepath_to_neat_instance='algorithm_runs/xor_full/run_2/NEAT_instance')
+        plot_population_complexity(filepath_to_neat_instance='algorithm_runs/xor_small_noise/run_1/NEAT_instance', font_size=None)
 
-    create_confusion_matrix()
+    if plot_confusion_matrix:
+        create_confusion_matrix()
+    if plot_shm_data_figure:
+        plot_shm_data(rotation_angle=30, elevation=-160)
     #
     # plt.figure()
     # N = 5

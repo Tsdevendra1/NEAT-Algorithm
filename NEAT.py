@@ -81,6 +81,11 @@ class NEAT:
             num_epochs = 5000
             batch_size = 50
             activation_type = 'sigmoid'
+        elif algorithm_running == 'spiral_data':
+            learning_rate = 0.1
+            num_epochs = 5000
+            batch_size = 50
+            activation_type = 'sigmoid'
         # TODO: Choose more suitable default
         else:
             learning_rate = 0.1
