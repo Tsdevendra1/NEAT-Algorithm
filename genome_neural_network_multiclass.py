@@ -410,11 +410,6 @@ class GenomeNeuralNetworkMultiClass:
                         or percentage_increase_between_midway_and_three_quarters < 1:
                     print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE')
                     break
-                    
-            # If the cost is getting worse we stop the algorithm
-            if cost_list[epoch] > cost_list[epoch-1]:
-                print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE COST GETTING WORSE')
-                break
 
         print('Optimising 100% done...')
 

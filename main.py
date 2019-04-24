@@ -1,4 +1,5 @@
 from NEAT import NEAT
+import time
 from config import Config
 from data_storage import get_circle_data, get_spiral_data
 from neural_network import create_data
@@ -11,9 +12,9 @@ def main():
     # Keep a consistent seed to make debugging easier TODO: Check if this work's across files
     np.random.seed(1)
 
-    algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3:'shm_two_class', 4:'spiral_data'}
+    algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3: 'shm_two_class', 4: 'spiral_data'}
     # Choose which algorithm is running using keys
-    algorithm_running = algorithm_options[3]
+    algorithm_running = algorithm_options[1]
 
     if algorithm_running == algorithm_options[0]:
         num_data_to_generate = 6250
@@ -45,7 +46,6 @@ def main():
                 y_data[row, 0] = 0
         num_data_to_generate = len(x_data)
 
-
     # Training data
     training_percentage = 0.8
     training_upper_limit_index = round(num_data_to_generate * training_percentage)
@@ -59,8 +59,12 @@ def main():
     neat = NEAT(x_training_data=x_training, y_training_data=y_training, x_test_data=x_test, y_test_data=y_test,
                 config=Config, fitness_threshold=-0.1, f1_score_threshold=0.90, algorithm_running=algorithm_running)
 
+    start_evaluate_time = time.time()
     neat.run(max_num_generations=10000, use_backprop=True, print_generation_information=True,
              show_population_weight_distribution=False)
+    end_evaluate_time = time.time()
+    total_time = end_evaluate_time - start_evaluate_time
+    print(total_time)
 
 
 if __name__ == "__main__":

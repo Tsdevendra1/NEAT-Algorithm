@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
+from numpy.random import rand
 import pickle
 import matplotlib.pyplot as plt
 import copy
@@ -311,7 +313,6 @@ def plot_population_complexity(filepath_to_neat_instance, font_size):
     axes2.plot(x_data, test, color='r')
     # axes2.plot(x_data, node_count, color='r')
 
-
     if font_size:
         plt.xlabel('Individual', fontsize=font_size)
         plt.ylabel('Test label', fontsize=font_size)
@@ -366,7 +367,6 @@ def create_confusion_matrix():
 
 
 def main():
-
     # DATA
     x_data, y_data = create_data(n_generated=200, add_noise=True)
     x_circle, y_circle = get_circle_data()
@@ -380,19 +380,16 @@ def main():
     feature_1_spiral = x_spiral[:, 0]
     feature_2_spiral = x_spiral[:, 1]
 
-    plot_data = False
+    plot_data = True
     show_decision_boundary = False
     visualise_generation = False
     plot_confusion_matrix = False
-    visualise_population_complexity = True
-    plot_shm_data_figure = True
-
+    visualise_population_complexity = False
+    plot_shm_data_figure = False
 
     font_size = 20
     # PLOT DATA
     if plot_data:
-
-
         # TODO: Add legends
         plt.scatter(feature_1_xor, feature_2_xor, color=create_label_colours(labels=y_data))
         plt.title('XOR Data', fontsize=font_size)
@@ -402,16 +399,40 @@ def main():
         plt.xticks(fontsize=font_size)
         plt.yticks(fontsize=font_size)
         plt.show()
-        plt.scatter(feature_1_circle, feature_2_circle, color=create_label_colours(labels=y_circle))
-        plt.title('Circle Data')
+
+        fig, ax = plt.subplots()
+        label_colours = create_label_colours(labels=y_data)
+        x1_reds = []
+        x2_reds = []
+        x1_greens = []
+        x2_greens = []
+        for index in range(len(label_colours)):
+            if label_colours[index] == 'green':
+                x1_greens.append(feature_1_xor[index])
+                x2_greens.append(feature_2_xor[index])
+            else:
+                x1_reds.append(feature_1_xor[index])
+                x2_reds.append(feature_2_xor[index])
+
+        ax.scatter(x1_greens, x2_greens, c='green', label='Class 1',
+                   alpha=1, edgecolors='none')
+        ax.scatter(x1_reds, x2_reds, c='red', label='Class 0',
+                   alpha=1, edgecolors='none')
+        ax.legend(loc='upper right')
         plt.xlabel('X1')
         plt.ylabel('X2')
         plt.show()
-        plt.scatter(feature_1_spiral, feature_2_spiral, color=create_label_colours(labels=y_spiral))
-        plt.title('Spiral Data')
-        plt.xlabel('X1')
-        plt.ylabel('X2')
-        plt.show()
+
+        # plt.scatter(feature_1_circle, feature_2_circle, color=create_label_colours(labels=y_circle))
+        # plt.title('Circle Data')
+        # plt.xlabel('X1')
+        # plt.ylabel('X2')
+        # plt.show()
+        # plt.scatter(feature_1_spiral, feature_2_spiral, color=create_label_colours(labels=y_spiral))
+        # plt.title('Spiral Data')
+        # plt.xlabel('X1')
+        # plt.ylabel('X2')
+        # plt.show()
 
     if show_decision_boundary:
         # Test genome accuracy
@@ -421,7 +442,8 @@ def main():
     if visualise_generation:
         visualise_generation_tracker(filepath_to_genome='algorithm_runs/xor_small_noise/run_1/generation_tracker')
     if visualise_population_complexity:
-        plot_population_complexity(filepath_to_neat_instance='algorithm_runs/xor_small_noise/run_1/NEAT_instance', font_size=None)
+        plot_population_complexity(filepath_to_neat_instance='algorithm_runs/xor_small_noise/run_1/NEAT_instance',
+                                   font_size=None)
 
     if plot_confusion_matrix:
         create_confusion_matrix()

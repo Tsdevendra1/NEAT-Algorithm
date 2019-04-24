@@ -425,10 +425,10 @@ class GenomeNeuralNetwork:
                     print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE')
                     break
 
-            # If the cost is getting worse we stop the algorithm
-            if cost_list[epoch] > cost_list[epoch-1]:
-                print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE COST GETTING WORSE')
-                break
+            # # If the cost is getting worse we stop the algorithm
+            # if cost_list[epoch] > cost_list[epoch-1]:
+            #     print('STOPPING OPTIMISATION DUE TO POOR PERFORMANCE COST GETTING WORSE')
+            #     break
 
         print('Optimising 100% done...')
 

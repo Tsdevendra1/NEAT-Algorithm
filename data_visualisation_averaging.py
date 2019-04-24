@@ -44,7 +44,7 @@ def get_genome_predictions(genome, x_data, round_values=True):
 
 
 def plot_decision_boundary(experiments_path, data_being_used):
-    number_of_data_points = 10
+    number_of_data_points = 110
     assert (data_being_used in {'circle_data', 'xor_data', 'spiral_data', 'shm_two_class'})
 
     if data_being_used == 'xor_data':
@@ -76,16 +76,34 @@ def plot_decision_boundary(experiments_path, data_being_used):
                         current_x.append(x)
                         current_y.append(y)
                         predictions = get_genome_predictions(genome=genome, x_data=x_data, round_values=False)
+                        # prediction_value = predictions[0][0]
+                        # if (x < 0.5 and y < 0.5 and prediction_value < 0.5):
+                        #     ewqeq = 3
+                        # if (x > 0.5 and y > 0.5 and prediction_value < 0.5):
+                        #     ewqeq = 3
+                        # if (x > 0.5 and y < 0.5 and prediction_value > 0.5):
+                        #     ewqeq = 3
+                        # if (x < 0.5 and y > 0.5 and prediction_value > 0.5):
+                        #     ewqeq = 3
                         prediction_list += predictions[0].tolist()
-                for x in x_values:
-                    for y in x_values_reverse:
-                        # x_data = np.array([[y, x, y ** 2, x ** 2, y * x, np.sin(y), np.sin(x)]])
-                        x_data = np.array([[y, x]])
-                        # This is correct, should be reverse to previous loop
-                        current_x.append(y)
-                        current_y.append(x)
-                        predictions = get_genome_predictions(genome=genome, x_data=x_data, round_values=False)
-                        prediction_list += predictions[0].tolist()
+                # for x in x_values:
+                #     for y in x_values_reverse:
+                #         # x_data = np.array([[y, x, y ** 2, x ** 2, y * x, np.sin(y), np.sin(x)]])
+                #         x_data = np.array([[y, x]])
+                #         # This is correct, should be reverse to previous loop
+                #         current_x.append(y)
+                #         current_y.append(x)
+                #         predictions = get_genome_predictions(genome=genome, x_data=x_data, round_values=False)
+                #         # prediction_value = predictions[0][0]
+                #         # if (x < 0.5 and y < 0.5 and prediction_value < 0.5):
+                #         #     ewqeq = 3
+                #         # if (x > 0.5 and y > 0.5 and prediction_value < 0.5):
+                #         #     ewqeq = 3
+                #         # if (x > 0.5 and y < 0.5 and prediction_value > 0.5):
+                #         #     ewqeq = 3
+                #         # if (x < 0.5 and y > 0.5 and prediction_value > 0.5):
+                #         #     ewqeq = 3
+                #         prediction_list += predictions[0].tolist()
             else:
                 # REMEMBER WHEN PLOTTING SHM DATA NEED TO MINUS AND DIVIDE BY 10
                 current_x = []
@@ -159,6 +177,31 @@ def plot_decision_boundary(experiments_path, data_being_used):
             plt.xlabel('X1')
             plt.ylabel('X2')
             plt.show()
+
+            fig, ax = plt.subplots()
+            label_colours = create_label_colours(labels=rounded_average_predictions)
+            x1_reds = []
+            x2_reds = []
+            x1_greens = []
+            x2_greens = []
+            for index in range(len(label_colours)):
+                if label_colours[index] == 'green':
+                    x1_greens.append(current_x[index])
+                    x2_greens.append(current_y[index])
+                else:
+                    x1_reds.append(current_x[index])
+                    x2_reds.append(current_y[index])
+
+            ax.scatter(x1_greens, x2_greens, c='green', label='Class 1',
+                       alpha=1, edgecolors='none')
+            ax.scatter(x1_reds, x2_reds, c='red', label='Class 0',
+                       alpha=1, edgecolors='none')
+            ax.legend(loc='upper right')
+            plt.xlabel('X1')
+            plt.ylabel('X2')
+            plt.show()
+
+
         else:
             fig = plt.figure()
             ax = Axes3D(fig)
@@ -215,7 +258,8 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
     :param same_axis: Defines whether two or more datasets should be plotted on the same y axis
     """
     # Plus one because of how the range function works
-    generations_to_go_through = list(range(1, max(generation_information[0]) + 1))
+    generations_to_go_through = list(range(1, min(list(map(lambda x: max(x), generation_information)))+1))
+    # generations_to_go_through = list(range(1, max(generation_information[0]) + 1))
 
     if len(args) > 1:
 
@@ -231,6 +275,8 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
         for information in args:
             information_type = information[0]
             information_plot_type = information[1]
+            if same_axis:
+                label = information[2]
             if not same_axis:
                 y_label = information[2]
                 y_labels.append(y_label)
@@ -240,11 +286,12 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
                 y_avg_list = []
                 for run in generation_information:
                     y_avg_list.append(run[generation][information_type])
-                y_data.append(np.mean(y_avg_list))
+                avg_value = np.mean(y_avg_list)
+                y_data.append(avg_value)
             if information_plot_type == 'line' and same_axis:
-                plt.plot(generations_to_go_through, y_data)
+                plt.plot(generations_to_go_through, y_data, label=label)
             elif information_plot_type == 'bar' and same_axis:
-                plt.bar(generations_to_go_through, y_data)
+                plt.bar(generations_to_go_through, y_data, label=label)
             y_data_list.append(y_data)
 
         if not same_axis:
@@ -255,9 +302,11 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
             axes2.set_ylabel(y_labels[1])
         else:
             plt.ylabel(y_label)
+            plt.legend(loc='upper right')
         plt.xticks(generations_to_go_through)
         plt.xlabel('Generation')
-        plt.title(title)
+        if title:
+            plt.title(title)
         plt.show()
 
     else:
@@ -277,7 +326,8 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
         plt.xticks(generations_to_go_through)
         plt.xlabel('Generation')
         plt.ylabel(y_label)
-        plt.title(title)
+        if title:
+            plt.title(title)
         plt.show()
 
 
@@ -291,27 +341,32 @@ def visualise_generation_tracker(experiments_path):
         infile.close()
 
     # If more than one information type is specified, MUST define the same_axis variable
-    plot_generation_graph(('best_all_time_genome_fitness', 'line'),
-                          ('average_population_fitness', 'line'),
+    plot_generation_graph(('best_all_time_genome_fitness', 'line', 'Best All Time Fitness'),
+                          ('average_population_fitness', 'line', 'Population Average Fitness'),
                           same_axis=True,
-                          y_label='Fitness value',
+                          y_label='Fitness',
                           generation_information=generation_information_list,
-                          title='Best All Time Genome Accuracy through generations')
-
-    plot_generation_graph(('best_all_time_genome_accuracy', 'line', 'Best Genome Accuracy (%)'),
-                          ('best_all_time_genome_f1_score', 'line', 'Best Genome F1 score'),
-                          same_axis=False,
-                          generation_information=generation_information_list,
-                          title='Best All Time Genome Accuracy through generations')
+                          title=None)
 
     plot_generation_graph(('best_all_time_genome_accuracy', 'line'),
                           generation_information=generation_information_list, y_label='Best Genome Accuracy (%)',
                           title='Best All Time Genome Accuracy through generations')
+    # plot_generation_graph(('best_all_time_genome_accuracy', 'line', 'Best Genome Accuracy (%)'),
+    #                       ('best_all_time_genome_f1_score', 'line', 'Best Genome F1 score'),
+    #                       same_axis=False,
+    #                       generation_information=generation_information_list,
+    #                       title='Best All Time Genome Accuracy through generations')
+    #
+    # plot_generation_graph(('best_all_time_genome_accuracy', 'line'),
+    #                       generation_information=generation_information_list, y_label='Best Genome Accuracy (%)',
+    #                       title='Best All Time Genome Accuracy through generations')
 
 
 def plot_population_complexity(experiments_path):
     node_count_list = []
     connection_count_list = []
+    best_connection_count_list = []
+    best_node_count_list = []
     for directory in os.listdir(experiments_path):
         try:
             infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
@@ -322,7 +377,9 @@ def plot_population_complexity(experiments_path):
                 node_count.append(len(population_member.nodes))
                 connection_count.append(len(population_member.connections))
             node_count_list.append(node_count)
-            connection_count_list.append(node_count)
+            connection_count_list.append(connection_count)
+            best_connection_count_list.append(len(neat_instance.best_all_time_genome.connections))
+            best_node_count_list.append(len(neat_instance.best_all_time_genome.nodes))
             infile.close()
         except:
             pass
@@ -352,15 +409,19 @@ def plot_population_complexity(experiments_path):
         avg_node_count.append(np.mean(node_count_keeper))
 
     x_data = [(number + 1) for number in range(min_connection_list_length)]
-    test = [11 for i in range(len(x_data))]
+    test = [np.mean(best_connection_count_list) for i in range(len(x_data))]
 
     plt.bar(x_data, avg_connection_count)
     plt.xticks(x_data)
     plt.xlabel('Individual')
     plt.ylabel('Test label')
     plt.title('Test title')
-    axes2 = plt.twinx()
-    axes2.plot(x_data, test, color='r')
+    plt.plot(x_data, avg_node_count, color='r')
+    plt.plot(x_data, test, color='r')
+    test = [np.mean(best_node_count_list) for i in range(len(x_data))]
+    plt.plot(x_data, test, color='r')
+    # axes2 = plt.twinx()
+    # axes2.plot(x_data, test, color='r')
     # axes2.plot(x_data, node_count, color='r')
 
     plt.xlabel('Individual')
@@ -368,7 +429,7 @@ def plot_population_complexity(experiments_path):
     plt.title('Test title')
     plt.show()
 
-    test = [7 for i in range(len(x_data))]
+    test = [np.mean(best_node_count_list) for i in range(len(x_data))]
 
     plt.bar(x_data, avg_node_count)
     plt.xticks(x_data)
@@ -417,11 +478,41 @@ def create_confusion_matrix(experiments_path, x_data, y_data):
     plt.show()
 
 
+def plot_model_complexity_during_evolution(experiments_path):
+    generation_information_list = []
+
+    for directory in os.listdir(experiments_path):
+        infile = open('{}/{}/generation_tracker'.format(experiments_path, directory), 'rb')
+        generation_tracker_instance = pickle.load(infile)
+        generation_information_list.append(generation_tracker_instance.generation_information)
+        infile.close()
+
+    complexity_tracker_nodes = {}
+    complexity_tracker_connections = {}
+    min_num_gens = None
+    for generation_dict in generation_information_list:
+        if min_num_gens is None or max(generation_dict) < min_num_gens:
+            min_num_gens = max(generation_dict)
+    for generation in range(1, min_num_gens + 1):
+        avg_tracker_connections = []
+        avg_tracker_nodes = []
+        for generation_dict in generation_information_list:
+            avg_tracker_connections.append(generation_dict[generation]['mean_number_connections_enabled'])
+            avg_tracker_nodes.append(generation_dict[generation]['mean_number_nodes_enabled'])
+
+        complexity_tracker_connections[generation] = np.mean(avg_tracker_connections)
+        complexity_tracker_nodes[generation] = np.mean(avg_tracker_nodes)
+
+    print(generation_information_list)
+    plt.plot([1, 2, 3, 4, 5, 6, 7], list(complexity_tracker_connections.values()))
+    plt.show()
+
+
 def main():
     # plot_shm_data(rotation_angle=50)
 
     # DATA
-    x_data, y_data = create_data(n_generated=200, add_noise=False)
+    x_data, y_data = create_data(n_generated=200, add_noise=True)
     x_circle, y_circle = get_circle_data()
     x_spiral, y_spiral = get_spiral_data()
 
@@ -436,17 +527,22 @@ def main():
     plot_data = False
     show_decision_boundary = False
     visualise_generation = False
-    visualise_population_complexity = False
-    plot_confusion_matrix = True
-    experiment_path = 'algorithm_runs\\xor_full'
+    visualise_population_complexity = True
+    plot_confusion_matrix = False
+    plot_figure_model_complexity_during_evolution = False
+    experiment_path = 'algorithm_runs\\xor_small_noise'
 
     # PLOT DATA
     if plot_data:
         # TODO: Add legends
-        plt.scatter(feature_1_xor, feature_2_xor, color=create_label_colours(labels=y_data))
+        colors = create_label_colours(labels=y_data)
+        fig, ax = plt.subplots()
+        for x1, x2, color in zip(feature_1_xor, feature_2_xor, colors):
+            ax.scatter(x1, x2, label=color, )
         plt.title('XOR Data')
         plt.xlabel('X1')
         plt.ylabel('X2')
+        ax.legend()
         plt.show()
         plt.scatter(feature_1_circle, feature_2_circle, color=create_label_colours(labels=y_circle))
         plt.title('Circle Data')
@@ -470,6 +566,9 @@ def main():
 
     if plot_confusion_matrix:
         create_confusion_matrix(x_data=x_data, y_data=y_data, experiments_path=experiment_path)
+
+    if plot_figure_model_complexity_during_evolution:
+        plot_model_complexity_during_evolution(experiments_path=experiment_path)
 
 
 if __name__ == "__main__":
