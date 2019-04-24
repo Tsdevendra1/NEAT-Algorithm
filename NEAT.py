@@ -236,52 +236,59 @@ class NEAT:
         percentage_correct = (num_correct / y_test_data.shape[0]) * 100
         return percentage_correct
 
+    def save_run_information(self, current_gen):
+        base_filepath = 'algorithm_runs'
+        if not os.path.exists(base_filepath):
+            # Make the directory before saving graphs
+            os.makedirs(base_filepath)
+
+        folders = len(os.listdir('{}/{}'.format(base_filepath, self.algorithm_running)))
+
+        # Folders + 1 because it will be the next folder in the sub directory
+        file_path_for_run = '{}/{}/run_{}/{}'.format(base_filepath, self.algorithm_running, (folders + 1), current_gen)
+
+        # Make the directory before saving all other files
+        os.makedirs(file_path_for_run)
+
+        # Save best genome in pickle
+        outfile = open('{}/best_genome_pickle'.format(file_path_for_run), 'wb')
+        pickle.dump(self.best_all_time_genome, outfile)
+        outfile.close()
+
+        # Save graph information
+        self.generation_tracker.plot_graphs(current_gen=current_gen, save_plots=True,
+                                            file_path=file_path_for_run)
+
+        # Save generation tracker in pickle
+        outfile = open('{}/generation_tracker'.format(file_path_for_run), 'wb')
+        pickle.dump(self.generation_tracker, outfile)
+        outfile.close()
+
+        # Save NEAT class instance so we can access the population again later
+        outfile = open('{}/NEAT_instance'.format(file_path_for_run), 'wb')
+        pickle.dump(self, outfile)
+        outfile.close()
+
     def check_algorithm_break_point(self, current_gen, f1_score_of_best_all_time_genome, max_num_generations):
+        break_point_reached = False
         # If the fitness threshold is met, stop the algorithm
-        if self.best_all_time_genome.fitness > self.fitness_threshold or f1_score_of_best_all_time_genome > self.f1_score_threshold or current_gen > max_num_generations:
+        if self.fitness_threshold and self.best_all_time_genome.fitness > self.fitness_threshold:
+            break_point_reached = True
+        if self.f1_score_threshold and f1_score_of_best_all_time_genome > self.f1_score_threshold:
+            break_point_reached = True
+        if current_gen > max_num_generations:
+            break_point_reached = True
 
-            files = folders = 0
+        save_percentage = 0.05
 
-            for _, dirnames, filenames in os.walk('algorithm_runs/{}'.format(self.algorithm_running)):
-                files += len(filenames)
-                folders += len(dirnames)
+        if break_point_reached:
 
-            folders = len(os.listdir('algorithm_runs/{}'.format(self.algorithm_running)))
-
-
-            base_filepath = 'algorithm_runs'
-            if not os.path.exists(base_filepath):
-                # Make the directory before saving graphs
-                os.makedirs(base_filepath)
-
-            # Folders + 1 because it will be the next folder in the sub directory
-            file_path_for_run = '{}/{}/run_{}'.format(base_filepath, self.algorithm_running, (folders + 1))
-
-            # Make the directory before saving all other files
-            os.makedirs(file_path_for_run)
-
-            # Save best genome in pickle
-            outfile = open('{}/best_genome_pickle'.format(file_path_for_run), 'wb')
-            pickle.dump(self.best_all_time_genome, outfile)
-            outfile.close()
-
-            # Save graph information
-            self.generation_tracker.plot_graphs(current_gen=current_gen, save_plots=True,
-                                                file_path=file_path_for_run)
-
-            # Save generation tracker in pickle
-            outfile = open('{}/generation_tracker'.format(file_path_for_run), 'wb')
-            pickle.dump(self.generation_tracker, outfile)
-            outfile.close()
-
-            # Save NEAT class instance so we can access the population again later
-            outfile = open('{}/NEAT_instance'.format(file_path_for_run), 'wb')
-            pickle.dump(self, outfile)
-            outfile.close()
+            self.save_run_information(current_gen=current_gen)
 
             return True
-        else:
-            return False
+        elif round(max_num_generations * save_percentage) == current_gen:
+            self.save_run_information(current_gen=current_gen)
+        return False
 
     def run(self, max_num_generations, use_backprop, print_generation_information, show_population_weight_distribution):
         """
@@ -333,7 +340,6 @@ class NEAT:
                                                           backprop_mutation=(use_backprop and current_gen > 1))
             end_reproduce_time = time.time()
             self.generation_tracker.reproduce_execute_time = end_reproduce_time - start_reproduce_time
-
 
             # Check to ensure no genes share the same connection gene addresses. (This problem has been fixed but is
             # here just incase now).

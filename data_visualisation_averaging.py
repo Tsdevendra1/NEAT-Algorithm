@@ -645,6 +645,15 @@ def plot_shm_multi_data(experiments_path):
             infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
             neat_instance = pickle.load(infile)
             neat_instance_list.append(neat_instance)
+            connection_amount_list = []
+            for genome in neat_instance.population.values():
+                connection_amount_list.append(len(genome.connections))
+            for index in range(len(connection_amount_list)):
+                avg = np.mean(connection_amount_list)
+                connection_amount_list[index] -= avg
+
+            plt.bar(list(range(1, 17)), connection_amount_list)
+            plt.show()
             if x_test_data is None:
                 x_test_data = neat_instance.x_test
                 y_test_data = neat_instance.y_test
@@ -664,19 +673,29 @@ def plot_shm_multi_data(experiments_path):
     gen_accuracy_list = []
     gen_fitness_list = []
     gen_population_fitness_list = []
-
+    gen_species_amount_list = []
+    # TODO: If you need to get accracy correct then manuall go through best genomes in history
     for index in generations_to_go_through:
         avg_tracker_accuracy = []
         avg_tracker_fitness = []
         avg_tracker_population_fitness = []
+        avg_species_amount = []
         for run in generation_information_list:
             avg_tracker_accuracy.append(run[index]['best_all_time_genome_accuracy'])
             avg_tracker_fitness.append(run[index]['best_all_time_genome_fitness'])
             avg_tracker_population_fitness.append(run[index]['average_population_fitness'])
+            avg_species_amount.append(run[index]['num_species'])
 
         gen_accuracy_list.append(np.mean(avg_tracker_accuracy))
         gen_fitness_list.append(np.mean(avg_tracker_fitness))
         gen_population_fitness_list.append(np.mean(avg_tracker_population_fitness))
+        gen_species_amount_list.append(np.mean(avg_species_amount))
+
+    plt.figure()
+    plt.plot(generations_to_go_through, gen_species_amount_list, label='Number of Species')
+    plt.ylabel('Number of Species')
+    plt.xlabel('Generation')
+    plt.show()
 
     # # Have to reset first one because its so large
     gen_fitness_list[0] = gen_fitness_list[1]
@@ -712,7 +731,6 @@ def plot_shm_multi_data(experiments_path):
 
     plt.show()
 
-    avg_prediction = []
     avg_predictions_array = np.empty((len(predictions_list[0]), len(predictions_list[0][0])))
     for i in range(len(predictions_list[0])):
         avg_tracker = np.empty((len(predictions_list), len(predictions_list[0][0])))
@@ -724,9 +742,6 @@ def plot_shm_multi_data(experiments_path):
         avg_predictions_array[i, :] = np.sum(avg_tracker, axis=0)
 
     before_rounding = avg_predictions_array
-    avg_predictions_array = avg_predictions_array.round()
-    # avg_prediction = np.array(list(map(lambda x: int(x), np.array(avg_prediction).round().tolist())))
-    # avg_prediction.shape = (avg_prediction.shape[0], 1)
 
     y_predicted = []
     y_actual = []
@@ -737,14 +752,15 @@ def plot_shm_multi_data(experiments_path):
         actual = np.argmax(y_test_data[row, :])
         y_actual.append(actual)
 
-
-
     wrong_counter = 0
     for i in range(len(y_actual)):
         if y_actual[i] != y_predicted[i]:
             wrong_counter += 1
+        # Make states 1-17 instead of 0-16
+        y_actual[i] += 1
+        y_predicted[i] += 1
     print('wrong: ', wrong_counter)
-    print('wrong percentage', wrong_counter/len(y_actual))
+    print('wrong percentage', wrong_counter / len(y_actual))
     data = {'y_Predicted': y_predicted,
             'y_Actual': y_actual,
             }
