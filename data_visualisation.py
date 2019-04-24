@@ -186,6 +186,31 @@ def plot_shm_data(elevation, rotation_angle):
     ax.view_init(elevation, rotation_angle)
     plt.show()
 
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    x1_reds = []
+    x2_reds = []
+    x3_reds = []
+    x1_greens = []
+    x2_greens = []
+    x3_greens = []
+    for index in range(len(labels)):
+        if labels[index] == 'green':
+            x1_greens.append(x_vals[index])
+            x2_greens.append(y_vals[index])
+            x3_greens.append(z_vals[index])
+        else:
+            x1_reds.append(x_vals[index])
+            x2_reds.append(y_vals[index])
+            x3_reds.append(z_vals[index])
+    ax.scatter(x1_greens, x2_greens, x3_greens, c='green', label='Undamaged',
+               )
+    ax.scatter(x1_reds, x2_reds, x3_reds, c='red', label='Damaged',
+               )
+    ax.legend(loc='upper right')
+    ax.view_init(elevation, rotation_angle)
+    plt.show()
+
 
 def plot_generation_graph(*args, same_axis=None, generation_information, y_label=None, title):
     """"
@@ -380,12 +405,12 @@ def main():
     feature_1_spiral = x_spiral[:, 0]
     feature_2_spiral = x_spiral[:, 1]
 
-    plot_data = True
+    plot_data = False
     show_decision_boundary = False
     visualise_generation = False
     plot_confusion_matrix = False
     visualise_population_complexity = False
-    plot_shm_data_figure = False
+    plot_shm_data_figure = True
 
     font_size = 20
     # PLOT DATA

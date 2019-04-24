@@ -246,6 +246,9 @@ class NEAT:
                 files += len(filenames)
                 folders += len(dirnames)
 
+            folders = len(os.listdir('algorithm_runs/{}'.format(self.algorithm_running)))
+
+
             base_filepath = 'algorithm_runs'
             if not os.path.exists(base_filepath):
                 # Make the directory before saving graphs

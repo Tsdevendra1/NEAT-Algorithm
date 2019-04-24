@@ -50,7 +50,7 @@ class GenerationStatistics:
         information = {}
         for info_type, info_value in self.__dict__.items():
             if isinstance(info_value, float) or isinstance(info_value, np.float64):
-                information[info_type] = round(info_value, 2)
+                information[info_type] = round(info_value, 6)
             else:
                 information[info_type] = info_value
 

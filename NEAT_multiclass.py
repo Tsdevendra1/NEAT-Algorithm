@@ -224,16 +224,24 @@ class NEATMultiClass:
     @staticmethod
     def calculate_f_statistic(genome, x_test_data, y_test_data):
         genome_nn = NEATMultiClass.create_genome_nn(genome=genome, x_data=x_test_data, y_data=y_test_data)
-        prediction = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True).round()
-        return sklearn.metrics.f1_score(y_test_data, prediction, average='samples')
+        prediction_array = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True)
+        prediction_real = np.zeros((y_test_data.shape[0], y_test_data.shape[1]))
+        for row in range(prediction_array.shape[0]):
+            prediction_index = np.argmax(prediction_array[row, :])
+            prediction_real[row, prediction_index] = 1.0
+        return sklearn.metrics.f1_score(y_test_data, prediction_real, average='samples')
 
     @staticmethod
     def calculate_accuracy(genome, x_test_data, y_test_data):
         genome_nn = NEATMultiClass.create_genome_nn(genome=genome, x_data=x_test_data, y_data=y_test_data)
-        prediction = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True).round()
+        prediction_array = genome_nn.run_one_pass(input_data=x_test_data, return_prediction_only=True)
+        prediction_real = np.zeros((y_test_data.shape[0], y_test_data.shape[1]))
+        for row in range(prediction_array.shape[0]):
+            prediction_index = np.argmax(prediction_array[row, :])
+            prediction_real[row, prediction_index] = 1.0
         num_correct = 0
         for row in range(y_test_data.shape[0]):
-            if np.array_equal(prediction[row, :], y_test_data[row, :]):
+            if np.array_equal(prediction_real[row, :], y_test_data[row, :]):
                 num_correct += 1
 
         percentage_correct = (num_correct / y_test_data.shape[0]) * 100
@@ -332,7 +340,6 @@ class NEATMultiClass:
                                                           backprop_mutation=(use_backprop and current_gen > 1))
             end_reproduce_time = time.time()
             self.generation_tracker.reproduce_execute_time = end_reproduce_time - start_reproduce_time
-
 
             # Check to ensure no genes share the same connection gene addresses. (This problem has been fixed but is
             # here just incase now).

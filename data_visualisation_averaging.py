@@ -230,23 +230,88 @@ def create_label_colours(labels):
     return coloured_labels
 
 
-def plot_shm_data(rotation_angle):
+def plot_shm_data(rotation_angle, elevation, experiments_path):
+    x_list = []
+    y_list = []
+    z_list = []
+    predictions_list = []
+    x_test_data = None
+    y_test_data = None
+    for directory in os.listdir(experiments_path):
+        try:
+            infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
+            neat_instance = pickle.load(infile)
+            if x_test_data is None:
+                x_test_data = neat_instance.x_test
+                y_test_data = neat_instance.y_test
+            prediction = get_genome_predictions(genome=neat_instance.best_all_time_genome, x_data=x_test_data,
+                                                round_values=False)
+            predictions_list.append(prediction)
+            infile.close()
+        except:
+            pass
+
+    avg_prediction = []
+    for i in range(len(predictions_list[0])):
+        avg_tracker = []
+        for run in predictions_list:
+            avg_tracker.append(run[i])
+        avg_prediction.append(np.mean(avg_tracker))
+
+    avg_prediction = np.array(list(map(lambda x: int(x), np.array(avg_prediction).round().tolist())))
+    avg_prediction.shape = (avg_prediction.shape[0], 1)
+
+    x_test_data = x_test_data / -1
+    x_test_data = x_test_data * 100
     x_data, y_data = get_shm_two_class_data(normalise_x=False)
+    x_vals = x_test_data[:, 0].tolist()
+    y_vals = x_test_data[:, 1].tolist()
+    z_vals = x_test_data[:, 2].tolist()
 
-    x_vals = x_data[:, 0].tolist()
-    y_vals = x_data[:, 1].tolist()
-    z_vals = x_data[:, 2].tolist()
-
-    x_min, x_max = min(x_vals), max(x_vals)
-    y_min, y_max = min(y_vals), max(y_vals)
-    z_min, z_max = min(z_vals), max(z_vals)
-
-    labels = create_label_colours(labels=y_data)
+    labels = create_label_colours(labels=avg_prediction)
 
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(x_vals, y_vals, z_vals, color=labels)
-    ax.view_init(-140, rotation_angle)
+    ax.view_init(elevation, rotation_angle)
+    plt.show()
+
+    fig, ax = plt.subplots()
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    x1_reds = []
+    x2_reds = []
+    x3_reds = []
+    x1_greens = []
+    x2_greens = []
+    x3_greens = []
+    for index in range(len(labels)):
+        if labels[index] == 'green':
+            x1_greens.append(x_vals[index])
+            x2_greens.append(y_vals[index])
+            x3_greens.append(z_vals[index])
+        else:
+            x1_reds.append(x_vals[index])
+            x2_reds.append(y_vals[index])
+            x3_reds.append(z_vals[index])
+
+    ax.scatter(x1_greens, x2_greens, x3_greens, c='green', label='Undamaged',
+               )
+    ax.scatter(x1_reds, x2_reds, x3_reds, c='red', label='Damaged',
+               )
+    ax.legend(loc='upper right')
+    ax.view_init(elevation, rotation_angle)
+    plt.show()
+
+    avg_prediction.shape = (avg_prediction.shape[0],)
+    y_test_data.shape = (y_test_data.shape[0],)
+    data = {'y_Predicted': avg_prediction.tolist(),
+            'y_Actual': y_test_data.tolist(),
+            }
+    df = pd.DataFrame(data, columns=['y_Actual', 'y_Predicted'])
+    confusion_matrix = pd.crosstab(df['y_Actual'], df['y_Predicted'], rownames=['Actual'], colnames=['Predicted'])
+
+    sn.heatmap(confusion_matrix, annot=True, xticklabels=['Undamaged', 'Damaged'], yticklabels=['Undamaged', 'Damaged'])
     plt.show()
 
 
@@ -258,7 +323,7 @@ def plot_generation_graph(*args, same_axis=None, generation_information, y_label
     :param same_axis: Defines whether two or more datasets should be plotted on the same y axis
     """
     # Plus one because of how the range function works
-    generations_to_go_through = list(range(1, min(list(map(lambda x: max(x), generation_information)))+1))
+    generations_to_go_through = list(range(1, min(list(map(lambda x: max(x), generation_information))) + 1))
     # generations_to_go_through = list(range(1, max(generation_information[0]) + 1))
 
     if len(args) > 1:
@@ -411,22 +476,20 @@ def plot_population_complexity(experiments_path):
     x_data = [(number + 1) for number in range(min_connection_list_length)]
     test = [np.mean(best_connection_count_list) for i in range(len(x_data))]
 
-    plt.bar(x_data, avg_connection_count)
+    plt.bar(x_data, avg_connection_count, label='Average number of connections')
     plt.xticks(x_data)
-    plt.xlabel('Individual')
-    plt.ylabel('Test label')
-    plt.title('Test title')
-    plt.plot(x_data, avg_node_count, color='r')
-    plt.plot(x_data, test, color='r')
+    plt.plot(x_data, avg_node_count, color='black', label='Average number of nodes', linestyle='--')
+    plt.plot(x_data, test, color='r', label='Best genome connections')
     test = [np.mean(best_node_count_list) for i in range(len(x_data))]
-    plt.plot(x_data, test, color='r')
+    plt.plot(x_data, test, color='r', linestyle='--', label='Best genome nodes')
     # axes2 = plt.twinx()
     # axes2.plot(x_data, test, color='r')
     # axes2.plot(x_data, node_count, color='r')
 
     plt.xlabel('Individual')
-    plt.ylabel('Test label')
-    plt.title('Test title')
+    plt.ylabel('Complexity')
+    plt.legend()
+    # plt.title('Test title')
     plt.show()
 
     test = [np.mean(best_node_count_list) for i in range(len(x_data))]
@@ -508,9 +571,191 @@ def plot_model_complexity_during_evolution(experiments_path):
     plt.show()
 
 
-def main():
-    # plot_shm_data(rotation_angle=50)
+def calculate_genome_fitness(neat_instance, genome):
+    genome_nn = neat_instance.create_genome_nn(genome=genome, x_data=neat_instance.x_train,
+                                               y_data=neat_instance.y_train,
+                                               algorithm_running=neat_instance.algorithm_running)
 
+    print('OPTIMISING')
+    genome_nn.optimise(print_epoch=False)
+    # We use genome_nn.x_train instead of self.x_train because the genome_nn might have deleted a row if there
+    # is no connection to one of the sources
+    cost = genome_nn.run_one_pass(input_data=genome_nn.x_train, labels=neat_instance.y_train, return_cost_only=True)
+    print('OPTIMISING FINISH')
+
+    # The fitness is the negative of the cost. Because less cost = greater fitness
+    genome.fitness = -cost
+
+    return -cost
+
+
+def get_avg_table_values(experiments_path):
+    fitness_list = []
+    f1_score_list = []
+    accuracy_list = []
+    best_accuracy_list = []
+    best_f1_list = []
+    best_fitness_list = []
+    for directory in os.listdir(experiments_path):
+        try:
+            infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
+            neat_instance = pickle.load(infile)
+            for genome in neat_instance.population.values():
+                f_score = neat_instance.calculate_f_statistic(genome=genome, x_test_data=neat_instance.x_test,
+                                                              y_test_data=neat_instance.y_test)
+                accuracy = neat_instance.calculate_accuracy(genome=genome, x_test_data=neat_instance.x_test,
+                                                            y_test_data=neat_instance.y_test)
+                accuracy_list.append(accuracy)
+                f1_score_list.append(f_score)
+                # fitness_value = genome.fitness
+                # if not fitness_value:
+                #     fitness_value = calculate_genome_fitness(neat_instance, genome)
+                # fitness_list.append(fitness_value)
+
+            f_score = neat_instance.calculate_f_statistic(genome=neat_instance.best_all_time_genome,
+                                                          x_test_data=neat_instance.x_test,
+                                                          y_test_data=neat_instance.y_test)
+            accuracy = neat_instance.calculate_accuracy(genome=neat_instance.best_all_time_genome,
+                                                        x_test_data=neat_instance.x_test,
+                                                        y_test_data=neat_instance.y_test)
+            best_accuracy_list.append(accuracy)
+            best_f1_list.append(f_score)
+            best_fitness_list.append(neat_instance.best_all_time_genome.fitness)
+            infile.close()
+        except:
+            pass
+
+    print('AVG ACCURACY', np.mean(accuracy_list))
+    print('AVG F1', np.mean(f1_score_list))
+    # print('AVG FITNESS', np.mean(fitness_list))
+
+    print('BEST ACCURACY', np.mean(best_accuracy_list))
+    print('BEST F1', np.mean(best_f1_list))
+    # print('BEST FITNESS', np.mean(best_fitness_list))
+
+
+def plot_shm_multi_data(experiments_path):
+    neat_instance_list = []
+    generation_information_list = []
+    x_test_data = None
+    y_test_data = None
+    predictions_list = []
+    for directory in os.listdir(experiments_path):
+        try:
+            infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
+            neat_instance = pickle.load(infile)
+            neat_instance_list.append(neat_instance)
+            if x_test_data is None:
+                x_test_data = neat_instance.x_test
+                y_test_data = neat_instance.y_test
+            prediction = get_genome_predictions(genome=neat_instance.best_all_time_genome, x_data=x_test_data,
+                                                round_values=False)
+            predictions_list.append(prediction)
+            infile.close()
+
+            infile = open('{}/{}/generation_tracker'.format(experiments_path, directory), 'rb')
+            generation_tracker_instance = pickle.load(infile)
+            generation_information_list.append(generation_tracker_instance.generation_information)
+            infile.close()
+        except:
+            pass
+    generations_to_go_through = list(range(1, min(list(map(lambda x: max(x), generation_information_list))) + 1))
+
+    gen_accuracy_list = []
+    gen_fitness_list = []
+    gen_population_fitness_list = []
+
+    for index in generations_to_go_through:
+        avg_tracker_accuracy = []
+        avg_tracker_fitness = []
+        avg_tracker_population_fitness = []
+        for run in generation_information_list:
+            avg_tracker_accuracy.append(run[index]['best_all_time_genome_accuracy'])
+            avg_tracker_fitness.append(run[index]['best_all_time_genome_fitness'])
+            avg_tracker_population_fitness.append(run[index]['average_population_fitness'])
+
+        gen_accuracy_list.append(np.mean(avg_tracker_accuracy))
+        gen_fitness_list.append(np.mean(avg_tracker_fitness))
+        gen_population_fitness_list.append(np.mean(avg_tracker_population_fitness))
+
+    # # Have to reset first one because its so large
+    gen_fitness_list[0] = gen_fitness_list[1]
+
+    plt.figure()
+    label1 = plt.plot(generations_to_go_through, gen_accuracy_list, label='Best Genome Accuracy')
+    plt.ylabel('Accuracy')
+    plt.legend(loc='lower right')
+    # axes2.legend(loc='upper right')
+    plt.xlabel('Generation')
+
+    axes2 = plt.twinx()
+    label2 = axes2.plot(generations_to_go_through, gen_fitness_list, color='darkorange', label='Best Genome Fitness')
+    axes2.set_ylabel('Fitness')
+    lns = label1 + label2
+    labs = [l.get_label() for l in lns]
+    plt.legend(lns, labs, loc=0)
+
+    plt.show()
+
+    gen_population_fitness_list[0] = gen_population_fitness_list[1]
+    plt.figure()
+    label1 = plt.plot(generations_to_go_through, gen_population_fitness_list, label='Average Population Fitness')
+    plt.ylabel('Fitness')
+    plt.legend(loc='lower right')
+    # axes2.legend(loc='upper right')
+    plt.xlabel('Generation')
+
+    label2 = plt.plot(generations_to_go_through, gen_fitness_list, label='Best Genome Fitness')
+    lns = label1 + label2
+    labs = [l.get_label() for l in lns]
+    plt.legend(lns, labs, loc=0)
+
+    plt.show()
+
+    avg_prediction = []
+    avg_predictions_array = np.empty((len(predictions_list[0]), len(predictions_list[0][0])))
+    for i in range(len(predictions_list[0])):
+        avg_tracker = np.empty((len(predictions_list), len(predictions_list[0][0])))
+        counter = 0
+        for run in predictions_list:
+            predictions = run[i, :]
+            avg_tracker[counter, :] = predictions
+            counter += 1
+        avg_predictions_array[i, :] = np.sum(avg_tracker, axis=0)
+
+    before_rounding = avg_predictions_array
+    avg_predictions_array = avg_predictions_array.round()
+    # avg_prediction = np.array(list(map(lambda x: int(x), np.array(avg_prediction).round().tolist())))
+    # avg_prediction.shape = (avg_prediction.shape[0], 1)
+
+    y_predicted = []
+    y_actual = []
+
+    for row in range(y_test_data.shape[0]):
+        predicted = np.argmax(before_rounding[row, :])
+        y_predicted.append(predicted)
+        actual = np.argmax(y_test_data[row, :])
+        y_actual.append(actual)
+
+
+
+    wrong_counter = 0
+    for i in range(len(y_actual)):
+        if y_actual[i] != y_predicted[i]:
+            wrong_counter += 1
+    print('wrong: ', wrong_counter)
+    print('wrong percentage', wrong_counter/len(y_actual))
+    data = {'y_Predicted': y_predicted,
+            'y_Actual': y_actual,
+            }
+    df = pd.DataFrame(data, columns=['y_Actual', 'y_Predicted'])
+    confusion_matrix = pd.crosstab(df['y_Actual'], df['y_Predicted'], rownames=['Actual'], colnames=['Predicted'])
+
+    sn.heatmap(confusion_matrix, annot=True, cmap="YlGnBu")
+    plt.show()
+
+
+def main():
     # DATA
     x_data, y_data = create_data(n_generated=200, add_noise=True)
     x_circle, y_circle = get_circle_data()
@@ -527,10 +772,14 @@ def main():
     plot_data = False
     show_decision_boundary = False
     visualise_generation = False
-    visualise_population_complexity = True
+    visualise_population_complexity = False
+    get_table_values = False
     plot_confusion_matrix = False
+    plot_figure_shm_data = False
     plot_figure_model_complexity_during_evolution = False
+    plot_figure_shm_multi = True
     experiment_path = 'algorithm_runs\\xor_small_noise'
+    # experiment_path = 'algorithm_runs\\shm_two_class'
 
     # PLOT DATA
     if plot_data:
@@ -569,6 +818,15 @@ def main():
 
     if plot_figure_model_complexity_during_evolution:
         plot_model_complexity_during_evolution(experiments_path=experiment_path)
+
+    if get_table_values:
+        get_avg_table_values(experiments_path=experiment_path)
+
+    if plot_figure_shm_data:
+        plot_shm_data(rotation_angle=30, elevation=-160, experiments_path='algorithm_runs/shm_two_class')
+
+    if plot_figure_shm_multi:
+        plot_shm_multi_data(experiments_path='algorithm_runs_multi/shm_multi_class')
 
 
 if __name__ == "__main__":
