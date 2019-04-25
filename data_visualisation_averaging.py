@@ -635,6 +635,7 @@ def get_avg_table_values(experiments_path):
 
 
 def plot_shm_multi_data(experiments_path):
+    # TODO: PLOT COMPLEXITY VS GEN OF AVERAGE THE BEST GENOME HISTORY
     neat_instance_list = []
     generation_information_list = []
     x_test_data = None

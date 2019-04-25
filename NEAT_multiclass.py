@@ -289,15 +289,10 @@ class NEATMultiClass:
         if current_gen > max_num_generations:
             break_point_reached = True
 
-        save_percentage = 0.05
-
         if break_point_reached:
-
             self.save_run_information(current_gen=current_gen)
 
             return True
-        elif round(max_num_generations * save_percentage) == current_gen:
-            self.save_run_information(current_gen=current_gen)
         return False
 
     def run(self, max_num_generations, use_backprop, print_generation_information, show_population_weight_distribution):
