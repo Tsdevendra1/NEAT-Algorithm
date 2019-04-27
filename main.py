@@ -14,7 +14,7 @@ def main():
 
     algorithm_options = {0: 'xor_full', 1: 'xor_small_noise', 2: 'circle_data', 3: 'shm_two_class', 4: 'spiral_data'}
     # Choose which algorithm is running using keys
-    algorithm_running = algorithm_options[1]
+    algorithm_running = algorithm_options[3]
 
     if algorithm_running == algorithm_options[0]:
         num_data_to_generate = 6250

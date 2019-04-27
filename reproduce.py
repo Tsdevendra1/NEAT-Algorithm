@@ -220,6 +220,8 @@ class Reproduce:
 
         for species_size, species in zip(adjusted_species_sizes, remaining_species):
 
+            remaining_species.historical_species_size.append(species_size)
+
             # TODO: Uncomment if you removed min_species_size
             # assert (species_size > 0)
             if species_size > 0:

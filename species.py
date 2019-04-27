@@ -15,6 +15,7 @@ class Species:
         self.adjusted_fitness = None
         # History of the fitness for the species
         self.fitness_history = []
+        self.historical_species_size = []
 
         # Keeps track of the unique characteristics of its members
         self.species_info = None
@@ -114,17 +115,6 @@ class SpeciesSet:
                 dict_of_compatibility_distances[(representative_genome, genome)] = compatibility_distance
                 if compatibility_distance < compatibility_threshold:
                     candidates.append((compatibility_distance, species_id))
-
-            # Check to see if any of the representatives are below the threshold
-            no_distances_less_than_threshold = True
-            for distance in compatibility_distances_dict.values():
-                if distance < compatibility_threshold:
-                    no_distances_less_than_threshold = False
-                    break
-
-            if no_distances_less_than_threshold:
-                # TODO: Remove this if not necessary
-                random = 3
 
             if candidates:
                 _, species_id = min(candidates, key=lambda x: x[0])
