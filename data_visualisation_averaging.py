@@ -1,4 +1,5 @@
 import numpy as np
+import collections
 import pandas as pd
 import seaborn as sn
 import pickle
@@ -641,35 +642,51 @@ def plot_shm_multi_data(experiments_path):
     x_test_data = None
     y_test_data = None
     predictions_list = []
+    best_num_connections = {}
+    best_num_nodes = {}
+    connection_amount_list = []
+    node_amount_list = []
     for directory in os.listdir(experiments_path):
-        try:
-            infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
-            neat_instance = pickle.load(infile)
-            neat_instance_list.append(neat_instance)
-            connection_amount_list = []
-            for genome in neat_instance.population.values():
-                connection_amount_list.append(len(genome.connections))
-            for index in range(len(connection_amount_list)):
-                avg = np.mean(connection_amount_list)
-                connection_amount_list[index] -= avg
+        infile = open('{}/{}/NEAT_instance'.format(experiments_path, directory), 'rb')
+        neat_instance = pickle.load(infile)
+        neat_instance_list.append(neat_instance)
+        for genome in neat_instance.population.values():
+            connection_amount_list.append(len(genome.connections))
+            node_amount_list.append(len(genome.nodes))
+        for generation, genome in neat_instance.best_genome_history.items():
+            best_num_connections[generation] = len(genome.connections)
+            best_num_nodes[generation] = len(genome.nodes)
+        # for index in range(len(connection_amount_list)):
+        #     avg = np.mean(connection_amount_list)
+        #     connection_amount_list[index] -= avg
+        #
+        # plt.bar(list(range(1, 17)), connection_amount_list)
+        # plt.show()
+        if x_test_data is None:
+            x_test_data = neat_instance.x_test
+            y_test_data = neat_instance.y_test
+        prediction = get_genome_predictions(genome=neat_instance.best_all_time_genome, x_data=x_test_data,
+                                            round_values=False)
+        predictions_list.append(prediction)
+        infile.close()
 
-            plt.bar(list(range(1, 17)), connection_amount_list)
-            plt.show()
-            if x_test_data is None:
-                x_test_data = neat_instance.x_test
-                y_test_data = neat_instance.y_test
-            prediction = get_genome_predictions(genome=neat_instance.best_all_time_genome, x_data=x_test_data,
-                                                round_values=False)
-            predictions_list.append(prediction)
-            infile.close()
-
-            infile = open('{}/{}/generation_tracker'.format(experiments_path, directory), 'rb')
-            generation_tracker_instance = pickle.load(infile)
-            generation_information_list.append(generation_tracker_instance.generation_information)
-            infile.close()
-        except:
-            pass
+        infile = open('{}/{}/generation_tracker'.format(experiments_path, directory), 'rb')
+        generation_tracker_instance = pickle.load(infile)
+        generation_information_list.append(generation_tracker_instance.generation_information)
+        infile.close()
+        # except:
+        #     pass
     generations_to_go_through = list(range(1, min(list(map(lambda x: max(x), generation_information_list))) + 1))
+
+    od_num_connections = collections.OrderedDict(sorted(best_num_connections.items()))
+    od_num_nodes = collections.OrderedDict(sorted(best_num_nodes.items()))
+    x = []
+    y= []
+    for generation, connections in od_num_connections.items():
+        x.append(generation)
+        y.append(connections)
+    plt.plot(x,y)
+    plt.show()
 
     gen_accuracy_list = []
     gen_fitness_list = []
@@ -792,11 +809,13 @@ def main():
     visualise_population_complexity = False
     get_table_values = False
     plot_confusion_matrix = False
-    plot_figure_shm_data = False
+    plot_figure_shm_data = True
     plot_figure_model_complexity_during_evolution = False
-    plot_figure_shm_multi = True
-    experiment_path = 'algorithm_runs\\xor_small_noise'
+    plot_figure_shm_multi = False
+    # experiment_path = 'algorithm_runs\\xor_small_noise'
+    experiment_path = 'algorithm_runs\\shm_two_class'
     # experiment_path = 'algorithm_runs\\shm_two_class'
+    # experiment_path = 'algorithm_runs_multi\\shm_multi_class'
 
     # PLOT DATA
     if plot_data:

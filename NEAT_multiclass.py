@@ -256,7 +256,7 @@ class NEATMultiClass:
         folders = len(os.listdir('{}/{}'.format(base_filepath, self.algorithm_running)))
 
         # Folders + 1 because it will be the next folder in the sub directory
-        file_path_for_run = '{}/{}/run_{}/{}'.format(base_filepath, self.algorithm_running, (folders + 1), current_gen)
+        file_path_for_run = '{}/{}/run_{}'.format(base_filepath, self.algorithm_running, (folders + 1))
 
         # Make the directory before saving all other files
         os.makedirs(file_path_for_run)

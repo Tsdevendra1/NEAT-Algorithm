@@ -1,4 +1,5 @@
 from generation_statistics import GenerationStatistics
+import matplotlib.pyplot as plt
 import time
 import numpy as np
 from genome_neural_network import GenomeNeuralNetwork
@@ -245,7 +246,7 @@ class NEAT:
         folders = len(os.listdir('{}/{}'.format(base_filepath, self.algorithm_running)))
 
         # Folders + 1 because it will be the next folder in the sub directory
-        file_path_for_run = '{}/{}/run_{}/{}'.format(base_filepath, self.algorithm_running, (folders + 1), current_gen)
+        file_path_for_run = '{}/{}/run_{}'.format(base_filepath, self.algorithm_running, (folders + 1))
 
         # Make the directory before saving all other files
         os.makedirs(file_path_for_run)
@@ -280,7 +281,6 @@ class NEAT:
             break_point_reached = True
 
         if break_point_reached:
-
             self.save_run_information(current_gen=current_gen)
 
             return True
@@ -376,7 +376,6 @@ class NEAT:
                 self.reproduction.show_population_weight_distribution(population=self.population)
 
         print('f1 score for best genome after optimising is: {}'.format(f1_score_of_best_all_time_genome))
-
         return self.best_all_time_genome
 
     def ensure_no_duplicate_genes(self):
