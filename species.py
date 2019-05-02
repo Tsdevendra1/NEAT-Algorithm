@@ -15,7 +15,6 @@ class Species:
         self.adjusted_fitness = None
         # History of the fitness for the species
         self.fitness_history = []
-        self.historical_species_size = []
 
         # Keeps track of the unique characteristics of its members
         self.species_info = None
